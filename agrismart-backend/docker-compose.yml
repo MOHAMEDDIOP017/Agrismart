@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  # ── MinIO : stockage objet S3-compatible pour les images de plantes ──────────
+  minio:
+    image: minio/minio:latest
+    container_name: agrismart-minio
+    ports:
+      - "9000:9000"   # API S3 (utilisée par le backend FastAPI)
+      - "9001:9001"   # Console web MinIO (http://localhost:9001)
+    environment:
+      MINIO_ROOT_USER: agrismartadmin
+      MINIO_ROOT_PASSWORD: AgriSmart2026!Secret
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ── Backend FastAPI ───────────────────────────────────────────────────────────
+  agrismart-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agrismart-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Credentials Firebase (ne pas inclure dans l'image)
+      - ./firebase_service_account.json:/app/firebase_service_account.json:ro
+      # Modèles IA (binaires lourds montés depuis l'hôte)
+      - ./models_ia:/app/models_ia:ro
+    env_file:
+      - .env
+    environment:
+      - ENV=production
+      # MinIO accessible depuis le backend via le réseau Docker
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ── Nginx (optionnel, activé via profil production) ──────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: agrismart-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - agrismart-backend
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  minio_data:
+    driver: local

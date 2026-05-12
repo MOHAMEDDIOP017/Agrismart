@@ -1,0 +1,53 @@
+# Credentials Firebase (NE JAMAIS COMMITER)
+firebase_service_account.json
+*.json.bak
+
+# Variables d'environnement
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+.ENV/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Modèles IA (binaires lourds)
+models_ia/*.pkl
+models_ia/*.h5
+models_ia/*.tflite
+# Garder le fichier de classes
+!models_ia/plant_disease_classes.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Uploads temporaires
+uploads/
+tmp/

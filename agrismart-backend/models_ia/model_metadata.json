@@ -1,0 +1,34 @@
+{
+  "model_name": "SVM",
+  "model_version": "v1.0.0",
+  "training_date": "2026-05-06 12:09:11",
+  "features": [
+    "N_kg_ha",
+    "P_kg_ha",
+    "K_kg_ha",
+    "temp_opt_C",
+    "humidite_pct",
+    "pH_sol",
+    "pluviometrie_mm"
+  ],
+  "classes": [
+    "Arachide",
+    "Maïs",
+    "Mil",
+    "Niébé",
+    "Oignon",
+    "Riz",
+    "Sorgho",
+    "Tomate"
+  ],
+  "cv_accuracy": 0.96875,
+  "test_accuracy": 0.975,
+  "f1_score": 0.9749969941197005,
+  "best_params": {
+    "C": 10,
+    "gamma": "scale",
+    "kernel": "rbf"
+  },
+  "training_samples": 2200,
+  "random_state": 42
+}

@@ -1,0 +1,38 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+venv/
+.venv/
+
+# Secrets — NE JAMAIS COMMITER
+**/.env
+**/firebase_service_account.json
+**/*.env.local
+**/*.env.production
+
+# Modèles IA lourds
+**/models_ia/*.pkl
+**/models_ia/*.h5
+**/models_ia/*.tflite
+
+# Flutter build
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.pub/
+
+# Logs
+*.log
+**/logs/

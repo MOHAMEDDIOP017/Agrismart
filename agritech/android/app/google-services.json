@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "555192061987",
+    "project_id": "agrismart-jf",
+    "storage_bucket": "agrismart-jf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:555192061987:android:58f5a826b5fa4677ef6196",
+        "android_client_info": {
+          "package_name": "com.agritech.agritech"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "555192061987-71jtpc0l85g6c0ehetjv8ufratqipnnq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.agritech.agritech",
+            "certificate_hash": "5ab0c97a06d0522fa381bede128fd6d986499b3d"
+          }
+        },
+        {
+          "client_id": "555192061987-pqqe3hvlck2ucuup8l6rcgfcgj3k4er5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXPVZCLO4GCkd_P_kWy5HOTqX-PPUoSeo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "555192061987-pqqe3hvlck2ucuup8l6rcgfcgj3k4er5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
