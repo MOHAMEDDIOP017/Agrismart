@@ -75,9 +75,10 @@ async def interventions_champ(
 )
 async def planifier_intervention(
     donnees: InterventionCreate,
-    courant: dict = Depends(get_utilisateur_courant),
+    expert: dict = Depends(require_expert()),
 ):
     doc = donnees.model_dump()
+    doc["expertId"] = expert["uid"]  # Forcé depuis le token, ne pas faire confiance au body
     intervention_id = await interventions_svc.creer(doc)
 
     # Notification à l'agriculteur

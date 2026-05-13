@@ -77,6 +77,14 @@ async def donnees_recentes(
     champ_id: str,
     courant: dict = Depends(get_utilisateur_courant),
 ):
+    champ = await champs_service.lire(champ_id)
+    if champ is None:
+        raise HTTPException(status_code=404, detail="Champ introuvable.")
+
+    uid = courant["uid"]
+    if courant.get("role") not in ["ADMIN", "EXPERT"] and champ.get("agriculteurId") != uid:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
+
     donnees_list = await donnees_agronomiques_svc.lister(
         filtres=[("champId", "==", champ_id)],
         ordre_par="dateSaisie",
@@ -101,6 +109,14 @@ async def evolution_donnees(
     champ_id: str,
     courant: dict = Depends(get_utilisateur_courant),
 ):
+    champ = await champs_service.lire(champ_id)
+    if champ is None:
+        raise HTTPException(status_code=404, detail="Champ introuvable.")
+
+    uid = courant["uid"]
+    if courant.get("role") not in ["ADMIN", "EXPERT"] and champ.get("agriculteurId") != uid:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
+
     donnees = await donnees_agronomiques_svc.lister(
         filtres=[("champId", "==", champ_id)],
         ordre_par="dateSaisie",

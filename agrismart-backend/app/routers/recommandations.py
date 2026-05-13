@@ -136,6 +136,11 @@ async def obtenir_recommandation(
     reco = await recommandations_svc.lire(recommandation_id)
     if reco is None:
         raise HTTPException(status_code=404, detail="Recommandation introuvable.")
+
+    uid = courant["uid"]
+    if courant.get("role") not in ["ADMIN", "EXPERT"] and reco.get("agriculteurId") != uid:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
+
     return reco
 
 
@@ -156,6 +161,10 @@ async def generer_post_recolte(
     reco = await recommandations_svc.lire(recommandation_id)
     if reco is None:
         raise HTTPException(status_code=404, detail="Recommandation introuvable.")
+
+    uid = courant["uid"]
+    if courant.get("role") not in ["ADMIN", "EXPERT"] and reco.get("agriculteurId") != uid:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
 
     culture_nom = reco.get("cultureNom") or reco.get("cultureRecommandeeId", "")
     rendement = float(reco.get("rendementEstime") or RENDEMENT_PAR_CULTURE.get(culture_nom, 1.0))
