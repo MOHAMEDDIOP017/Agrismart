@@ -1,0 +1,278 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─────────────────────────────────────────────
+    // FONCTIONS UTILITAIRES
+    // ─────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function getUserRole() {
+      return getUserData().role;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'ADMIN';
+    }
+
+    function isExpert() {
+      return isAuthenticated() && getUserRole() == 'EXPERT';
+    }
+
+    function isAgriculteur() {
+      return isAuthenticated() && getUserRole() == 'AGRICULTEUR';
+    }
+
+    function isProprietaire(doc) {
+      return isAuthenticated() && doc.data.agriculteurId == request.auth.uid;
+    }
+
+    function isProprietaireNouveau(data) {
+      return isAuthenticated() && data.agriculteurId == request.auth.uid;
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION users
+    // ─────────────────────────────────────────────
+
+    match /users/{userId} {
+      allow read: if isAuthenticated()
+                  && (request.auth.uid == userId || isAdmin() || isExpert());
+
+      allow create: if isAuthenticated()
+                    && (request.auth.uid == userId || isAdmin());
+
+      // L'utilisateur peut modifier son profil mais pas changer son propre rôle
+      allow update: if isAuthenticated()
+                    && (
+                      (request.auth.uid == userId
+                       && request.resource.data.role == resource.data.role)
+                      || isAdmin()
+                    );
+
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION champs
+    // ─────────────────────────────────────────────
+
+    match /champs/{champId} {
+      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
+
+      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
+                    || isAdmin();
+
+      allow update: if isProprietaire(resource) || isAdmin();
+
+      allow delete: if isProprietaire(resource) || isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION donneesAgronomiques
+    // ─────────────────────────────────────────────
+
+    match /donneesAgronomiques/{donneeId} {
+      allow read: if isAuthenticated()
+                  && (
+                    // Vérifie via le champ parent
+                    get(/databases/$(database)/documents/champs/$(resource.data.champId)).data.agriculteurId == request.auth.uid
+                    || isAdmin()
+                    || isExpert()
+                  );
+
+      allow create: if isAuthenticated()
+                    && (
+                      get(/databases/$(database)/documents/champs/$(request.resource.data.champId)).data.agriculteurId == request.auth.uid
+                      || isAdmin()
+                      || isExpert()
+                    );
+
+      allow update: if isAuthenticated()
+                    && (
+                      get(/databases/$(database)/documents/champs/$(resource.data.champId)).data.agriculteurId == request.auth.uid
+                      || isAdmin()
+                    );
+
+      allow delete: if isAuthenticated()
+                    && (
+                      get(/databases/$(database)/documents/champs/$(resource.data.champId)).data.agriculteurId == request.auth.uid
+                      || isAdmin()
+                    );
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION diagnosticsMaladie
+    // ─────────────────────────────────────────────
+
+    match /diagnosticsMaladie/{diagnosticId} {
+      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
+
+      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
+                    || isAdmin();
+
+      // Expert peut valider/corriger ; agriculteur peut évaluer
+      allow update: if isProprietaire(resource) || isAdmin() || isExpert();
+
+      // Traçabilité : seul l'admin supprime
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION recommandationsCulture
+    // ─────────────────────────────────────────────
+
+    match /recommandationsCulture/{recId} {
+      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
+
+      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
+                    || isAdmin();
+
+      // Traçabilité : pas de modification ni suppression par l'agriculteur
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION recommandationsPostRecolte
+    // ─────────────────────────────────────────────
+
+    match /recommandationsPostRecolte/{recId} {
+      allow read: if isAuthenticated()
+                  && (
+                    get(/databases/$(database)/documents/recommandationsCulture/$(resource.data.recommandationCultureId)).data.agriculteurId == request.auth.uid
+                    || isAdmin()
+                    || isExpert()
+                  );
+
+      allow create: if isAuthenticated()
+                    && (
+                      get(/databases/$(database)/documents/recommandationsCulture/$(request.resource.data.recommandationCultureId)).data.agriculteurId == request.auth.uid
+                      || isAdmin()
+                    );
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION imagesPlantes
+    // ─────────────────────────────────────────────
+
+    match /imagesPlantes/{imageId} {
+      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
+
+      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
+                    || isAdmin();
+
+      allow delete: if isProprietaire(resource) || isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION notifications
+    // destinataireId (et non agriculteurId) identifie le propriétaire
+    // ─────────────────────────────────────────────
+
+    match /notifications/{notifId} {
+      allow read: if isAuthenticated()
+                  && (resource.data.destinataireId == request.auth.uid || isAdmin());
+
+      // Le backend crée les notifications via service account — pas depuis le client
+      allow create: if isAdmin();
+
+      // Marquer comme lu : destinataire uniquement
+      allow update: if isAuthenticated()
+                    && resource.data.destinataireId == request.auth.uid;
+
+      allow delete: if (isAuthenticated() && resource.data.destinataireId == request.auth.uid)
+                    || isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION conseils
+    // ─────────────────────────────────────────────
+
+    match /conseils/{conseilId} {
+      allow read: if isAuthenticated()
+                  && (
+                    resource.data.agriculteurId == request.auth.uid
+                    || resource.data.expertId == request.auth.uid
+                    || isAdmin()
+                  );
+
+      allow create: if isExpert() && request.resource.data.expertId == request.auth.uid
+                    || isAdmin();
+
+      // Marquer comme lu par l'agriculteur destinataire
+      allow update: if (isAuthenticated() && resource.data.agriculteurId == request.auth.uid)
+                    || isAdmin();
+
+      allow delete: if (isAuthenticated() && resource.data.expertId == request.auth.uid)
+                    || isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION interventions
+    // ─────────────────────────────────────────────
+
+    match /interventions/{interventionId} {
+      allow read: if isAuthenticated()
+                  && (
+                    resource.data.agriculteurId == request.auth.uid
+                    || resource.data.expertId == request.auth.uid
+                    || isAdmin()
+                  );
+
+      allow create: if isExpert() || isAdmin();
+
+      allow update: if (isAuthenticated() && resource.data.expertId == request.auth.uid)
+                    || isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // CATALOGUES (lecture publique pour tout utilisateur authentifié)
+    // ─────────────────────────────────────────────
+
+    match /cultures/{cultureId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /maladies/{maladieId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /traitementsRecommandes/{traitementId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // COLLECTION historiqueActivites (audit)
+    // ─────────────────────────────────────────────
+
+    match /historiqueActivites/{activiteId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ─────────────────────────────────────────────
+    // RÈGLE PAR DÉFAUT : refus de tout
+    // ─────────────────────────────────────────────
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
