@@ -53,7 +53,7 @@ class _SplashScreenState extends State<SplashScreen>
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone =
         prefs.getBool(AppConstants.keyOnboardingDone) ?? false;
-    final hasToken = prefs.containsKey(AppConstants.keyAuthToken);
+    final hasToken = prefs.containsKey(AppConstants.keyUserData);
 
     if (!mounted) return;
     if (!onboardingDone) {

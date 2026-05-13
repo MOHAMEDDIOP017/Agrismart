@@ -36,8 +36,17 @@ async def get_utilisateur_courant(
     """
     from app.config import settings
 
-    # Mode développement : bypass Firebase (DEV_BYPASS_AUTH=true dans .env)
-    if settings.dev_bypass_auth:
+    # Mode développement : bypass Firebase uniquement si le token est 'dev-bypass-token'
+    # (envoyé par api_client.dart quand FirebaseAuth.currentUser == null).
+    # Un vrai token Firebase est toujours vérifié normalement, même en mode dev.
+    is_dev_bypass_token = (
+        settings.dev_bypass_auth
+        and credentials is not None
+        and credentials.credentials == "dev-bypass-token"
+    )
+    no_credentials_in_dev = settings.dev_bypass_auth and credentials is None
+
+    if is_dev_bypass_token or no_credentials_in_dev:
         logger.debug(f"[DEV BYPASS] Utilisateur simulé : {settings.dev_user_id}")
         return {
             "uid": settings.dev_user_id,

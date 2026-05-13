@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'app.dart';
 import 'core/config/api_config.dart';
 import 'features/shared/notifications/fcm_service.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,12 +13,16 @@ void main() async {
   // Affiche la configuration réseau active (debug uniquement)
   ApiConfig.debugLog();
 
-  // Initialisation Firebase (nécessite google-services.json dans android/app/)
+  // Initialisation Firebase avec les options explicites du projet agrismart-jf
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // FCM : non bloquant — échec toléré si les services Google sont indisponibles
   try {
-    await Firebase.initializeApp();
     await FcmService.instance.init();
-  } catch (_) {
-    // Firebase non configuré — mode bypass backend actif
+  } catch (e) {
+    debugPrint('[FCM] Init échouée (non bloquant) : $e');
   }
 
   // Orientation portrait uniquement

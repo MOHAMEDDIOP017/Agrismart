@@ -21,10 +21,16 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final credential = await _firebaseAuth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      final credential = await _firebaseAuth
+          .signInWithEmailAndPassword(email: email, password: password)
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => throw FirebaseAuthException(
+              code: 'network-request-failed',
+              message:
+                  'Délai dépassé. Vérifiez votre connexion et réessayez.',
+            ),
+          );
       // Obtient le token initial
       final token = await credential.user!.getIdToken(true);
 
@@ -48,13 +54,22 @@ class AuthRepositoryImpl implements AuthRepository {
       return user;
     } on FirebaseAuthException catch (e) {
       if (_isUserError(e)) throw Exception(_mapFirebaseError(e));
-      // Erreur infra Firebase (réseau, reCAPTCHA…) → utilise la session courante si dispo
+      // Erreur infra Firebase (réseau, reCAPTCHA, timeout…)
+      // 1) Si une session Firebase est déjà ouverte, on l'utilise
       final fbUser = _firebaseAuth.currentUser;
       if (fbUser != null) {
         final fallback = await _userFromFirebase(fbUser);
         await _persistUser(fallback);
         return fallback;
       }
+      // 2) Tentative backend en mode DEV_BYPASS_AUTH (token 'dev-bypass-token'
+      //    envoyé automatiquement par l'intercepteur quand currentUser == null)
+      try {
+        final resp = await _dio.get('/auth/me');
+        final user = UserModel.fromBackendJson(resp.data as Map<String, dynamic>);
+        await _persistUser(user);
+        return user;
+      } catch (_) {}
       throw Exception(_mapFirebaseError(e));
     } on DioException catch (e) {
       // Firebase OK mais backend inaccessible → lit le rôle depuis les Custom Claims
@@ -190,6 +205,7 @@ class AuthRepositoryImpl implements AuthRepository {
       'user-disabled',
       'email-already-in-use',
       'weak-password',
+      'invalid-credential',
     };
     return userErrors.contains(e.code);
   }

@@ -88,8 +88,10 @@ class MinioService:
             logger.error(f"Erreur upload MinIO ({chemin_minio}) : {e}")
             raise MinioIndisponibleException(f"Échec de l'upload vers MinIO : {e}")
 
-        # Construction de l'URL directe (bucket en lecture publique)
-        url_minio = f"http://{settings.minio_endpoint}/{self.bucket}/{chemin_minio}"
+        # Construction de l'URL directe (bucket en lecture publique).
+        # On utilise minio_public_endpoint si défini (accès depuis mobile/Wi-Fi local).
+        public_host = settings.minio_public_endpoint or settings.minio_endpoint
+        url_minio = f"http://{public_host}/{self.bucket}/{chemin_minio}"
 
         logger.info(f"Image uploadée vers MinIO : {chemin_minio} ({taille} bytes)")
 
@@ -204,7 +206,8 @@ class MinioService:
             logger.error(f"Erreur upload photo champ ({champ_id}) : {e}")
             raise MinioIndisponibleException(f"Échec de l'upload de la photo du champ : {e}")
 
-        url = f"http://{settings.minio_endpoint}/{self.bucket}/{chemin}"
+        public_host = settings.minio_public_endpoint or settings.minio_endpoint
+        url = f"http://{public_host}/{self.bucket}/{chemin}"
         logger.info(f"Photo du champ {champ_id} uploadée : {chemin}")
         return url
 

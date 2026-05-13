@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 ///   5. Hot reload Flutter (R dans le terminal flutter run)
 class ApiConfig {
   // ── À mettre à jour si l'IP Wi-Fi du PC change ───────────────────────────
-  static const String _wifiPcIp = '10.156.89.118';
+  static const String _wifiPcIp = '10.86.209.5';
   // ──────────────────────────────────────────────────────────────────────────
 
   static const int _port = 8000;

@@ -80,14 +80,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final route = authState?.routeInitiale ?? AppRoutes.dashboard;
       context.go(route);
     } else {
+      // Affiche le vrai message d'erreur (réseau, credentials invalides, etc.)
+      final erreur = ref.read(authProvider).valueOrNull?.error
+          ?? 'Connexion impossible. Vérifiez vos identifiants.';
+      // Nettoie le préfixe "Exception: " ajouté par Dart
+      final message = erreur.replaceFirst(RegExp(r'^Exception:\s*'), '');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Email ou mot de passe incorrect',
+            message,
             style: GoogleFonts.inter(color: Colors.white),
           ),
           backgroundColor: AppColors.danger,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),

@@ -19,6 +19,10 @@ class Settings(BaseSettings):
 
     # MinIO — stockage objet S3-compatible pour les images de plantes
     minio_endpoint: str = "localhost:9000"
+    # Endpoint public utilisé dans les URLs retournées aux clients mobiles.
+    # En dev Wi-Fi local : mettre l'IP du PC (ex: 10.156.84.163:9000).
+    # Si vide, on utilise minio_endpoint.
+    minio_public_endpoint: str = ""
     minio_access_key: str = "agrismartadmin"
     minio_secret_key: str = "AgriSmart2026!Secret"
     minio_secure: bool = False
