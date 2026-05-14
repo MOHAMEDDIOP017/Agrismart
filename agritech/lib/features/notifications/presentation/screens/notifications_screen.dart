@@ -100,7 +100,7 @@ class _NotifTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final icon = _iconForType(notif.type);
     final color = _colorForType(notif.type);
-    final dateStr = DateFormat('dd/MM · HH:mm').format(notif.dateEnvoi.toLocal());
+    final dateStr = DateFormat('dd/MM · HH:mm', 'fr_FR').format(notif.dateEnvoi.toLocal());
 
     return InkWell(
       onTap: notif.estLue

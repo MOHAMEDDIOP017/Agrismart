@@ -157,7 +157,7 @@ class _ChampAdminCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd/MM/yyyy').format(champ.dateCreation);
+    final dateStr = DateFormat('dd/MM/yyyy', 'fr_FR').format(champ.dateCreation);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),

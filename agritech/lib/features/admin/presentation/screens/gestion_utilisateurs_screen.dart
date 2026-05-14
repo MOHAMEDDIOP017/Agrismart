@@ -233,7 +233,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
   ) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text(
           estSuspendu ? 'Réactiver le compte ?' : 'Suspendre le compte ?',
         ),
@@ -244,7 +244,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
@@ -254,7 +254,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(ctx);
               await notifier.changerStatut(
                 id,
                 estSuspendu
@@ -279,14 +279,14 @@ class GestionUtilisateursScreen extends ConsumerWidget {
   ) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Supprimer l\'utilisateur ?'),
         content: Text(
           'Êtes-vous sûr de vouloir supprimer définitivement le compte de $nomComplet ?\n\nCette action est irréversible.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
@@ -295,14 +295,18 @@ class GestionUtilisateursScreen extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
-              Navigator.pop(context);
-              await notifier.supprimerUtilisateur(id);
+              Navigator.pop(ctx);
+              final ok = await notifier.supprimerUtilisateur(id);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content:
-                        Text('$nomComplet a été supprimé avec succès'),
-                    backgroundColor: AppColors.danger,
+                    content: Text(
+                      ok
+                          ? '$nomComplet a été supprimé avec succès'
+                          : 'Erreur lors de la suppression de $nomComplet',
+                    ),
+                    backgroundColor:
+                        ok ? AppColors.danger : AppColors.amber,
                   ),
                 );
               }

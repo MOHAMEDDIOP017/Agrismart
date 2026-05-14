@@ -24,22 +24,7 @@ class UserAdminCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dismissible(
-      key: Key(utilisateur.id),
-      background: _fondSwipeGauche(),
-      secondaryBackground: _fondSwipeDroite(),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.endToStart) {
-          // Swipe gauche → supprimer
-          onSupprimer();
-          return false;
-        } else {
-          // Swipe droite → modifier
-          onModifier();
-          return false;
-        }
-      },
-      child: Container(
+    return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -157,7 +142,6 @@ class UserAdminCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -181,19 +165,6 @@ class UserAdminCard extends StatelessWidget {
   String _dateFormatee(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
-  Widget _fondSwipeGauche() => Container(
-        color: AppColors.danger,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white),
-      );
-
-  Widget _fondSwipeDroite() => Container(
-        color: AppColors.amber,
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        child: const Icon(Icons.edit, color: Colors.white),
-      );
 }
 
 class _AvatarInitiales extends StatelessWidget {
