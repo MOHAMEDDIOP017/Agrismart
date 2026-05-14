@@ -19,6 +19,25 @@ router = APIRouter(prefix="/champs", tags=["Champs agricoles"])
 
 
 @router.get(
+    "",
+    summary="Lister tous les champs (Admin)",
+    description="Retourne tous les champs de la plateforme. Accès réservé aux administrateurs.",
+    status_code=status.HTTP_200_OK,
+)
+async def lister_tous_champs(
+    courant: dict = Depends(get_utilisateur_courant),
+):
+    if courant.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
+
+    champs = await champs_service.lister(
+        ordre_par="dateCreation",
+        decroissant=True,
+    )
+    return {"champs": champs, "total": len(champs)}
+
+
+@router.get(
     "/agriculteur/{agriculteur_id}",
     summary="Lister les champs d'un agriculteur",
     description="Retourne tous les champs appartenant à l'agriculteur spécifié.",

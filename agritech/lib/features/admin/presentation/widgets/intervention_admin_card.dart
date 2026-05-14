@@ -116,10 +116,8 @@ class InterventionNonAssigneeCard extends StatelessWidget {
           // Bouton assigner
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: ElevatedButton(
               onPressed: onAssigner,
-              icon: const Icon(Icons.person_add_outlined, size: 16),
-              label: const Text('Assigner un expert'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF534AB7),
                 foregroundColor: Colors.white,
@@ -130,6 +128,7 @@ class InterventionNonAssigneeCard extends StatelessWidget {
                 textStyle: const TextStyle(
                     fontWeight: FontWeight.w600, fontSize: 13),
               ),
+              child: const Text('Assigner un expert'),
             ),
           ),
         ],

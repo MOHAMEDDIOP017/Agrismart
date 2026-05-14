@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/network/api_client.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/repositories/detection_repository_impl.dart';
 import '../../data/services/detection_api_service.dart';
 import '../../data/services/image_preprocessing_service.dart';
@@ -9,8 +10,6 @@ import '../../domain/entities/diagnostic_entity.dart';
 import '../../domain/repositories/detection_repository.dart';
 
 // ---- Providers d'infrastructure ----
-
-final dioProvider = Provider<Dio>((ref) => Dio());
 
 final imagePreprocessingServiceProvider = Provider<ImagePreprocessingService>(
   (_) => ImagePreprocessingService(),
@@ -20,12 +19,14 @@ final detectionApiServiceProvider = Provider<DetectionApiService>(
   (ref) => DetectionApiService(ref.read(dioProvider)),
 );
 
-final detectionRepositoryProvider = Provider<DetectionRepository>(
-  (ref) => DetectionRepositoryImpl(
+final detectionRepositoryProvider = Provider<DetectionRepository>((ref) {
+  final userId = ref.watch(currentUserProvider)?.id;
+  return DetectionRepositoryImpl(
     apiService: ref.read(detectionApiServiceProvider),
     preprocessingService: ref.read(imagePreprocessingServiceProvider),
-  ),
-);
+    userId: userId,
+  );
+});
 
 // ---- Étapes du flux d'analyse ----
 

@@ -16,6 +16,26 @@ router = APIRouter(prefix="/interventions", tags=["Interventions d'experts"])
 
 
 @router.get(
+    "",
+    summary="Lister toutes les interventions (Admin)",
+    description="Retourne toutes les interventions de la plateforme. Accès réservé aux administrateurs.",
+    status_code=status.HTTP_200_OK,
+)
+async def lister_toutes_interventions(
+    courant: dict = Depends(get_utilisateur_courant),
+):
+    if courant.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Accès réservé aux administrateurs.")
+
+    interventions = await interventions_svc.lister(
+        ordre_par="dateInterventionPrevue",
+        decroissant=True,
+        limite=100,
+    )
+    return {"interventions": interventions, "total": len(interventions)}
+
+
+@router.get(
     "/expert/{expert_id}",
     summary="Interventions d'un expert",
     description="Retourne toutes les interventions planifiées ou réalisées par un expert.",

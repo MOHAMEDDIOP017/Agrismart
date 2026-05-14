@@ -57,7 +57,7 @@ class NonAutoriseScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: () {
                     final route = user?.routeHome ?? '/login';
                     context.go(route);
@@ -69,8 +69,7 @@ class NonAutoriseScreen extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.home_outlined),
-                  label: Text(
+                  child: Text(
                     'Retourner à l\'accueil',
                     style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                   ),

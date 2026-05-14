@@ -278,7 +278,7 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
           Row(
             children: [
               Expanded(
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: _generation ? null : _exporterPDF,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.danger,
@@ -289,13 +289,12 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                     textStyle: GoogleFonts.poppins(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
-                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                  label: const Text('Exporter PDF'),
+                  child: const Text('Exporter PDF'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: _generation ? null : _partager,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
@@ -306,8 +305,7 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                     textStyle: GoogleFonts.poppins(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Partager'),
+                  child: const Text('Partager'),
                 ),
               ),
             ],

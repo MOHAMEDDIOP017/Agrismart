@@ -64,18 +64,15 @@ class _DiagnosticDetailExpertScreenState
                     : Container(color: AppColors.primaryDark),
               ),
               actions: [
-                TextButton.icon(
+                TextButton(
                   onPressed: () => _showValidation(context),
-                  icon: const Icon(Icons.check_circle_outline,
-                      size: 18, color: Colors.white),
-                  label: Text('Valider',
+                  child: Text('Valider',
                       style: GoogleFonts.poppins(
                           color: Colors.white, fontWeight: FontWeight.w600)),
                 ),
-                TextButton.icon(
+                TextButton(
                   onPressed: () => _showCorrection(context),
-                  icon: const Icon(Icons.edit_outlined, size: 18, color: Colors.amber),
-                  label: Text('Corriger',
+                  child: Text('Corriger',
                       style: GoogleFonts.poppins(
                           color: Colors.amber, fontWeight: FontWeight.w600)),
                 ),

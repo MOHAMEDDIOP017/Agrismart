@@ -180,10 +180,8 @@ class _ImagePreviewScreenState extends ConsumerState<ImagePreviewScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton.icon(
+                        child: OutlinedButton(
                           onPressed: () => context.pop(),
-                          icon: const Icon(Icons.refresh, size: 18),
-                          label: const Text('Reprendre'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white),
@@ -191,15 +189,14 @@ class _ImagePreviewScreenState extends ConsumerState<ImagePreviewScreen> {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
                           ),
+                          child: const Text('Reprendre'),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         flex: 2,
-                        child: ElevatedButton.icon(
+                        child: ElevatedButton(
                           onPressed: peutAnalyser ? _lancerAnalyse : null,
-                          icon: const Icon(Icons.analytics_outlined, size: 18),
-                          label: const Text('Analyser'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             disabledBackgroundColor:
@@ -208,6 +205,7 @@ class _ImagePreviewScreenState extends ConsumerState<ImagePreviewScreen> {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14)),
                           ),
+                          child: const Text('Analyser'),
                         ),
                       ),
                     ],

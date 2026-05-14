@@ -119,10 +119,8 @@ class AlerteExpertCard extends StatelessWidget {
                       children: [
                         if (alerte.statut != StatutAlerteZone.resolue)
                           Expanded(
-                            child: OutlinedButton.icon(
+                            child: OutlinedButton(
                               onPressed: onPrendreEnCharge,
-                              icon: const Icon(Icons.play_arrow_outlined, size: 16),
-                              label: const Text('Prendre en charge'),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: AppColors.primary,
                                 side: const BorderSide(color: AppColors.primary),
@@ -132,14 +130,13 @@ class AlerteExpertCard extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                              child: const Text('Prendre en charge'),
                             ),
                           ),
                         if (alerte.statut != StatutAlerteZone.resolue) const SizedBox(width: 8),
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: onVoirDiagnostic,
-                            icon: const Icon(Icons.visibility_outlined, size: 16),
-                            label: const Text('Voir diagnostic'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.info,
                               side: const BorderSide(color: AppColors.info),
@@ -149,6 +146,7 @@ class AlerteExpertCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            child: const Text('Voir diagnostic'),
                           ),
                         ),
                       ],

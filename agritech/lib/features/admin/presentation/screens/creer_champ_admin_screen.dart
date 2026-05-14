@@ -253,23 +253,16 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
               SizedBox(
                 width: double.infinity,
                 height: 46,
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: _isGpsLoading ? null : _getLocation,
-                  icon: _isGpsLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.my_location_rounded),
-                  label: Text(
-                      _isGpsLoading ? 'Localisation...' : 'Obtenir ma position GPS'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _adminPrimary,
                     side: const BorderSide(color: Color(0xFF534AB7)),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
+                  child: Text(
+                      _isGpsLoading ? 'Localisation...' : 'Obtenir ma position GPS'),
                 ),
               ),
 

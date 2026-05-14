@@ -138,16 +138,15 @@ class ChampSupervisionCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: onTableauDeBord,
-                    icon: const Icon(Icons.dashboard_outlined, size: 16),
-                    label: const Text('Tableau de bord'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
+                    child: const Text('Tableau de bord'),
                   ),
                 ),
               ],

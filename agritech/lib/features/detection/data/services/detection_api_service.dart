@@ -3,8 +3,11 @@ import 'dart:math';
 import 'package:dio/dio.dart';
 import '../../../../mock_data/maladies_mock.dart';
 import '../dto/diagnostic_response_dto.dart';
+import '../../domain/entities/diagnostic_entity.dart';
 import '../../domain/entities/maladie_entity.dart';
 import '../../domain/entities/traitement_entity.dart';
+import '../../domain/enums/niveau_gravite.dart';
+import '../../domain/enums/statut_validation.dart';
 
 /// Service d'appel à l'API de détection de maladies (upload image → analyse IA)
 class DetectionApiService {
@@ -60,6 +63,58 @@ class DetectionApiService {
       await Future.delayed(const Duration(seconds: 2));
       return _getMockResponse(champId: champId);
     }
+  }
+
+  Future<List<DiagnosticEntity>> getHistorique(String userId) async {
+    final resp = await _dio.get('/diagnostics/agriculteur/$userId');
+    final data = resp.data as Map<String, dynamic>;
+    final list = (data['diagnostics'] as List? ?? []).cast<Map<String, dynamic>>();
+    return list.map(_mapHistoriqueDoc).toList();
+  }
+
+  DiagnosticEntity _mapHistoriqueDoc(Map<String, dynamic> json) {
+    final predictions = (json['topPredictions'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
+    final nomMaladie = predictions.isNotEmpty
+        ? (predictions[0]['maladie'] as String? ?? 'Inconnu')
+        : 'Inconnu';
+    final dateStr = json['dateAnalyse']?.toString() ?? '';
+    final statutStr = json['statut'] as String? ?? 'EN_ATTENTE';
+    return DiagnosticEntity(
+      id: (json['id'] ?? '') as String,
+      maladieDetectee: MaladieEntity(
+        id: json['maladieId'] as String? ?? '',
+        nom: nomMaladie,
+        nomScientifique: '',
+        description: '',
+        symptomes: const [],
+        gravite: NiveauGravite.modere,
+        culturesAffectees: const [],
+      ),
+      scoreConfiance: (json['scoreConfiance'] as num? ?? 0).toDouble(),
+      topPredictions: const [],
+      dateAnalyse: DateTime.tryParse(dateStr) ?? DateTime.now(),
+      modeleVersion: json['modeleVersion'] as String? ?? '',
+      tempsAnalyseMs: 0,
+      champId: json['champId'] as String?,
+      statut: StatutValidation.fromString(statutStr),
+    );
+  }
+
+  Future<void> evaluerDiagnostic({
+    required String diagnosticId,
+    required String choix,
+    String? commentaire,
+  }) async {
+    final note = switch (choix) {
+      'CORRECT' => 5,
+      'PARTIEL' => 3,
+      _ => 1,
+    };
+    await _dio.post(
+      '/diagnostics/$diagnosticId/evaluer',
+      data: {'note': note, if (commentaire != null) 'commentaire': commentaire},
+    );
   }
 
   DiagnosticResponseDto _getMockResponse({String? champId}) {

@@ -217,13 +217,11 @@ class ChampDashboardExpertScreen extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: () => context.goNamed(
                               ExpertRoutes.planifierInterventionNom,
                               queryParameters: {'champId': champId},
                             ),
-                            icon: const Icon(Icons.event_note_outlined, size: 16),
-                            label: const Text('Planifier intervention'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.primary,
                               side: const BorderSide(color: AppColors.primary),
@@ -231,17 +229,16 @@ class ChampDashboardExpertScreen extends ConsumerWidget {
                               textStyle: GoogleFonts.poppins(
                                 fontSize: 12, fontWeight: FontWeight.w600),
                             ),
+                            child: const Text('Planifier intervention'),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: OutlinedButton.icon(
+                          child: OutlinedButton(
                             onPressed: () => context.goNamed(
                               ExpertRoutes.historiqueChampNom,
                               pathParameters: {'id': champId},
                             ),
-                            icon: const Icon(Icons.history, size: 16),
-                            label: const Text('Historique'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.info,
                               side: const BorderSide(color: AppColors.info),
@@ -249,6 +246,7 @@ class ChampDashboardExpertScreen extends ConsumerWidget {
                               textStyle: GoogleFonts.poppins(
                                 fontSize: 12, fontWeight: FontWeight.w600),
                             ),
+                            child: const Text('Historique'),
                           ),
                         ),
                       ],

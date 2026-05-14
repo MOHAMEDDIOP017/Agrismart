@@ -114,30 +114,28 @@ class DiagnosticAttenteCard extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: OutlinedButton(
                       onPressed: onValider,
-                      icon: const Icon(Icons.check_circle_outline, size: 16),
-                      label: const Text('Valider'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
                         side: const BorderSide(color: AppColors.primary),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
+                      child: const Text('Valider'),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: OutlinedButton(
                       onPressed: onCorrection,
-                      icon: const Icon(Icons.edit_outlined, size: 16),
-                      label: const Text('Corriger'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.amber,
                         side: const BorderSide(color: AppColors.amber),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         textStyle: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
                       ),
+                      child: const Text('Corriger'),
                     ),
                   ),
                 ],

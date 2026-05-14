@@ -435,10 +435,8 @@ class _BoutonAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: OutlinedButton.icon(
+      child: OutlinedButton(
         onPressed: onTap,
-        icon: Icon(icone, color: couleur, size: 18),
-        label: Text(label, style: TextStyle(color: couleur)),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: couleur.withValues(alpha: 0.5)),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -446,6 +444,7 @@ class _BoutonAction extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
+        child: Text(label, style: TextStyle(color: couleur)),
       ),
     );
   }

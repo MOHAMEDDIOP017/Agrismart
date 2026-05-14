@@ -183,7 +183,7 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
             SizedBox(
               width: double.infinity,
               height: 52,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: _isLoading ? null : _envoyer,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -193,16 +193,7 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
                   textStyle: GoogleFonts.poppins(
                       fontSize: 15, fontWeight: FontWeight.w600),
                 ),
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5),
-                      )
-                    : const Icon(Icons.send_outlined, size: 18),
-                label:
-                    Text(_isLoading ? 'Envoi en cours...' : 'Envoyer le conseil'),
+                child: Text(_isLoading ? 'Envoi en cours...' : 'Envoyer le conseil'),
               ),
             ),
             const SizedBox(height: 40),

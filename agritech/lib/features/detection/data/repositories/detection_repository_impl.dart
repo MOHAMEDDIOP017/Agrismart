@@ -4,16 +4,18 @@ import '../../domain/repositories/detection_repository.dart';
 import '../services/detection_api_service.dart';
 import '../services/image_preprocessing_service.dart';
 
-/// Implémentation du repository de détection (mode mock)
 class DetectionRepositoryImpl implements DetectionRepository {
   DetectionRepositoryImpl({
     required DetectionApiService apiService,
     required ImagePreprocessingService preprocessingService,
+    String? userId,
   })  : _apiService = apiService,
-        _preprocessingService = preprocessingService;
+        _preprocessingService = preprocessingService,
+        _userId = userId;
 
   final DetectionApiService _apiService;
   final ImagePreprocessingService _preprocessingService;
+  final String? _userId;
   final List<DiagnosticEntity> _historique = [];
 
   @override
@@ -33,7 +35,13 @@ class DetectionRepositoryImpl implements DetectionRepository {
 
   @override
   Future<List<DiagnosticEntity>> getHistoriqueDiagnostics() async {
-    await Future.delayed(const Duration(milliseconds: 600));
+    if (_userId != null) {
+      try {
+        return await _apiService.getHistorique(_userId);
+      } catch (_) {
+        return List.from(_historique);
+      }
+    }
     return List.from(_historique);
   }
 
@@ -52,19 +60,24 @@ class DetectionRepositoryImpl implements DetectionRepository {
     required String choix,
     String? commentaire,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    // En production : POST /api/v1/diagnostics/:id/evaluation
+    try {
+      await _apiService.evaluerDiagnostic(
+        diagnosticId: diagnosticId,
+        choix: choix,
+        commentaire: commentaire,
+      );
+    } catch (_) {
+      // Évaluation non bloquante
+    }
   }
 
   @override
   Future<void> archiverDiagnostic(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     _historique.removeWhere((d) => d.id == id);
   }
 
   @override
   Future<void> supprimerDiagnostic(String id) async {
-    await Future.delayed(const Duration(milliseconds: 300));
     _historique.removeWhere((d) => d.id == id);
   }
 }

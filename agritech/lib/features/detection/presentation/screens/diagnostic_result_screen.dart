@@ -544,10 +544,8 @@ class _BoutonAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (outlined) {
-      return OutlinedButton.icon(
+      return OutlinedButton(
         onPressed: onTap,
-        icon: Icon(icone, size: 18),
-        label: Text(label),
         style: OutlinedButton.styleFrom(
           foregroundColor: couleur,
           side: BorderSide(color: couleur),
@@ -555,13 +553,13 @@ class _BoutonAction extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
+        child: Text(label),
       );
     }
-    return TextButton.icon(
+    return TextButton(
       onPressed: onTap,
-      icon: Icon(icone, size: 18),
-      label: Text(label),
       style: TextButton.styleFrom(foregroundColor: couleur),
+      child: Text(label),
     );
   }
 }

@@ -200,16 +200,15 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
               // Déconnexion
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: _logout,
-                  icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-                  label: const Text(
-                    'Se déconnecter',
-                    style: TextStyle(color: AppColors.danger),
-                  ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.danger),
                     minimumSize: const Size(double.infinity, 52),
+                  ),
+                  child: const Text(
+                    'Se déconnecter',
+                    style: TextStyle(color: AppColors.danger),
                   ),
                 ),
               ).animate().fadeIn(delay: 400.ms),

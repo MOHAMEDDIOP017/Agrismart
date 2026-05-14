@@ -488,10 +488,9 @@ class _ErreurCamera extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
+            ElevatedButton(
               onPressed: () => context.pop(),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Retour'),
+              child: const Text('Retour'),
             ),
           ],
         ),

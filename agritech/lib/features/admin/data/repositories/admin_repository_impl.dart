@@ -143,9 +143,16 @@ class AdminRepositoryImpl implements AdminRepository {
 
   @override
   Future<List<AssignationEntity>> getAssignations() async {
-    // Les assignations correspondent aux interventions non assignées
-    // (pas d'endpoint dédié → retourne liste vide en attendant un vrai endpoint admin)
-    return [];
+    try {
+      final resp = await _dio.get('/interventions');
+      final data = resp.data as Map<String, dynamic>;
+      return (data['interventions'] as List? ?? [])
+          .cast<Map<String, dynamic>>()
+          .map(_mapIntervention)
+          .toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   @override
@@ -223,7 +230,7 @@ class AdminRepositoryImpl implements AdminRepository {
 
   @override
   Future<void> annulerAssignation(String assignationId) async {
-    // Pas d'endpoint dédié — no-op
+    await _dio.delete('/interventions/$assignationId');
   }
 
   // ── Historique système ────────────────────────────────────────────────────
@@ -398,6 +405,30 @@ class AdminRepositoryImpl implements AdminRepository {
       utilisateurRole: RoleUtilisateur.agriculteur,
       horodatage: DateTime.tryParse(dateStr) ?? DateTime.now(),
       details: json['details']?.toString(),
+    );
+  }
+
+  static AssignationEntity _mapIntervention(Map<String, dynamic> json) {
+    final statutStr = (json['statut'] ?? 'PLANIFIEE').toString().toUpperCase();
+    final statut = switch (statutStr) {
+      'REALISEE' => StatutAssignation.realisee,
+      'ANNULEE' => StatutAssignation.annulee,
+      'EN_COURS' => StatutAssignation.enCours,
+      _ => StatutAssignation.planifiee,
+    };
+    final dateStr = json['dateInterventionPrevue']?.toString() ?? '';
+    final dateCreationStr = json['dateCreation']?.toString() ?? '';
+    return AssignationEntity(
+      id: (json['id'] ?? '') as String,
+      agriculteurNom: json['agriculteurId'] as String? ?? '—',
+      champNom: json['champId'] as String? ?? '—',
+      region: '—',
+      typeIntervention: json['typeIntervention'] as String? ?? '—',
+      niveauUrgence: NiveauUrgenceAdmin.modere,
+      statut: statut,
+      dateSouhaitee: DateTime.tryParse(dateStr) ?? DateTime.now(),
+      dateCreation: DateTime.tryParse(dateCreationStr) ?? DateTime.now(),
+      expertId: json['expertId'] as String?,
     );
   }
 }
