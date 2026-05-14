@@ -141,6 +141,9 @@ class RecommandationService:
         self._label_encoder = None
         self._metadata: dict = {}
         self._modeles_charges = False
+        # Cache pluviométrie NASA POWER — clé : (lat_arrondie, lon_arrondie)
+        # Les climatologies à long terme ne changent pas entre deux appels.
+        self._cache_pluvio: dict[tuple[float, float], float] = {}
 
     # ──────────────────────────────────────────────────────────────────────
     # Chargement des artefacts ML
@@ -192,15 +195,11 @@ class RecommandationService:
         return self._metadata.get("model_version", "svm_v1.0.0")
 
     @staticmethod
-    def _estimer_pluviometrie_annuelle(latitude: float) -> float:
+    def _estimer_pluviometrie_par_latitude(latitude: float) -> float:
         """
-        Estime la pluviométrie annuelle moyenne (mm/an) depuis la latitude.
+        Fallback : estime la pluviométrie annuelle (mm/an) depuis la latitude.
+        Utilisé uniquement si NASA POWER est indisponible.
         Source : NASA POWER / ISRA Sénégal.
-
-        Le SVM a été entraîné avec la pluviométrie annuelle du dataset
-        AgriSmart_Dataset_2200, PAS avec la pluie instantanée d'OpenWeatherMap
-        (champ 'rain.1h' ≈ 0 mm quasiment tout le temps).
-        On calcule donc une valeur réaliste basée sur la localisation du champ.
         """
         if latitude >= 16.0:
             return 300.0    # Sahel nord (Saint-Louis, Matam)
@@ -211,6 +210,36 @@ class RecommandationService:
         if latitude >= 13.0:
             return 900.0    # Centre-sud (Kolda)
         return 1200.0       # Casamance (Ziguinchor, Sédhiou)
+
+    async def _obtenir_pluviometrie(
+        self, latitude: float, longitude: float
+    ) -> tuple[float, str]:
+        """
+        Retourne la pluviométrie annuelle (mm/an) et sa source.
+
+        1. Vérifie le cache en mémoire.
+        2. Appelle l'API NASA POWER (même source que le dataset d'entraînement).
+        3. Si indisponible, tombe en fallback sur l'estimation par latitude.
+
+        Returns:
+            (pluvio_mm, source) avec source = 'nasa_power' | 'fallback_latitude'
+        """
+        cle = (round(latitude, 2), round(longitude, 2))
+
+        if cle in self._cache_pluvio:
+            logger.info(f"Pluviométrie NASA POWER (cache) : {self._cache_pluvio[cle]:.1f} mm/an")
+            return self._cache_pluvio[cle], "nasa_power_cache"
+
+        try:
+            pluvio = await meteo_service.get_pluviometrie_annuelle(latitude, longitude)
+            self._cache_pluvio[cle] = pluvio
+            return pluvio, "nasa_power"
+        except Exception as e:
+            logger.warning(
+                f"NASA POWER indisponible ({e}) — fallback estimation par latitude."
+            )
+            pluvio = self._estimer_pluviometrie_par_latitude(latitude)
+            return pluvio, "fallback_latitude"
 
     # ──────────────────────────────────────────────────────────────────────
     # Mode dégradé (heuristique sans modèle)
@@ -319,22 +348,25 @@ class RecommandationService:
             or meteo.get("humidite", 65)
         )
 
-        # Pluviométrie : OWM renvoie rain.1h (mm/h, ≈ 0 hors averse).
-        # Le SVM a été entraîné sur la pluviométrie ANNUELLE (mm/an) du dataset
-        # NASA POWER. On estime la valeur annuelle depuis la latitude du champ.
-        latitude_champ = float(champ.get("latitude", 14.5))
-        pluvio_mm = self._estimer_pluviometrie_annuelle(latitude_champ)
+        # Pluviométrie annuelle via NASA POWER (même source que le dataset d'entraînement).
+        # OWM retourne rain.1h ≈ 0 mm, inutilisable pour le SVM.
+        latitude_champ  = float(champ.get("latitude",  14.5))
+        longitude_champ = float(champ.get("longitude", -14.5))
+        pluvio_mm, pluvio_source = await self._obtenir_pluviometrie(
+            latitude_champ, longitude_champ
+        )
 
         features_dict = {
-            "N_kg_ha":                  n_kg_ha,
-            "P_kg_ha":                  p_kg_ha,
-            "K_kg_ha":                  k_kg_ha,
-            "temp_opt_C":               temperature_c,
-            "humidite_pct":             humidite_pct,
-            "pH_sol":                   ph_sol,
-            "pluviometrie_mm":          pluvio_mm,
-            "pluviometrie_source":      "estimation_annuelle_latitude",
-            "latitude_champ":           latitude_champ,
+            "N_kg_ha":              n_kg_ha,
+            "P_kg_ha":              p_kg_ha,
+            "K_kg_ha":              k_kg_ha,
+            "temp_opt_C":           temperature_c,
+            "humidite_pct":         humidite_pct,
+            "pH_sol":               ph_sol,
+            "pluviometrie_mm":      pluvio_mm,
+            "pluviometrie_source":  pluvio_source,
+            "latitude_champ":       latitude_champ,
+            "longitude_champ":      longitude_champ,
         }
 
         # 5. Prédiction SVM (ou heuristique)

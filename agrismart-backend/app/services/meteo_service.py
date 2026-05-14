@@ -1,4 +1,4 @@
-"""Service d'intégration avec l'API OpenWeatherMap."""
+"""Service d'intégration avec l'API OpenWeatherMap et NASA POWER."""
 
 import logging
 from datetime import datetime, timezone
@@ -13,6 +13,15 @@ logger = logging.getLogger(__name__)
 
 # Timeout des requêtes HTTP en secondes
 TIMEOUT_HTTP = 10
+
+# URL de l'API NASA POWER (climatologie à long terme, sans clé API)
+NASA_POWER_BASE_URL = "https://power.larc.nasa.gov/api/temporal/climatology/point"
+
+# Jours par mois (année non bissextile)
+_JOURS_PAR_MOIS = {
+    "JAN": 31, "FEB": 28, "MAR": 31, "APR": 30, "MAY": 31, "JUN": 30,
+    "JUL": 31, "AUG": 31, "SEP": 30, "OCT": 31, "NOV": 30, "DEC": 31,
+}
 
 
 class MeteoService:
@@ -134,6 +143,74 @@ class MeteoService:
         except requests.exceptions.RequestException as e:
             logger.error(f"Erreur lors de la récupération des prévisions : {e}")
             raise APIMeteoIndisponibleException(f"Impossible de récupérer les prévisions : {str(e)}")
+
+    async def get_pluviometrie_annuelle(
+        self, latitude: float, longitude: float
+    ) -> float:
+        """
+        Retourne la pluviométrie annuelle moyenne (mm/an) via NASA POWER.
+
+        L'API NASA POWER fournit des climatologies à long terme (20 ans+)
+        basées sur les données satellitaires. Le paramètre PRECTOTCORR
+        donne la précipitation corrigée en mm/jour pour chaque mois.
+        On somme : Σ(mois) = valeur_mm_jour × nb_jours_mois.
+
+        C'est la même source que le dataset d'entraînement AgriSmart_Dataset_2200
+        (300 observations réelles NASA POWER + ISRA).
+
+        Returns:
+            Pluviométrie annuelle en mm/an.
+
+        Raises:
+            APIMeteoIndisponibleException si l'API NASA POWER est indisponible.
+        """
+        try:
+            params = {
+                "parameters": "PRECTOTCORR",
+                "community": "AG",
+                "longitude": round(longitude, 4),
+                "latitude": round(latitude, 4),
+                "format": "JSON",
+                "header": "true",
+            }
+            reponse = requests.get(
+                NASA_POWER_BASE_URL,
+                params=params,
+                timeout=TIMEOUT_HTTP,
+            )
+            reponse.raise_for_status()
+            data = reponse.json()
+
+            mensuel: dict = (
+                data.get("properties", {})
+                    .get("parameter", {})
+                    .get("PRECTOTCORR", {})
+            )
+
+            if not mensuel:
+                raise ValueError("Réponse NASA POWER vide ou format inattendu.")
+
+            # Somme mensuelle : mm/jour × nb_jours = mm/mois → total annuel
+            total_mm_an = sum(
+                mensuel.get(mois, 0.0) * jours
+                for mois, jours in _JOURS_PAR_MOIS.items()
+            )
+
+            logger.info(
+                f"NASA POWER — pluviométrie annuelle ({latitude:.2f}, {longitude:.2f}) : "
+                f"{total_mm_an:.1f} mm/an"
+            )
+            return round(total_mm_an, 1)
+
+        except requests.exceptions.Timeout:
+            logger.warning("NASA POWER — timeout, fallback latitude.")
+            raise APIMeteoIndisponibleException("NASA POWER ne répond pas (timeout).")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"NASA POWER — erreur réseau : {e}")
+            raise APIMeteoIndisponibleException(f"NASA POWER indisponible : {e}")
+        except Exception as e:
+            logger.warning(f"NASA POWER — erreur inattendue : {e}")
+            raise APIMeteoIndisponibleException(str(e))
 
     def _donnees_fictives(self) -> dict:
         """Retourne des données météo fictives pour le Sénégal (développement sans clé API)."""
