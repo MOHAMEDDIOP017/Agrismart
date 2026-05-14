@@ -191,6 +191,27 @@ class RecommandationService:
         """Retourne la version du modèle depuis les métadonnées."""
         return self._metadata.get("model_version", "svm_v1.0.0")
 
+    @staticmethod
+    def _estimer_pluviometrie_annuelle(latitude: float) -> float:
+        """
+        Estime la pluviométrie annuelle moyenne (mm/an) depuis la latitude.
+        Source : NASA POWER / ISRA Sénégal.
+
+        Le SVM a été entraîné avec la pluviométrie annuelle du dataset
+        AgriSmart_Dataset_2200, PAS avec la pluie instantanée d'OpenWeatherMap
+        (champ 'rain.1h' ≈ 0 mm quasiment tout le temps).
+        On calcule donc une valeur réaliste basée sur la localisation du champ.
+        """
+        if latitude >= 16.0:
+            return 300.0    # Sahel nord (Saint-Louis, Matam)
+        if latitude >= 15.0:
+            return 420.0    # Centre-nord (Dakar, Thiès, Diourbel)
+        if latitude >= 14.0:
+            return 600.0    # Centre (Kaolack, Fatick)
+        if latitude >= 13.0:
+            return 900.0    # Centre-sud (Kolda)
+        return 1200.0       # Casamance (Ziguinchor, Sédhiou)
+
     # ──────────────────────────────────────────────────────────────────────
     # Mode dégradé (heuristique sans modèle)
     # ──────────────────────────────────────────────────────────────────────
@@ -285,22 +306,35 @@ class RecommandationService:
             meteo = {"temperature": 28.0, "humidite": 65.0, "pluviometrie": 0.0}
 
         # 4. Vecteur de 7 features (ordre strict attendu par le SVM)
-        n_kg_ha        = float(donnees_agro.get("tauxAzote",     50))
-        p_kg_ha        = float(donnees_agro.get("tauxPhosphore", 40))
-        k_kg_ha        = float(donnees_agro.get("tauxPotassium", 40))
-        temperature_c  = float(meteo.get("temperature",   28))
-        humidite_pct   = float(meteo.get("humidite",      65))
-        ph_sol         = float(donnees_agro.get("phSol",  6.5))
-        pluvio_mm      = float(meteo.get("pluviometrie",   0))
+        n_kg_ha       = float(donnees_agro.get("tauxAzote",     50))
+        p_kg_ha       = float(donnees_agro.get("tauxPhosphore", 40))
+        k_kg_ha       = float(donnees_agro.get("tauxPotassium", 40))
+        temperature_c = float(meteo.get("temperature", 28))
+        ph_sol        = float(donnees_agro.get("phSol", 6.5))
+
+        # Humidité : on préfère l'humidité sol mesurée (données agronomiques) à
+        # l'humidité de l'air OWM, car le dataset d'entraînement utilise l'humidité sol.
+        humidite_pct = float(
+            donnees_agro.get("humiditeObservee")
+            or meteo.get("humidite", 65)
+        )
+
+        # Pluviométrie : OWM renvoie rain.1h (mm/h, ≈ 0 hors averse).
+        # Le SVM a été entraîné sur la pluviométrie ANNUELLE (mm/an) du dataset
+        # NASA POWER. On estime la valeur annuelle depuis la latitude du champ.
+        latitude_champ = float(champ.get("latitude", 14.5))
+        pluvio_mm = self._estimer_pluviometrie_annuelle(latitude_champ)
 
         features_dict = {
-            "N_kg_ha":          n_kg_ha,
-            "P_kg_ha":          p_kg_ha,
-            "K_kg_ha":          k_kg_ha,
-            "temp_opt_C":       temperature_c,
-            "humidite_pct":     humidite_pct,
-            "pH_sol":           ph_sol,
-            "pluviometrie_mm":  pluvio_mm,
+            "N_kg_ha":                  n_kg_ha,
+            "P_kg_ha":                  p_kg_ha,
+            "K_kg_ha":                  k_kg_ha,
+            "temp_opt_C":               temperature_c,
+            "humidite_pct":             humidite_pct,
+            "pH_sol":                   ph_sol,
+            "pluviometrie_mm":          pluvio_mm,
+            "pluviometrie_source":      "estimation_annuelle_latitude",
+            "latitude_champ":           latitude_champ,
         }
 
         # 5. Prédiction SVM (ou heuristique)
