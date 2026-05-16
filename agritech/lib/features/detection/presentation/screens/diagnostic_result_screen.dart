@@ -210,20 +210,47 @@ class DiagnosticResultScreen extends StatelessWidget {
                 ],
 
                 // Section 7 — Actions
-                _BoutonAction(
-                  label: 'Partager avec un expert',
-                  icone: Icons.share_outlined,
-                  couleur: AppColors.primary,
-                  onTap: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    shape: const RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(24))),
-                    builder: (_) =>
-                        ExpertSelectionSheet(diagnosticId: diagnostic.id),
+                if (diagnostic.estSauvegarde)
+                  _BoutonAction(
+                    label: 'Partager avec un expert',
+                    icone: Icons.share_outlined,
+                    couleur: AppColors.primary,
+                    onTap: () => showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(24))),
+                      builder: (_) =>
+                          ExpertSelectionSheet(diagnosticId: diagnostic.id),
+                    ),
+                  )
+                else
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.amber.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.amber.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_off_outlined,
+                            color: AppColors.amber, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Analyse effectuée hors ligne. Relancez une analyse avec connexion pour partager avec un expert.',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppColors.amber,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 10),
                 _BoutonAction(
                   label: 'Évaluer ce diagnostic',

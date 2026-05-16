@@ -50,6 +50,8 @@ class _ExpertSelectionSheetState extends ConsumerState<ExpertSelectionSheet> {
 
   Future<void> _envoyer() async {
     if (_expertSelectionneId == null) return;
+    // Capturer le messenger AVANT tout await (évite "deactivated widget" error)
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _envoiEnCours = true);
 
     try {
@@ -62,17 +64,14 @@ class _ExpertSelectionSheetState extends ConsumerState<ExpertSelectionSheet> {
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) Navigator.of(context).pop();
     } on DioException catch (e) {
-      if (mounted) {
-        setState(() => _envoiEnCours = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.response?.data?['detail'] ?? 'Erreur lors de l\'envoi.',
-            ),
-            backgroundColor: AppColors.danger,
-          ),
-        );
-      }
+      if (mounted) setState(() => _envoiEnCours = false);
+      final detail = e.response?.data?['detail'] as String?;
+      final message = (detail == 'Diagnostic introuvable.')
+          ? 'Ce diagnostic n\'existe pas encore sur le serveur. Relancez une analyse en ligne.'
+          : detail ?? 'Erreur lors de l\'envoi.';
+      messenger.showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: AppColors.danger),
+      );
     } catch (_) {
       if (mounted) setState(() => _envoiEnCours = false);
     }

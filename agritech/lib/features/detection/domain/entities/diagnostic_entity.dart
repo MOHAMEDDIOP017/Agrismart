@@ -44,6 +44,9 @@ class DiagnosticEntity extends Equatable {
   bool get estFiable => scoreConfiance >= 0.75;
   bool get estIncertain => scoreConfiance < 0.50;
 
+  /// Vrai si le diagnostic existe réellement en base (ID non généré localement par le fallback mock).
+  bool get estSauvegarde => !id.startsWith('diag_');
+
   @override
   List<Object?> get props => [id, dateAnalyse];
 }
