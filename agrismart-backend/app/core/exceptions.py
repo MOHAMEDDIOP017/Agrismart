@@ -1,10 +1,10 @@
-"""Exceptions métier personnalisées pour AgriSmart."""
+"""Exceptions métier personnalisées pour KoobalaTech."""
 
 from fastapi import HTTPException, status
 
 
-class AgriSmartException(Exception):
-    """Exception de base pour AgriSmart."""
+class KoobalaTechException(Exception):
+    """Exception de base pour KoobalaTech."""
 
     def __init__(self, message: str, code: int = 500):
         self.message = message
@@ -12,42 +12,42 @@ class AgriSmartException(Exception):
         super().__init__(message)
 
 
-class AuthentificationEchoueeException(AgriSmartException):
+class AuthentificationEchoueeException(KoobalaTechException):
     """Token Firebase invalide ou expiré."""
 
     def __init__(self, message: str = "Token d'authentification invalide ou expiré"):
         super().__init__(message, 401)
 
 
-class AutorisationRefuseeException(AgriSmartException):
+class AutorisationRefuseeException(KoobalaTechException):
     """L'utilisateur n'a pas les droits nécessaires."""
 
     def __init__(self, message: str = "Vous n'avez pas les droits pour effectuer cette action"):
         super().__init__(message, 403)
 
 
-class UtilisateurNonTrouveException(AgriSmartException):
+class UtilisateurNonTrouveException(KoobalaTechException):
     """Utilisateur introuvable en base."""
 
     def __init__(self, utilisateur_id: str):
         super().__init__(f"Utilisateur '{utilisateur_id}' introuvable", 404)
 
 
-class ChampNonTrouveException(AgriSmartException):
+class ChampNonTrouveException(KoobalaTechException):
     """Champ agricole introuvable."""
 
     def __init__(self, champ_id: str):
         super().__init__(f"Champ '{champ_id}' introuvable", 404)
 
 
-class ChampNonAccessibleException(AgriSmartException):
+class ChampNonAccessibleException(KoobalaTechException):
     """L'utilisateur n'est pas propriétaire du champ."""
 
     def __init__(self, champ_id: str):
         super().__init__(f"Accès au champ '{champ_id}' refusé", 403)
 
 
-class DonneesAgronomiquesAbsentesException(AgriSmartException):
+class DonneesAgronomiquesAbsentesException(KoobalaTechException):
     """Aucune donnée agronomique disponible pour le champ."""
 
     def __init__(self, champ_id: str):
@@ -56,28 +56,28 @@ class DonneesAgronomiquesAbsentesException(AgriSmartException):
         )
 
 
-class ImageInvalideException(AgriSmartException):
+class ImageInvalideException(KoobalaTechException):
     """Fichier image invalide (format, taille ou corruption)."""
 
     def __init__(self, raison: str = "Format ou taille d'image invalide"):
         super().__init__(raison, 400)
 
 
-class ImageNonTrouveException(AgriSmartException):
+class ImageNonTrouveException(KoobalaTechException):
     """Image introuvable en Firestore ou dans MinIO."""
 
     def __init__(self, image_id: str):
         super().__init__(f"Image '{image_id}' introuvable", 404)
 
 
-class MinioIndisponibleException(AgriSmartException):
+class MinioIndisponibleException(KoobalaTechException):
     """Erreur lors d'une opération sur MinIO (upload, download, delete)."""
 
     def __init__(self, detail: str = "Service de stockage MinIO indisponible"):
         super().__init__(detail, 503)
 
 
-class ModeleIAIndisponibleException(AgriSmartException):
+class ModeleIAIndisponibleException(KoobalaTechException):
     """Modèle IA non chargé ou fichier absent dans models_ia/."""
 
     def __init__(self, nom_modele: str):
@@ -87,21 +87,21 @@ class ModeleIAIndisponibleException(AgriSmartException):
         )
 
 
-class APIMeteoIndisponibleException(AgriSmartException):
+class APIMeteoIndisponibleException(KoobalaTechException):
     """Erreur lors de l'appel à l'API OpenWeatherMap."""
 
     def __init__(self, detail: str = "API météo indisponible"):
         super().__init__(detail, 503)
 
 
-class DiagnosticNonTrouveException(AgriSmartException):
+class DiagnosticNonTrouveException(KoobalaTechException):
     """Diagnostic de maladie introuvable."""
 
     def __init__(self, diagnostic_id: str):
         super().__init__(f"Diagnostic '{diagnostic_id}' introuvable", 404)
 
 
-class RessourceNonTrouveException(AgriSmartException):
+class RessourceNonTrouveException(KoobalaTechException):
     """Ressource générique introuvable."""
 
     def __init__(self, ressource: str, id_val: str):
@@ -110,8 +110,8 @@ class RessourceNonTrouveException(AgriSmartException):
 
 # ─── Convertisseur vers HTTPException ────────────────────────────────────────
 
-def agrismart_exception_handler(exc: AgriSmartException) -> HTTPException:
-    """Convertit une exception métier AgriSmart en HTTPException FastAPI."""
+def koobalatec_exception_handler(exc: KoobalaTechException) -> HTTPException:
+    """Convertit une exception métier KoobalaTech en HTTPException FastAPI."""
     status_map = {
         400: status.HTTP_400_BAD_REQUEST,
         401: status.HTTP_401_UNAUTHORIZED,

@@ -10,7 +10,7 @@ from app.core.security import verifier_token_firebase
 from app.core.exceptions import (
     AuthentificationEchoueeException,
     AutorisationRefuseeException,
-    agrismart_exception_handler,
+    koobalatec_exception_handler,
 )
 from app.models.enums import RoleUtilisateur
 
@@ -62,7 +62,7 @@ async def get_utilisateur_courant(
         token_data = await verifier_token_firebase(credentials.credentials)
         return token_data
     except AuthentificationEchoueeException as e:
-        raise agrismart_exception_handler(e)
+        raise koobalatec_exception_handler(e)
 
 
 def require_role(*roles: RoleUtilisateur):

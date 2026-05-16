@@ -1,4 +1,4 @@
-"""Utilitaires de prétraitement des images pour AgriSmart."""
+"""Utilitaires de prétraitement des images pour KoobalaTech."""
 
 import io
 import logging

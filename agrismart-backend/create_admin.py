@@ -1,8 +1,8 @@
 """
-Script de création du compte Administrateur initial AgriSmart.
+Script de création du compte Administrateur initial KoobalaTech.
 
 Usage :
-    cd agrismart-backend
+    cd koobalatec-backend
     python create_admin.py
 
 Prérequis :
@@ -14,7 +14,7 @@ import sys
 from datetime import datetime, timezone
 
 # ── Paramètres du compte admin à créer ──────────────────────────────────────
-ADMIN_EMAIL     = "admin@agrismart.sn"
+ADMIN_EMAIL     = "admin@koobalatec.sn"
 ADMIN_PASSWORD  = "Admin2026!"
 ADMIN_NOM       = "Diop"
 ADMIN_PRENOM    = "Fatou"

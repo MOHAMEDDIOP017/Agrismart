@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 import firebase_admin.auth as firebase_auth
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import agrismart_exception_handler, AuthentificationEchoueeException
+from app.core.exceptions import koobalatec_exception_handler, AuthentificationEchoueeException
 from app.services.auth_service import auth_service
 from app.services.firestore_service import utilisateurs_service
 
@@ -111,6 +111,6 @@ async def get_me(
         profil = await auth_service.obtenir_utilisateur(uid)
         return profil
     except Exception as e:
-        raise agrismart_exception_handler(e) if hasattr(e, "code") else HTTPException(
+        raise koobalatec_exception_handler(e) if hasattr(e, "code") else HTTPException(
             status_code=500, detail=str(e)
         )

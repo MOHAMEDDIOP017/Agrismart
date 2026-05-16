@@ -20,12 +20,12 @@ class _DonneesAgroScreenState extends ConsumerState<DonneesAgroScreen> {
   int _etape = 0;
   String? _champSelectionne;
 
-  // Valeurs des sliders
-  double _ph = 7.0;
-  double _azote = 50.0;
-  double _phosphore = 30.0;
-  double _potassium = 80.0;
-  double _humidite = 60.0;
+  // Valeurs des sliders — centrées sur les moyennes du dataset d'entraînement
+  double _ph = 6.5;
+  double _azote = 35.0;
+  double _phosphore = 25.0;
+  double _potassium = 30.0;
+  double _humidite = 55.0;
   final _observationsCtrl = TextEditingController();
 
   bool _isSaved = false;
@@ -319,10 +319,10 @@ class _EtapeSaisie extends StatelessWidget {
           AgroSliderField(
             label: 'pH du sol',
             value: ph,
-            min: 0,
-            max: 14,
+            min: 4.0,
+            max: 9.0,
             unit: '',
-            divisions: 140,
+            divisions: 50,
             coloredByValue: true,
             onChanged: onPhChanged,
           ),
@@ -331,7 +331,7 @@ class _EtapeSaisie extends StatelessWidget {
             label: 'Azote (N)',
             value: azote,
             min: 0,
-            max: 200,
+            max: 100,
             unit: 'kg/ha',
             onChanged: onAzoteChanged,
           ),
@@ -340,7 +340,7 @@ class _EtapeSaisie extends StatelessWidget {
             label: 'Phosphore (P)',
             value: phosphore,
             min: 0,
-            max: 150,
+            max: 70,
             unit: 'kg/ha',
             onChanged: onPhosphoreChanged,
           ),
@@ -349,7 +349,7 @@ class _EtapeSaisie extends StatelessWidget {
             label: 'Potassium (K)',
             value: potassium,
             min: 0,
-            max: 200,
+            max: 90,
             unit: 'kg/ha',
             onChanged: onPotassiumChanged,
           ),

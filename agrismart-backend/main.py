@@ -1,5 +1,5 @@
 """
-AgriSmart Backend — Point d'entrée principal FastAPI.
+KoobalaTech Backend — Point d'entrée principal FastAPI.
 
 Application d'assistance agricole intelligente pour les agriculteurs sénégalais.
 Modules IA :
@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.utils.logger import configurer_logging
-from app.core.exceptions import AgriSmartException, agrismart_exception_handler
+from app.core.exceptions import KoobalaTechException, koobalatec_exception_handler
 
 # Importation de tous les routers
 from app.routers import (
@@ -40,7 +40,7 @@ from app.routers import (
 
 # ─── Configuration du logging ────────────────────────────────────────────────
 configurer_logging()
-logger = logging.getLogger("agrismart.main")
+logger = logging.getLogger("koobalatec.main")
 
 
 # ─── Cycle de vie de l'application ───────────────────────────────────────────
@@ -72,10 +72,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Erreur chargement modèle SVM au démarrage : {e}")
 
-    logger.info("AgriSmart Backend prêt à recevoir des requêtes.")
+    logger.info("KoobalaTech Backend prêt à recevoir des requêtes.")
     yield
 
-    logger.info("Arrêt d'AgriSmart Backend.")
+    logger.info("Arrêt d'KoobalaTech Backend.")
 
 
 # ─── Création de l'application FastAPI ───────────────────────────────────────
@@ -84,9 +84,9 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="""
-## AgriSmart Backend API
+## KoobalaTech Backend API
 
-API backend pour l'application mobile Flutter AgriSmart, destinée aux agriculteurs sénégalais.
+API backend pour l'application mobile Flutter KoobalaTech, destinée aux agriculteurs sénégalais.
 
 ### Modules IA
 
@@ -141,10 +141,10 @@ async def timing_middleware(request: Request, call_next):
 
 # ─── Gestionnaire d'exceptions global ────────────────────────────────────────
 
-@app.exception_handler(AgriSmartException)
-async def gestionnaire_exceptions_metier(request: Request, exc: AgriSmartException):
-    """Convertit les exceptions AgriSmart en réponses HTTP structurées."""
-    http_exc = agrismart_exception_handler(exc)
+@app.exception_handler(KoobalaTechException)
+async def gestionnaire_exceptions_metier(request: Request, exc: KoobalaTechException):
+    """Convertit les exceptions KoobalaTech en réponses HTTP structurées."""
+    http_exc = koobalatec_exception_handler(exc)
     return JSONResponse(
         status_code=http_exc.status_code,
         content={"detail": http_exc.detail, "type": type(exc).__name__},

@@ -79,7 +79,7 @@ def test_validation_hors_plage():
 
 if __name__ == "__main__":
     print("=" * 65)
-    print("  TEST D'INTEGRATION -- MODELE SVM AgriSmart")
+    print("  TEST D'INTEGRATION -- MODELE SVM KoobalaTech")
     print("=" * 65)
 
     tests = [

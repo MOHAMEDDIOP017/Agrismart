@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class MinioClient:
-    """Client MinIO singleton pour AgriSmart."""
+    """Client MinIO singleton pour KoobalaTech."""
 
     _instance = None
 

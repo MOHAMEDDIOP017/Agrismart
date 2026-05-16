@@ -1,4 +1,4 @@
-"""Configuration globale de l'application AgriSmart."""
+"""Configuration globale de l'application KoobalaTech."""
 
 from functools import lru_cache
 from pydantic_settings import BaseSettings
@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Paramètres de configuration chargés depuis le fichier .env."""
 
     # Application
-    app_name: str = "AgriSmart Backend"
+    app_name: str = "KoobalaTech Backend"
     app_version: str = "1.0.0"
     env: str = "development"
     api_secret_key: str = "changeme"

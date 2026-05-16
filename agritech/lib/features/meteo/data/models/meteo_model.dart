@@ -26,27 +26,29 @@ class MeteoModel {
   String get pluviometrieLabel => '${pluviometrie.toInt()} mm';
   String get ventLabel => '${vitesseVent.toInt()} km/h';
 
+  /// Parse le format renvoyé par le backend AgriSmart (champs plats).
   factory MeteoModel.fromJson(Map<String, dynamic> json) {
-    final weather = (json['weather'] as List?)?.first as Map<String, dynamic>? ?? {};
-    final main = json['main'] as Map<String, dynamic>? ?? {};
-    final wind = json['wind'] as Map<String, dynamic>? ?? {};
-    final rain = json['rain'] as Map<String, dynamic>? ?? {};
-    final desc = (weather['description'] as String? ?? 'inconnu').toLowerCase();
-    final iconCode = (weather['icon'] as String? ?? '');
-    final icone = iconCode.startsWith('01') ? 'sunny'
-        : iconCode.startsWith('09') || iconCode.startsWith('10') ? 'rainy'
-        : iconCode.startsWith('11') ? 'stormy'
-        : 'cloudy';
+    final desc = (json['description'] as String? ?? 'inconnu').toLowerCase();
+    final String icone;
+    if (desc.contains('dégagé') || desc.contains('soleil') || desc.contains('ensoleillé')) {
+      icone = 'sunny';
+    } else if (desc.contains('pluie') || desc.contains('pluvieux') || desc.contains('averse') || desc.contains('bruine')) {
+      icone = 'rainy';
+    } else if (desc.contains('orage') || desc.contains('tempête')) {
+      icone = 'stormy';
+    } else {
+      icone = 'cloudy';
+    }
     return MeteoModel(
-      ville: json['name'] as String? ?? '',
-      temperature: ((main['temp'] as num?) ?? 0).toDouble(),
-      temperatureMin: ((main['temp_min'] as num?) ?? 0).toDouble(),
-      temperatureMax: ((main['temp_max'] as num?) ?? 0).toDouble(),
-      humidite: (main['humidity'] as int?) ?? 0,
+      ville: json['ville'] as String? ?? '',
+      temperature: ((json['temperature'] as num?) ?? 0).toDouble(),
+      temperatureMin: ((json['temperature_min'] as num?) ?? 0).toDouble(),
+      temperatureMax: ((json['temperature_max'] as num?) ?? 0).toDouble(),
+      humidite: ((json['humidite'] as num?) ?? 0).toInt(),
       description: desc,
       icone: icone,
-      pluviometrie: ((rain['1h'] as num?) ?? 0).toDouble(),
-      vitesseVent: ((wind['speed'] as num?) ?? 0).toDouble(),
+      pluviometrie: ((json['pluviometrie'] as num?) ?? 0).toDouble(),
+      vitesseVent: ((json['vitesse_vent'] as num?) ?? 0).toDouble(),
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/deconnexion_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -40,7 +39,11 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
       ),
     );
     if (confirmed == true && mounted) {
-      await DeconnexionService.deconnecter(ref);
+      // Attendre que l'animation de fermeture du dialog soit terminée
+      // avant que go_router déclenche la redirection vers /login.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        DeconnexionService.deconnecter(ref);
+      });
     }
   }
 
@@ -72,7 +75,6 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                     right: 0,
                     child: Column(
                       children: [
-                        // Avatar cliquable
                         GestureDetector(
                           onTap: () => ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Modifier la photo de profil')),
@@ -136,14 +138,6 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
             delegate: SliverChildListDelegate([
               const SizedBox(height: 20),
 
-              // Statistiques animées
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _StatsGrid(user: user),
-              ).animate().fadeIn(duration: 400.ms),
-
-              const SizedBox(height: 24),
-
               // Informations personnelles
               const _SectionHeader(title: 'Informations'),
               _ProfileTile(
@@ -191,7 +185,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
               ),
               _SettingsTile(
                 icon: Icons.info_outline_rounded,
-                label: 'À propos d\'AgriSmart',
+                label: 'À propos de KoobalaTech',
                 onTap: () => _showAbout(context),
               ),
 
@@ -211,7 +205,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                     style: TextStyle(color: AppColors.danger),
                   ),
                 ),
-              ).animate().fadeIn(delay: 400.ms),
+              ),
 
               const SizedBox(height: 40),
             ]),
@@ -224,7 +218,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
   void _showAbout(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
@@ -238,7 +232,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
               child: const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('AgriSmart'),
+            const Text('KoobalaTech'),
           ],
         ),
         content: const Column(
@@ -254,7 +248,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text('Fermer'),
           ),
         ],
@@ -264,74 +258,6 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
 }
 
 // ─── Widgets ─────────────────────────────────────────────────────────────
-
-class _StatsGrid extends StatelessWidget {
-  const _StatsGrid({required this.user});
-  final dynamic user;
-
-  @override
-  Widget build(BuildContext context) {
-    final stats = [
-      (Icons.terrain_rounded, 'Champs', user?.nombreChamps ?? 0, AppColors.primary),
-      (Icons.camera_alt_rounded, 'Diagnostics', user?.nombreDiagnostics ?? 0, AppColors.teal),
-      (Icons.psychology_rounded, 'Recommandations', user?.nombreRecommandations ?? 0, AppColors.amber),
-      (Icons.star_rounded, 'Évaluations', user?.nombreEvaluations ?? 0, AppColors.coral),
-    ];
-
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 2.2,
-      children: stats.asMap().entries.map((e) {
-        final i = e.key;
-        final s = e.value;
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: s.$4.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: s.$4.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            children: [
-              Icon(s.$1, color: s.$4, size: 22),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TweenAnimationBuilder<int>(
-                    tween: IntTween(begin: 0, end: s.$3 as int),
-                    duration: Duration(milliseconds: 800 + i * 200),
-                    builder: (_, v, __) => Text(
-                      '$v',
-                      style: TextStyle(
-                        color: s.$4,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    s.$2,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelSmall
-                        ?.copyWith(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
 
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title});

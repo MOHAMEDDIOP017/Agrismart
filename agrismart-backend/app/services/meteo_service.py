@@ -155,7 +155,7 @@ class MeteoService:
         donne la précipitation corrigée en mm/jour pour chaque mois.
         On somme : Σ(mois) = valeur_mm_jour × nb_jours_mois.
 
-        C'est la même source que le dataset d'entraînement AgriSmart_Dataset_2200
+        C'est la même source que le dataset d'entraînement KoobalaTech_Dataset_2200
         (300 observations réelles NASA POWER + ISRA).
 
         Returns:

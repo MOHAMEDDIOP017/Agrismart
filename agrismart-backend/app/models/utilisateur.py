@@ -1,4 +1,4 @@
-"""Modèles Pydantic pour les utilisateurs d'AgriSmart."""
+"""Modèles Pydantic pour les utilisateurs d'KoobalaTech."""
 
 from datetime import datetime
 from typing import Optional

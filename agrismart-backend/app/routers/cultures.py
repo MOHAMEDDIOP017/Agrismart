@@ -15,7 +15,7 @@ router = APIRouter(prefix="/cultures", tags=["Cultures"])
 @router.get(
     "",
     summary="Lister toutes les cultures",
-    description="Retourne le catalogue complet des cultures supportées par AgriSmart.",
+    description="Retourne le catalogue complet des cultures supportées par KoobalaTech.",
     status_code=status.HTTP_200_OK,
 )
 async def lister_cultures(

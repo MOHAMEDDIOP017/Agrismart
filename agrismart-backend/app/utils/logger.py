@@ -1,4 +1,4 @@
-"""Configuration du système de logging pour AgriSmart."""
+"""Configuration du système de logging pour KoobalaTech."""
 
 import logging
 import sys
@@ -24,5 +24,5 @@ def configurer_logging() -> None:
     logging.getLogger("google.cloud.firestore_v1").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-    logger = logging.getLogger("agrismart")
+    logger = logging.getLogger("koobalatec")
     logger.info(f"Logging configuré — niveau : {logging.getLevelName(niveau)}")

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import Optional
 
 from app.core.dependencies import get_utilisateur_courant, require_expert
-from app.core.exceptions import agrismart_exception_handler, AgriSmartException
+from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
 from app.models.diagnostic_maladie import (
     ResultatAnalyseIA,
     ValidationDiagnostic,
@@ -94,8 +94,8 @@ async def analyser_image(
 
         return resultat
 
-    except AgriSmartException as e:
-        raise agrismart_exception_handler(e)
+    except KoobalaTechException as e:
+        raise koobalatec_exception_handler(e)
     except Exception as e:
         logger.error(f"Erreur lors de l'analyse IA : {e}")
         raise HTTPException(status_code=500, detail=str(e))

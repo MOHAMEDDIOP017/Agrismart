@@ -45,11 +45,11 @@ def _deserialize(raw: str) -> Any:
 
 def token_cache_key(token: str) -> str:
     digest = hashlib.sha256(token.encode()).hexdigest()[:32]
-    return f"agrismart:token:{digest}"
+    return f"koobalatec:token:{digest}"
 
 
 def profil_cache_key(uid: str) -> str:
-    return f"agrismart:user:{uid}"
+    return f"koobalatec:user:{uid}"
 
 
 async def get_cached(key: str) -> Optional[Any]:

@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import agrismart_exception_handler, AgriSmartException
+from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
 from app.models.recommandation_culture import ResultatRecommandation
 from app.models.recommandation_post_recolte import RecommandationPostRecolteCreate
 from app.services.recommandation_service import (
@@ -88,8 +88,8 @@ async def generer_recommandations(
 
         return resultat
 
-    except AgriSmartException as e:
-        raise agrismart_exception_handler(e)
+    except KoobalaTechException as e:
+        raise koobalatec_exception_handler(e)
     except Exception as e:
         logger.error(f"Erreur lors de la génération des recommandations : {e}")
         raise HTTPException(status_code=500, detail=str(e))

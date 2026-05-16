@@ -2,7 +2,7 @@
 Module IA 1 : Service de recommandation de cultures.
 
 Modèle : SVM (kernel RBF) entraîné par GridSearchCV sur 2200 observations.
-Dataset : AgriSmart_Dataset_2200 (300 réelles NASA POWER + ISRA, 1900 SMOTE).
+Dataset : KoobalaTech_Dataset_2200 (300 réelles NASA POWER + ISRA, 1900 SMOTE).
 Accuracy test : 97,50 % — F1-score weighted : 0,9750
 """
 
@@ -378,6 +378,12 @@ class RecommandationService:
                     n_kg_ha, p_kg_ha, k_kg_ha,
                     temperature_c, humidite_pct, ph_sol, pluvio_mm,
                 ]])
+                logger.info(
+                    f"[SVM] Features envoyées : "
+                    f"N={n_kg_ha} P={p_kg_ha} K={k_kg_ha} "
+                    f"T={temperature_c}°C H={humidite_pct}% "
+                    f"pH={ph_sol} Pluvio={pluvio_mm}mm ({pluvio_source})"
+                )
                 features_normalises = self._scaler.transform(features_array)
                 probas  = self._modele.predict_proba(features_normalises)[0]
                 classes = self._label_encoder.classes_

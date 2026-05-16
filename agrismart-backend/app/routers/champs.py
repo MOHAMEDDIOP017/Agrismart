@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import agrismart_exception_handler, AgriSmartException
+from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
 from app.models.champ import ChampCreate, ChampUpdate, ChampResponse, ScoreSanteChamp
 from app.services.firestore_service import (
     champs_service, diagnostics_svc, recommandations_svc

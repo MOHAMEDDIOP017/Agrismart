@@ -1,4 +1,4 @@
-"""Énumérations utilisées dans les modèles Pydantic d'AgriSmart."""
+"""Énumérations utilisées dans les modèles Pydantic d'KoobalaTech."""
 
 from enum import Enum
 

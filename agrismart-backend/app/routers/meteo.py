@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import APIMeteoIndisponibleException, agrismart_exception_handler
+from app.core.exceptions import APIMeteoIndisponibleException, koobalatec_exception_handler
 from app.services.firestore_service import champs_service
 from app.services.meteo_service import meteo_service
 
@@ -37,7 +37,7 @@ async def meteo_actuelle(
         )
         return {"champId": champ_id, "meteo": donnees}
     except APIMeteoIndisponibleException as e:
-        raise agrismart_exception_handler(e)
+        raise koobalatec_exception_handler(e)
 
 
 @router.get(
@@ -69,4 +69,4 @@ async def previsions_meteo(
             "total_tranches": len(previsions),
         }
     except APIMeteoIndisponibleException as e:
-        raise agrismart_exception_handler(e)
+        raise koobalatec_exception_handler(e)

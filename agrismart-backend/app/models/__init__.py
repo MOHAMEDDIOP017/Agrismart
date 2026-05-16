@@ -1,4 +1,4 @@
-"""Package des modèles Pydantic d'AgriSmart."""
+"""Package des modèles Pydantic d'KoobalaTech."""
 
 from app.models.enums import (
     RoleUtilisateur,
