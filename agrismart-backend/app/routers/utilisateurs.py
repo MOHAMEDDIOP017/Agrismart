@@ -58,6 +58,36 @@ async def lister_utilisateurs(
 
 
 @router.get(
+    "/experts",
+    summary="Lister les experts disponibles",
+    description="Retourne la liste des experts actifs. Accessible à tous les utilisateurs connectés.",
+    status_code=status.HTTP_200_OK,
+)
+async def lister_experts(
+    courant: dict = Depends(get_utilisateur_courant),
+):
+    """Permet à un agriculteur de voir les experts disponibles pour partager un diagnostic."""
+    experts = await utilisateurs_service.lister(
+        filtres=[("role", "==", RoleUtilisateur.EXPERT.value)],
+        limite=50,
+    )
+    return {
+        "experts": [
+            {
+                "id": e.get("id") or e.get("uid", ""),
+                "nom": e.get("nom", ""),
+                "prenom": e.get("prenom", ""),
+                "specialite": e.get("specialite", "Agronomie générale"),
+                "zone_geographique": e.get("zone_geographique", "Sénégal"),
+                "actif": e.get("actif", True),
+            }
+            for e in experts
+        ],
+        "total": len(experts),
+    }
+
+
+@router.get(
     "/{utilisateur_id}",
     summary="Obtenir un utilisateur",
     description="Retourne le profil d'un utilisateur par son ID.",

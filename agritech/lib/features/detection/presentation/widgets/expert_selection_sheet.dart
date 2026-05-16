@@ -1,28 +1,46 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 
+// ── Provider : charge les experts depuis l'API ────────────────────────────────
+
+final _expertsProvider = FutureProvider.autoDispose<List<_ExpertItem>>((ref) async {
+  final dio = ApiClient().dio;
+  final resp = await dio.get('/utilisateurs/experts');
+  final liste = (resp.data['experts'] as List? ?? []).cast<Map<String, dynamic>>();
+  return liste
+      .where((e) => (e['actif'] as bool? ?? true))
+      .map((e) => _ExpertItem(
+            id: (e['id'] ?? '') as String,
+            nom: (e['nom'] ?? '') as String,
+            prenom: (e['prenom'] ?? '') as String,
+            specialite: (e['specialite'] ?? 'Agronomie') as String,
+            zone: (e['zone_geographique'] ?? 'Sénégal') as String,
+          ))
+      .where((e) => e.id.isNotEmpty)
+      .toList();
+});
+
+// ── Widget principal ──────────────────────────────────────────────────────────
+
 /// BottomSheet de sélection d'un expert agricole pour partager un diagnostic
-class ExpertSelectionSheet extends StatefulWidget {
+class ExpertSelectionSheet extends ConsumerStatefulWidget {
   const ExpertSelectionSheet({required this.diagnosticId, super.key});
 
   final String diagnosticId;
 
   @override
-  State<ExpertSelectionSheet> createState() => _ExpertSelectionSheetState();
+  ConsumerState<ExpertSelectionSheet> createState() => _ExpertSelectionSheetState();
 }
 
-class _ExpertSelectionSheetState extends State<ExpertSelectionSheet> {
-  int? _expertSelectionne;
+class _ExpertSelectionSheetState extends ConsumerState<ExpertSelectionSheet> {
+  String? _expertSelectionneId;
   bool _envoiConfirme = false;
+  bool _envoiEnCours = false;
   final _messageCtrl = TextEditingController();
-
-  final _experts = const [
-    _Expert('exp_001', 'Dr. Moussa Diallo', 'Phytopathologie', 'Thiès', true),
-    _Expert('exp_002', 'Mme Aïssatou Ndiaye', 'Agronomie générale', 'Dakar', true),
-    _Expert('exp_003', 'M. Ibrahima Sarr', 'Cultures céréalières', 'Kaolack', false),
-    _Expert('exp_004', 'Dr. Fatou Ba', 'Maraîchage', 'Ziguinchor', true),
-  ];
 
   @override
   void dispose() {
@@ -31,15 +49,39 @@ class _ExpertSelectionSheetState extends State<ExpertSelectionSheet> {
   }
 
   Future<void> _envoyer() async {
-    if (_expertSelectionne == null) return;
-    await Future.delayed(const Duration(milliseconds: 600));
-    setState(() => _envoiConfirme = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) Navigator.of(context).pop();
+    if (_expertSelectionneId == null) return;
+    setState(() => _envoiEnCours = true);
+
+    try {
+      final dio = ApiClient().dio;
+      await dio.post(
+        '/diagnostics/${widget.diagnosticId}/partager-expert',
+        queryParameters: {'expert_id': _expertSelectionneId},
+      );
+      if (mounted) setState(() => _envoiConfirme = true);
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) Navigator.of(context).pop();
+    } on DioException catch (e) {
+      if (mounted) {
+        setState(() => _envoiEnCours = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.response?.data?['detail'] ?? 'Erreur lors de l\'envoi.',
+            ),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _envoiEnCours = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final expertsAsync = ref.watch(_expertsProvider);
+
     return DraggableScrollableSheet(
       initialChildSize: 0.7,
       minChildSize: 0.4,
@@ -57,55 +99,137 @@ class _ExpertSelectionSheetState extends State<ExpertSelectionSheet> {
                   children: [
                     _Handle(),
                     Expanded(
-                      child: ListView(
-                        controller: scrollCtrl,
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        children: [
-                          const SizedBox(height: 4),
-                          Text(
-                            'Partager avec un expert',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      child: expertsAsync.when(
+                        loading: () => const Center(child: CircularProgressIndicator()),
+                        error: (e, _) => Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.wifi_off_outlined,
+                                    size: 48, color: AppColors.textSecondary),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Impossible de charger les experts.',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () => ref.invalidate(_expertsProvider),
+                                  child: const Text('Réessayer'),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Experts disponibles dans votre zone',
-                            style: GoogleFonts.inter(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ..._experts.asMap().entries.map((e) {
-                            final i = e.key;
-                            final expert = e.value;
-                            return _ExpertCard(
-                              expert: expert,
-                              selectionne: _expertSelectionne == i,
-                              onTap: () => setState(() => _expertSelectionne = i),
-                            );
-                          }),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _messageCtrl,
-                            maxLines: 3,
-                            decoration: InputDecoration(
-                              hintText:
-                                  'Ajouter un message (optionnel)...',
-                              hintStyle: GoogleFonts.inter(
-                                  color: AppColors.textSecondary),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed:
-                                _expertSelectionne != null ? _envoyer : null,
-                            child: const Text('Envoyer le diagnostic'),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
+                        ),
+                        data: (experts) => experts.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.person_search_outlined,
+                                          size: 48, color: AppColors.textSecondary),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Aucun expert disponible pour le moment.',
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : ListView(
+                                controller: scrollCtrl,
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Partager avec un expert',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${experts.length} expert${experts.length > 1 ? 's' : ''} disponible${experts.length > 1 ? 's' : ''}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ...experts.map((expert) => _ExpertCard(
+                                        expert: expert,
+                                        selectionne: _expertSelectionneId == expert.id,
+                                        onTap: () => setState(
+                                          () => _expertSelectionneId = expert.id,
+                                        ),
+                                      )),
+                                  const SizedBox(height: 16),
+                                  TextField(
+                                    controller: _messageCtrl,
+                                    maxLines: 3,
+                                    decoration: InputDecoration(
+                                      hintText: 'Ajouter un message (optionnel)...',
+                                      hintStyle: GoogleFonts.inter(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide:
+                                            const BorderSide(color: AppColors.border),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        borderSide:
+                                            const BorderSide(color: AppColors.border),
+                                      ),
+                                      contentPadding: const EdgeInsets.all(12),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: (_expertSelectionneId != null && !_envoiEnCours)
+                                        ? _envoyer
+                                        : null,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      minimumSize: const Size.fromHeight(50),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      textStyle: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    child: _envoiEnCours
+                                        ? const SizedBox(
+                                            width: 22,
+                                            height: 22,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2.5,
+                                            ),
+                                          )
+                                        : const Text('Envoyer le diagnostic'),
+                                  ),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
                       ),
                     ),
                   ],
@@ -116,6 +240,8 @@ class _ExpertSelectionSheetState extends State<ExpertSelectionSheet> {
   }
 }
 
+// ── Carte expert ──────────────────────────────────────────────────────────────
+
 class _ExpertCard extends StatelessWidget {
   const _ExpertCard({
     required this.expert,
@@ -123,7 +249,7 @@ class _ExpertCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final _Expert expert;
+  final _ExpertItem expert;
   final bool selectionne;
   final VoidCallback onTap;
 
@@ -151,7 +277,7 @@ class _ExpertCard extends StatelessWidget {
               radius: 22,
               backgroundColor: AppColors.primary.withValues(alpha: 0.15),
               child: Text(
-                expert.nom.substring(expert.nom.lastIndexOf(' ') + 1)[0],
+                expert.initiales,
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
@@ -164,7 +290,7 @@ class _ExpertCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expert.nom,
+                    expert.nomComplet,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -180,7 +306,8 @@ class _ExpertCard extends StatelessWidget {
                 ],
               ),
             ),
-            _DispoIndicateur(enLigne: expert.enLigne),
+            if (selectionne)
+              const Icon(Icons.check_circle, color: AppColors.primary, size: 22),
           ],
         ),
       ),
@@ -188,86 +315,7 @@ class _ExpertCard extends StatelessWidget {
   }
 }
 
-class _DispoIndicateur extends StatefulWidget {
-  const _DispoIndicateur({required this.enLigne});
-
-  final bool enLigne;
-
-  @override
-  State<_DispoIndicateur> createState() => _DispoIndicateurState();
-}
-
-class _DispoIndicateurState extends State<_DispoIndicateur>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      duration: const Duration(milliseconds: 900),
-      vsync: this,
-    );
-    _anim = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-    if (widget.enLigne) _ctrl.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final couleur = widget.enLigne ? AppColors.primary : AppColors.textSecondary;
-    final label = widget.enLigne ? 'En ligne' : 'Hors ligne';
-
-    if (!widget.enLigne) {
-      return _buildChip(couleur, label, 1.0);
-    }
-
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => _buildChip(couleur, label, _anim.value),
-    );
-  }
-
-  Widget _buildChip(Color couleur, String label, double opacity) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: couleur.withValues(alpha: 0.1 * opacity),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: couleur.withValues(alpha: opacity),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              color: couleur,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ── Vue de confirmation ───────────────────────────────────────────────────────
 
 class _ConfirmationView extends StatelessWidget {
   @override
@@ -297,6 +345,8 @@ class _ConfirmationView extends StatelessWidget {
   }
 }
 
+// ── Poignée du sheet ──────────────────────────────────────────────────────────
+
 class _Handle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -316,12 +366,28 @@ class _Handle extends StatelessWidget {
   }
 }
 
-class _Expert {
-  const _Expert(this.id, this.nom, this.specialite, this.zone, this.enLigne);
+// ── Modèle local ─────────────────────────────────────────────────────────────
+
+class _ExpertItem {
+  const _ExpertItem({
+    required this.id,
+    required this.nom,
+    required this.prenom,
+    required this.specialite,
+    required this.zone,
+  });
 
   final String id;
   final String nom;
+  final String prenom;
   final String specialite;
   final String zone;
-  final bool enLigne;
+
+  String get nomComplet => '$prenom $nom'.trim();
+
+  String get initiales {
+    final p = prenom.isNotEmpty ? prenom[0] : '';
+    final n = nom.isNotEmpty ? nom[0] : '';
+    return '$p$n'.toUpperCase();
+  }
 }
