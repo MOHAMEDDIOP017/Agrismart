@@ -23,6 +23,7 @@ class StatutValidation(str, Enum):
     """Statut de validation d'un diagnostic de maladie."""
     EN_ATTENTE = "EN_ATTENTE"
     VALIDE_EXPERT = "VALIDE_EXPERT"
+    CORRIGE = "CORRIGE"
     REJETE = "REJETE"
     AUTO_CONFIRME = "AUTO_CONFIRME"
 

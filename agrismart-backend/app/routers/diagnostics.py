@@ -10,6 +10,7 @@ from app.models.diagnostic_maladie import (
     ResultatAnalyseIA,
     ValidationDiagnostic,
     CorrectionDiagnostic,
+    RejetDiagnostic,
     EvaluationDiagnostic,
 )
 from app.models.enums import StatutValidation, TypeNotification
@@ -222,13 +223,51 @@ async def corriger_diagnostic(
 
     expert_id = expert["uid"]
     await diagnostics_svc.mettre_a_jour(diagnostic_id, {
-        "statut": StatutValidation.VALIDE_EXPERT.value,
+        "statut": StatutValidation.CORRIGE.value,
         "expertId": expert_id,
         "maladieId": corps.maladieIdCorrecte,
         "commentaireExpert": corps.commentaireExpert,
     })
 
     return {"message": "Diagnostic corrigé.", "diagnosticId": diagnostic_id}
+
+
+@router.post(
+    "/{diagnostic_id}/rejeter",
+    summary="Rejeter un diagnostic (Expert)",
+    description="Un expert rejette un diagnostic dont l'image est inexploitable ou hors périmètre.",
+    status_code=status.HTTP_200_OK,
+)
+async def rejeter_diagnostic(
+    diagnostic_id: str,
+    corps: RejetDiagnostic,
+    expert: dict = Depends(require_expert()),
+):
+    diagnostic = await diagnostics_svc.lire(diagnostic_id)
+    if diagnostic is None:
+        raise HTTPException(status_code=404, detail="Diagnostic introuvable.")
+
+    expert_id = expert["uid"]
+    await diagnostics_svc.mettre_a_jour(diagnostic_id, {
+        "statut": StatutValidation.REJETE.value,
+        "expertId": expert_id,
+        "motifRejet": corps.motifRejet,
+        "commentaireExpert": corps.motifRejet,
+    })
+
+    try:
+        await notification_service.envoyer_notification(
+            destinataire_id=diagnostic.get("agriculteurId", ""),
+            type_notif=TypeNotification.VALIDATION_DIAGNOSTIC,
+            titre="Diagnostic rejeté",
+            corps=f"Votre diagnostic a été rejeté. Motif : {corps.motifRejet[:100]}",
+            reference_id=diagnostic_id,
+        )
+    except Exception as e:
+        logger.warning(f"Notification rejet non envoyée : {e}")
+
+    logger.info(f"Expert {expert_id} a rejeté le diagnostic {diagnostic_id} : {corps.motifRejet}")
+    return {"message": "Diagnostic rejeté.", "diagnosticId": diagnostic_id}
 
 
 @router.post(

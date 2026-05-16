@@ -56,6 +56,12 @@ class CorrectionDiagnostic(BaseModel):
     commentaireExpert: str = Field(..., min_length=10, max_length=2000)
 
 
+class RejetDiagnostic(BaseModel):
+    """Corps de la requête de rejet par un expert."""
+    motifRejet: str = Field(..., min_length=10, max_length=1000,
+                            description="Raison du rejet (image inexploitable, hors périmètre…)")
+
+
 class EvaluationDiagnostic(BaseModel):
     """Évaluation de la qualité du diagnostic par l'agriculteur."""
     note: int = Field(..., ge=1, le=5, description="Note de 1 à 5 étoiles")

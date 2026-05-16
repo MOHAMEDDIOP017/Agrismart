@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 enum StatutValidation {
   enAttente,
   valideExpert,
+  corrige,
   rejete,
   autoConfirme;
 
@@ -14,6 +15,8 @@ enum StatutValidation {
         return 'EN ATTENTE';
       case StatutValidation.valideExpert:
         return 'VALIDÉ EXPERT';
+      case StatutValidation.corrige:
+        return 'CORRIGÉ';
       case StatutValidation.rejete:
         return 'REJETÉ';
       case StatutValidation.autoConfirme:
@@ -27,10 +30,12 @@ enum StatutValidation {
         return AppColors.textSecondary;
       case StatutValidation.valideExpert:
         return AppColors.primary;
+      case StatutValidation.corrige:
+        return AppColors.amber;
       case StatutValidation.rejete:
         return AppColors.danger;
       case StatutValidation.autoConfirme:
-        return AppColors.amber;
+        return AppColors.info;
     }
   }
 
@@ -40,10 +45,12 @@ enum StatutValidation {
         return AppColors.textSecondary.withValues(alpha: 0.12);
       case StatutValidation.valideExpert:
         return AppColors.primary.withValues(alpha: 0.12);
+      case StatutValidation.corrige:
+        return AppColors.amber.withValues(alpha: 0.12);
       case StatutValidation.rejete:
         return AppColors.danger.withValues(alpha: 0.12);
       case StatutValidation.autoConfirme:
-        return AppColors.amber.withValues(alpha: 0.12);
+        return AppColors.info.withValues(alpha: 0.12);
     }
   }
 
@@ -53,6 +60,8 @@ enum StatutValidation {
         return Icons.hourglass_empty;
       case StatutValidation.valideExpert:
         return Icons.verified_outlined;
+      case StatutValidation.corrige:
+        return Icons.edit_outlined;
       case StatutValidation.rejete:
         return Icons.cancel_outlined;
       case StatutValidation.autoConfirme:
@@ -66,6 +75,8 @@ enum StatutValidation {
         return StatutValidation.enAttente;
       case 'VALIDE_EXPERT':
         return StatutValidation.valideExpert;
+      case 'CORRIGE':
+        return StatutValidation.corrige;
       case 'REJETE':
         return StatutValidation.rejete;
       case 'AUTO_CONFIRME':
@@ -81,6 +92,8 @@ enum StatutValidation {
         return 'EN_ATTENTE';
       case StatutValidation.valideExpert:
         return 'VALIDE_EXPERT';
+      case StatutValidation.corrige:
+        return 'CORRIGE';
       case StatutValidation.rejete:
         return 'REJETE';
       case StatutValidation.autoConfirme:
