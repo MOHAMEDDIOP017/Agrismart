@@ -149,6 +149,17 @@ class ExpertRepositoryImpl implements ExpertRepository {
     );
   }
 
+  @override
+  Future<void> rejeterDiagnostic({
+    required String diagnosticId,
+    required String expertId,
+    required String motifRejet,
+  }) async {
+    await _dio.post('/diagnostics/$diagnosticId/rejeter', data: {
+      'motifRejet': motifRejet,
+    });
+  }
+
   // ── Champs supervisés ────────────────────────────────────────────────────
 
   @override

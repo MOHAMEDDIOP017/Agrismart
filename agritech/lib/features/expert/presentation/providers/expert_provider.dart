@@ -155,6 +155,24 @@ class DiagnosticsNotifier extends AsyncNotifier<DiagnosticsState> {
     }
   }
 
+  Future<bool> rejeterDiagnostic({
+    required String diagnosticId,
+    required String motifRejet,
+  }) async {
+    try {
+      final expertId = ref.read(expertIdProvider);
+      await _repo.rejeterDiagnostic(
+        diagnosticId: diagnosticId,
+        expertId: expertId,
+        motifRejet: motifRejet,
+      );
+      await refresh();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<bool> corrigerDiagnostic({
     required String diagnosticId,
     required DecisionExpert decision,

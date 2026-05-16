@@ -43,6 +43,12 @@ abstract class ExpertRepository {
     bool notifierAgriculteur = true,
   });
 
+  Future<void> rejeterDiagnostic({
+    required String diagnosticId,
+    required String expertId,
+    required String motifRejet,
+  });
+
   // ── Supervision champs ───────────────────────────────────────────
   Future<List<ChampSuperviseEntity>> getChampsSupervises(String expertId);
   Future<ChampSuperviseEntity> getChampDetail(String champId);

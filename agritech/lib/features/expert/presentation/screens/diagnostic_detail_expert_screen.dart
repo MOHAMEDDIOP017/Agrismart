@@ -76,6 +76,12 @@ class _DiagnosticDetailExpertScreenState
                       style: GoogleFonts.poppins(
                           color: Colors.amber, fontWeight: FontWeight.w600)),
                 ),
+                TextButton(
+                  onPressed: () => _showRejet(context),
+                  child: Text('Rejeter',
+                      style: GoogleFonts.poppins(
+                          color: AppColors.danger, fontWeight: FontWeight.w600)),
+                ),
               ],
             ),
 
@@ -397,6 +403,122 @@ class _DiagnosticDetailExpertScreenState
             ctx.pop();
           }
         },
+      ),
+    );
+  }
+
+  void _showRejet(BuildContext ctx) {
+    final motifCtrl = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (_, setDialogState) => AlertDialog(
+          title: Text(
+            'Rejeter ce diagnostic',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.danger,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ce diagnostic sera marqué comme rejeté et l\'agriculteur sera notifié.',
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Motif du rejet *',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: motifCtrl,
+                maxLines: 3,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'ex : Image floue, hors cadre, mauvaise plante...',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(dialogCtx),
+              child: Text(
+                'Annuler',
+                style: GoogleFonts.poppins(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      final motif = motifCtrl.text.trim();
+                      if (motif.length < 10) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(
+                            content: Text('Le motif doit contenir au moins 10 caractères.'),
+                          ),
+                        );
+                        return;
+                      }
+                      setDialogState(() => isLoading = true);
+                      final ok = await ref
+                          .read(diagnosticsNotifier.notifier)
+                          .rejeterDiagnostic(
+                            diagnosticId: widget.diagnosticId,
+                            motifRejet: motif,
+                          );
+                      if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                      if (ok && ctx.mounted) ctx.pop();
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.danger,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Text('Confirmer le rejet'),
+            ),
+          ],
+        ),
       ),
     );
   }
