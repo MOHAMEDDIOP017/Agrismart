@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     scaler_path: str = "./models_ia/scaler_crop.pkl"
     label_encoder_path: str = "./models_ia/label_encoder_crop.pkl"
     modele_metadata_path: str = "./models_ia/model_metadata.json"
-    modele_detection_path: str = "./models_ia/efficientnet_plant_disease.tflite"
-    classes_detection_path: str = "./models_ia/plant_disease_classes.json"
+    modele_detection_path: str = "./models_ia/efficientnetb0_plantvillage.tflite"
+    classes_detection_path: str = "./models_ia/class_names.json"
 
     # Contraintes sur les images
     taille_max_image_bytes: int = 10 * 1024 * 1024  # 10 Mo

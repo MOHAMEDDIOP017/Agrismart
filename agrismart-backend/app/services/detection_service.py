@@ -52,18 +52,19 @@ class DetectionService:
 
     def __init__(self):
         self._interpreter = None       # TFLite interpreter
+        self._keras_model = None       # Keras .h5 model (fallback si TFLite incompatible)
         self._classes: list[str] = []  # Noms des classes de maladies
         self._modele_charge = False
 
     def _charger_modele(self) -> None:
-        """Charge le modèle TFLite et la liste des classes (lazy loading)."""
+        """Charge le modèle TFLite (ou .h5 en fallback) et la liste des classes."""
         if self._modele_charge:
             return
 
         classes_path = Path(settings.classes_detection_path)
         modele_path = Path(settings.modele_detection_path)
 
-        # Chargement des classes depuis plant_disease_classes.json
+        # Chargement des classes
         if classes_path.exists():
             with open(classes_path, "r", encoding="utf-8") as f:
                 self._classes = json.load(f)
@@ -78,13 +79,51 @@ class DetectionService:
             return
 
         try:
-            import tensorflow as tf
-            self._interpreter = tf.lite.Interpreter(model_path=str(modele_path))
+            try:
+                import tflite_runtime.interpreter as tflite
+                self._interpreter = tflite.Interpreter(model_path=str(modele_path))
+                logger.debug("TFLite chargé via tflite_runtime")
+            except ImportError:
+                import tensorflow as tf
+                self._interpreter = tf.lite.Interpreter(model_path=str(modele_path))
+                logger.debug("TFLite chargé via tensorflow.lite")
             self._interpreter.allocate_tensors()
             self._modele_charge = True
-            logger.info(f"Modèle EfficientNetB0 chargé : {modele_path}")
+            logger.info(f"Modèle EfficientNetB0 (TFLite) chargé : {modele_path}")
+        except Exception as tflite_err:
+            logger.warning(f"TFLite indisponible ({tflite_err}). Tentative chargement .h5 Keras...")
+            self._charger_modele_keras(modele_path)
+
+    def _charger_modele_keras(self, tflite_path: Path) -> None:
+        """Fallback : charge le modèle .h5 via tf.keras quand TFLite est incompatible."""
+        h5_path = tflite_path.parent / tflite_path.stem.replace("_plantvillage", "_plantvillage").replace(".tflite", "")
+        h5_path = tflite_path.with_suffix(".h5").parent / (tflite_path.stem + ".h5")
+        # Cherche efficientnetb0_plantvillage.h5 dans le même dossier
+        h5_candidates = list(tflite_path.parent.glob("efficientnetb0*.h5"))
+        if not h5_candidates:
+            logger.error("Fichier .h5 introuvable. Mode MOCK activé.")
+            return
+        h5_path = h5_candidates[0]
+        try:
+            import tensorflow as tf
+
+            class _PatchedDense(tf.keras.layers.Dense):
+                def __init__(self, *args, quantization_config=None, **kwargs):
+                    super().__init__(*args, **kwargs)
+
+            self._keras_model = tf.keras.models.load_model(
+                str(h5_path),
+                custom_objects={"Dense": _PatchedDense},
+                compile=False,
+            )
+            # Warmup pour compiler le graphe TF une seule fois
+            import numpy as np
+            dummy = np.zeros((1, settings.image_height, settings.image_width, 3), dtype=np.float32)
+            self._keras_model.predict(dummy, verbose=0)
+            self._modele_charge = True
+            logger.info(f"Modèle EfficientNetB0 (Keras .h5) chargé et warmup effectué : {h5_path}")
         except Exception as e:
-            logger.error(f"Erreur lors du chargement du modèle TFLite : {e}")
+            logger.error(f"Erreur chargement .h5 Keras : {e}")
             self._modele_charge = False
 
     def _preprocesser_image(self, image_bytes: bytes) -> np.ndarray:
@@ -102,7 +141,8 @@ class DetectionService:
             image = image.resize(
                 (settings.image_width, settings.image_height), Image.BILINEAR
             )
-            array = np.array(image, dtype=np.float32) / 255.0
+            # EfficientNetB0 preprocess_input : normalisation vers [-1, 1]
+            array = (np.array(image, dtype=np.float32) - 127.5) / 127.5
             return np.expand_dims(array, axis=0)
         except Exception as e:
             raise ImageInvalideException(f"Impossible de prétraiter l'image : {e}")
@@ -116,6 +156,15 @@ class DetectionService:
         self._interpreter.invoke()
 
         probas = self._interpreter.get_tensor(output_details[0]["index"])[0]
+        return sorted(
+            zip(self._classes, probas.tolist()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+    def _predire_avec_keras(self, image_array: np.ndarray) -> list[tuple[str, float]]:
+        """Lance l'inférence Keras (.h5) et retourne les probabilités triées par ordre décroissant."""
+        probas = self._keras_model.predict(image_array, verbose=0)[0]
         return sorted(
             zip(self._classes, probas.tolist()),
             key=lambda x: x[1],
@@ -190,13 +239,18 @@ class DetectionService:
 
         if self._modele_charge:
             try:
-                resultats = self._predire_avec_tflite(image_array)
+                if self._interpreter is not None:
+                    resultats = self._predire_avec_tflite(image_array)
+                    backend = "TFLite"
+                else:
+                    resultats = self._predire_avec_keras(image_array)
+                    backend = "Keras"
                 logger.info(
-                    f"Inférence TFLite réussie en {time.time() - debut:.3f}s — "
+                    f"Inférence {backend} réussie en {time.time() - debut:.3f}s — "
                     f"top-1 : {resultats[0][0]} ({resultats[0][1]:.3f})"
                 )
             except Exception as e:
-                logger.error(f"Erreur inférence TFLite : {e}. Basculement sur le mock.")
+                logger.error(f"Erreur inférence : {e}. Basculement sur le mock.")
                 resultats = self._predire_mock()
         else:
             resultats = self._predire_mock()

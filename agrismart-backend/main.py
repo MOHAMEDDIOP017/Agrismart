@@ -72,6 +72,17 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Erreur chargement modèle SVM au démarrage : {e}")
 
+    # Préchargement du modèle EfficientNetB0 (évite la latence au premier diagnostic)
+    try:
+        from app.services.detection_service import detection_service
+        detection_service._charger_modele()
+        if detection_service._modele_charge:
+            logger.info("[OK] Modele EfficientNetB0 precharge")
+        else:
+            logger.warning("[WARN] Modele EfficientNetB0 non charge -- mode mock actif")
+    except Exception as e:
+        logger.error(f"❌ Erreur chargement modèle EfficientNetB0 au démarrage : {e}")
+
     logger.info("KoobalaTech Backend prêt à recevoir des requêtes.")
     yield
 
