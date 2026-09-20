@@ -3,8 +3,6 @@ import 'package:equatable/equatable.dart';
 /// Statistiques globales de la plateforme (vue Admin)
 class StatistiquesGlobalesEntity extends Equatable {
   const StatistiquesGlobalesEntity({
-    required this.totalDiagnostics,
-    required this.precisionIAPourcent,
     required this.totalRecommandations,
     required this.totalAlertes,
     required this.totalInterventions,
@@ -15,13 +13,11 @@ class StatistiquesGlobalesEntity extends Equatable {
     required this.totalAdmins,
     required this.interventionsEnCours,
     required this.donneesBarChart,
-    required this.topMaladies,
-    required this.donneesLineChart,
+    this.totalChamps = 0,
+    this.topCulturesRecommandees = const [],
   });
 
   // KPIs principaux
-  final int totalDiagnostics;
-  final double precisionIAPourcent;
   final int totalRecommandations;
   final int totalAlertes;
   final int totalInterventions;
@@ -34,68 +30,50 @@ class StatistiquesGlobalesEntity extends Equatable {
   final int totalAdmins;
   final int interventionsEnCours;
 
-  /// Données pour le BarChart hebdomadaire [semaine → {diagnostics, recommandations}]
+  /// Nombre total de champs enregistrés
+  final int totalChamps;
+
+  /// Top cultures les plus recommandées par l'IA
+  final List<CultureStatReco> topCulturesRecommandees;
+
+  /// Données pour le BarChart hebdomadaire [semaine → recommandations]
   final List<DonneeBarChart> donneesBarChart;
 
-  /// Top 5 maladies détectées ce mois
-  final List<MaladieStat> topMaladies;
+  @override
+  List<Object?> get props => [totalRecommandations, totalUtilisateurs];
+}
 
-  /// Données pour le LineChart d'évolution de la précision IA
-  final List<DonneeLineChart> donneesLineChart;
+/// Culture recommandée avec son nombre de recommandations
+class CultureStatReco extends Equatable {
+  const CultureStatReco({
+    required this.nom,
+    required this.nombreRecommandations,
+    required this.maxRecommandations,
+  });
+
+  final String nom;
+  final int nombreRecommandations;
+  final int maxRecommandations;
+
+  double get progression =>
+      maxRecommandations > 0 ? nombreRecommandations / maxRecommandations : 0;
 
   @override
-  List<Object?> get props => [totalDiagnostics, precisionIAPourcent];
+  List<Object?> get props => [nom];
 }
 
 /// Point de données pour le graphique à barres
 class DonneeBarChart extends Equatable {
   const DonneeBarChart({
     required this.semaine,
-    required this.diagnostics,
     required this.recommandations,
   });
 
   final String semaine;
-  final double diagnostics;
   final double recommandations;
 
   @override
   List<Object?> get props => [semaine];
-}
-
-/// Maladie avec son nombre de détections pour le classement
-class MaladieStat extends Equatable {
-  const MaladieStat({
-    required this.nom,
-    required this.nombreDetections,
-    required this.maxDetections,
-  });
-
-  final String nom;
-  final int nombreDetections;
-  /// Maximum pour calculer la barre de progression
-  final int maxDetections;
-
-  double get progression => nombreDetections / maxDetections;
-
-  @override
-  List<Object?> get props => [nom];
-}
-
-/// Point de données pour le graphique d'évolution de précision IA
-class DonneeLineChart extends Equatable {
-  const DonneeLineChart({
-    required this.mois,
-    required this.precisionBrute,
-    required this.precisionValidee,
-  });
-
-  final String mois;
-  final double precisionBrute;
-  final double precisionValidee;
-
-  @override
-  List<Object?> get props => [mois];
 }
 
 /// Statut des services système

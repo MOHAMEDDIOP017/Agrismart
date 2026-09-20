@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,35 +13,28 @@ import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/champs/presentation/screens/champs_list_screen.dart';
 import '../features/champs/presentation/screens/champ_detail_screen.dart';
 import '../features/champs/presentation/screens/champ_form_screen.dart';
-import '../features/donnees_agro/presentation/screens/donnees_agro_screen.dart';
+import '../features/meteo/presentation/screens/meteo_screen.dart';
 import '../features/recommandations/presentation/screens/recommandations_screen.dart';
+import '../features/chat/presentation/screens/chat_screen.dart';
 import '../features/alertes/presentation/screens/alertes_screen.dart';
 import '../features/alertes/presentation/screens/alerte_detail_screen.dart';
 import '../features/suivi/presentation/screens/suivi_screen.dart';
 import '../features/profil/presentation/screens/profil_screen.dart';
-import '../features/detection/domain/entities/diagnostic_entity.dart';
-import '../features/detection/presentation/screens/detection_home_screen.dart';
-import '../features/detection/presentation/screens/camera_screen.dart';
-import '../features/detection/presentation/screens/image_preview_screen.dart';
-import '../features/detection/presentation/screens/analyse_en_cours_screen.dart';
-import '../features/detection/presentation/screens/diagnostic_result_screen.dart';
-import '../features/detection/presentation/screens/diagnostic_historique_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../features/shared/presentation/screens/non_autorise_screen.dart';
 
 // ── Expert ───────────────────────────────────────────────────────────────────
 import '../features/expert/presentation/screens/expert_dashboard_screen.dart';
-import '../features/expert/presentation/screens/diagnostics_en_attente_screen.dart';
-import '../features/expert/presentation/screens/diagnostic_detail_expert_screen.dart';
 import '../features/expert/presentation/screens/supervision_champs_screen.dart';
 import '../features/expert/presentation/screens/champ_dashboard_expert_screen.dart';
 import '../features/expert/presentation/screens/historique_champ_screen.dart';
 import '../features/expert/presentation/screens/planifier_intervention_screen.dart';
 import '../features/expert/presentation/screens/conseils_screen.dart';
 import '../features/expert/presentation/screens/nouveau_conseil_screen.dart';
-import '../features/expert/presentation/screens/alertes_zone_screen.dart';
 import '../features/expert/presentation/screens/rapport_screen.dart';
 import '../features/expert/presentation/screens/profil_expert_screen.dart';
+import '../features/expert/presentation/screens/recommandations_expert_screen.dart';
+import '../features/expert/presentation/screens/recommandation_detail_expert_screen.dart';
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 import '../features/admin/presentation/screens/admin_dashboard_screen.dart';
@@ -79,25 +71,18 @@ class AppRoutes {
   static const champs = '/home/champs';
   static const champDetail = '/home/champs/:id';
   static const champForm = '/home/champs/form';
-  static const donneesAgro = '/home/donnees-agro';
   static const recommandations = '/home/dashboard/recommandations';
+  static const assistant = '/home/dashboard/assistant';
   static const alertes = '/home/alertes';
   static const alerteDetail = '/home/alertes/:id';
   static const suivi = '/home/suivi';
   static const profil = '/home/profil';
 
-  // Module Détection — dans le shell
-  static const detection = '/home/detection';
-  static const diagnosticHistorique = '/home/detection/historique';
+  // Onglet Météo — dans le shell
+  static const meteo = '/home/meteo';
 
   // Notifications
   static const notifications = '/notifications';
-
-  // Module Détection — plein écran (hors shell, poussés par-dessus)
-  static const camera = '/camera';
-  static const imagePreview = '/image-preview';
-  static const analyseEnCours = '/analyse-en-cours';
-  static const diagnosticResult = '/diagnostic-result';
 }
 
 // ── Notifier pour rafraîchir le router quand l'auth change ──────────────────
@@ -113,12 +98,7 @@ class _AuthListenable extends ChangeNotifier {
 
 // ── Helpers de classification des routes ────────────────────────────────────
 
-bool _estRouteAgriculteur(String path) =>
-    path.startsWith('/home') ||
-    path == AppRoutes.camera ||
-    path == AppRoutes.imagePreview ||
-    path == AppRoutes.analyseEnCours ||
-    path == AppRoutes.diagnosticResult;
+bool _estRouteAgriculteur(String path) => path.startsWith('/home');
 
 bool _estRouteExpert(String path) => path.startsWith('/expert');
 
@@ -238,11 +218,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (c, s) => const DashboardScreen(),
               routes: [
                 GoRoute(
-                  path: 'donnees-agro',
-                  name: 'donnees-agro',
-                  builder: (c, s) => const DonneesAgroScreen(),
-                ),
-                GoRoute(
                   path: 'suivi',
                   name: 'suivi',
                   builder: (c, s) => const SuiviScreen(),
@@ -251,6 +226,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                   path: 'recommandations',
                   name: 'recommandations',
                   builder: (c, s) => const RecommandationsScreen(),
+                ),
+                GoRoute(
+                  path: 'assistant',
+                  name: 'assistant',
+                  builder: (c, s) => const ChatScreen(),
                 ),
               ],
             ),
@@ -283,19 +263,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
 
-          // Onglet 2 — Détection IA
+          // Onglet 2 — Météo locale
           StatefulShellBranch(routes: [
             GoRoute(
-              path: AppRoutes.detection,
-              name: 'detection',
-              builder: (c, s) => const DetectionHomeScreen(),
-              routes: [
-                GoRoute(
-                  path: 'historique',
-                  name: 'diagnostic-historique',
-                  builder: (c, s) => const DiagnosticHistoriqueScreen(),
-                ),
-              ],
+              path: AppRoutes.meteo,
+              name: 'meteo',
+              builder: (c, s) => const MeteoScreen(),
             ),
           ]),
 
@@ -345,23 +318,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: ExpertRoutes.expertDiagnostics,
-              name: ExpertRoutes.diagnosticsNom,
-              builder: (c, s) => const DiagnosticsEnAttenteScreen(),
-              routes: [
-                GoRoute(
-                  path: ':id',
-                  name: ExpertRoutes.diagnosticDetailNom,
-                  builder: (c, s) {
-                    final id = s.pathParameters['id']!;
-                    return DiagnosticDetailExpertScreen(diagnosticId: id);
-                  },
-                ),
-              ],
-            ),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
               path: ExpertRoutes.expertChamps,
               name: ExpertRoutes.champsNom,
               builder: (c, s) => const SupervisionChampsScreen(),
@@ -404,53 +360,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
-      // ── Routes plein écran hors shell Agriculteur ────────────────
-      GoRoute(
-        path: AppRoutes.camera,
-        name: 'camera',
-        pageBuilder: (c, s) => _fadePage(s, const CameraScreen()),
-      ),
-      GoRoute(
-        path: AppRoutes.imagePreview,
-        name: 'image-preview',
-        pageBuilder: (c, s) {
-          final file = s.extra as File;
-          return _fadePage(s, ImagePreviewScreen(imageFile: file));
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.analyseEnCours,
-        name: 'analyse-en-cours',
-        pageBuilder: (c, s) {
-          final args = s.extra as Map<String, dynamic>;
-          return _fadePage(
-            s,
-            AnalyseEnCoursScreen(
-              imageFile: args['imageFile'] as File,
-              champId: args['champId'] as String?,
-            ),
-          );
-        },
-      ),
-      GoRoute(
-        path: AppRoutes.diagnosticResult,
-        name: 'diagnostic-result',
-        pageBuilder: (c, s) {
-          final diagnostic = s.extra as DiagnosticEntity;
-          return _fadePage(s, DiagnosticResultScreen(diagnostic: diagnostic));
-        },
-      ),
-
       // ── Routes plein écran hors shell Expert ─────────────────────
       GoRoute(
         path: ExpertRoutes.expertNouveauConseil,
         name: ExpertRoutes.nouveauConseilNom,
         pageBuilder: (c, s) => _fadePage(s, const NouveauConseilScreen()),
-      ),
-      GoRoute(
-        path: ExpertRoutes.expertAlertes,
-        name: ExpertRoutes.alertesNom,
-        pageBuilder: (c, s) => _fadePage(s, const AlertesZoneScreen()),
       ),
       GoRoute(
         path: ExpertRoutes.expertRapport,
@@ -467,6 +381,23 @@ final routerProvider = Provider<GoRouter>((ref) {
             PlanifierInterventionScreen(preselectedChampId: champId),
           );
         },
+      ),
+      GoRoute(
+        path: ExpertRoutes.expertRecommandations,
+        name: ExpertRoutes.recommandationsNom,
+        pageBuilder: (c, s) =>
+            _fadePage(s, const RecommandationsExpertScreen()),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: ExpertRoutes.recommandationDetailNom,
+            pageBuilder: (c, s) {
+              final id = s.pathParameters['id']!;
+              return _fadePage(
+                  s, RecommandationDetailExpertScreen(recoId: id));
+            },
+          ),
+        ],
       ),
 
       // ════════════════════════════════════════════════════════════

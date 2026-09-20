@@ -18,7 +18,7 @@ void main() async {
   // Affiche la configuration réseau active (debug uniquement)
   ApiConfig.debugLog();
 
-  // Initialisation Firebase avec les options explicites du projet agrismart-jf
+  // Initialisation Firebase avec les options explicites du projet koobalaTech-jf
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -46,7 +46,7 @@ void main() async {
 
   runApp(
     const ProviderScope(
-      child: AgriSmartApp(),
+      child: KoobalaTechApp(),
     ),
   );
 }

@@ -1,6 +1,6 @@
-# AgriSmart Backend
+﻿# KoobalaTech Backend
 
-Backend FastAPI pour l'application mobile Flutter **AgriSmart** — assistance agricole intelligente pour les agriculteurs sénégalais.
+Backend FastAPI pour l'application mobile Flutter **KoobalaTech** — assistance agricole intelligente pour les agriculteurs sénégalais.
 
 ## Architecture hybride
 
@@ -14,7 +14,7 @@ Backend FastAPI pour l'application mobile Flutter **AgriSmart** — assistance a
 | **FastAPI** | API REST exposée à l'application Flutter |
 
 ```
-agrismart-backend/
+koobalatec-backend/
 ├── main.py                          # Point d'entrée FastAPI
 ├── app/
 │   ├── config.py                    # Variables d'environnement (pydantic-settings)
@@ -60,7 +60,7 @@ MinIO est le service de stockage d'images de plantes. Il remplace Firebase Stora
 ### 1. Lancer MinIO avec Docker Compose
 
 ```bash
-# Depuis le dossier agrismart-backend/
+# Depuis le dossier koobalatec-backend/
 docker-compose up -d minio
 ```
 
@@ -69,8 +69,8 @@ MinIO sera accessible sur :
 - **Console web** (interface graphique) : `http://localhost:9001`
 
 Credentials par défaut :
-- Login : `agrismartadmin`
-- Mot de passe : `AgriSmart2026!Secret`
+- Login : `koobalatecadmin`
+- Mot de passe : `KoobalaTech2026!Secret`
 
 ### 2. Vérification du démarrage MinIO
 
@@ -82,16 +82,16 @@ curl http://localhost:9000/minio/health/live
 open http://localhost:9001
 ```
 
-Le bucket `agrismart-images` est **créé automatiquement** au premier démarrage du backend.
+Le bucket `koobalatec-images` est **créé automatiquement** au premier démarrage du backend.
 
 ### 3. Variables d'environnement MinIO dans .env
 
 ```env
 MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=agrismartadmin
-MINIO_SECRET_KEY=AgriSmart2026!Secret
+MINIO_ACCESS_KEY=koobalatecadmin
+MINIO_SECRET_KEY=KoobalaTech2026!Secret
 MINIO_SECURE=false
-MINIO_BUCKET_IMAGES=agrismart-images
+MINIO_BUCKET_IMAGES=koobalatec-images
 ```
 
 ### Flux d'upload d'image (MinIO)
@@ -132,7 +132,7 @@ Flutter                 FastAPI              Firestore            MinIO        T
 ### 1. Cloner et configurer l'environnement Python
 
 ```bash
-cd agrismart-backend
+cd koobalatec-backend
 python -m venv venv
 source venv/bin/activate  # Windows : venv\Scripts\activate
 pip install -r requirements.txt
@@ -151,7 +151,7 @@ Téléchargez depuis Firebase Console → Paramètres → Comptes de service.
 
 ```bash
 # Ne jamais commiter ce fichier !
-cp ~/Downloads/agrismart-firebase-adminsdk-xxxx.json ./firebase_service_account.json
+cp ~/Downloads/koobalatec-firebase-adminsdk-xxxx.json ./firebase_service_account.json
 ```
 
 ### 4. Démarrer MinIO (Docker)
@@ -195,7 +195,7 @@ ReDoc : http://localhost:8000/redoc
 docker-compose up -d
 
 # Logs
-docker-compose logs -f agrismart-backend
+docker-compose logs -f koobalatec-backend
 docker-compose logs -f minio
 ```
 
@@ -215,37 +215,42 @@ Obtenu côté Flutter : `await user.getIdToken()`
 
 ---
 
-## Modules IA
+## Module IA — Recommandation de cultures
 
-### Module 1 — Recommandation de cultures
-
-**Endpoint :** `POST /recommandations/generer/{champId}`
+**Endpoint :** `POST /recommandations/v2/generer/{champId}`
 
 **Workflow :**
-1. Récupère les données agronomiques (pH, N, P, K, humidité)
-2. Appelle OpenWeatherMap pour la météo GPS du champ
-3. Normalise avec `StandardScaler`
-4. Prédit avec `RandomForestClassifier.predict_proba()`
-5. Retourne le **top-3** avec scores, périodes, conseils
-6. Sauvegarde en Firestore
+1. Géolocalise le champ et détermine sa zone agroécologique (parmi les 6 zones du Sénégal)
+2. Collecte automatiquement les 16 variables sol/climat/NDVI (SoilGrids, NASA POWER,
+   moyennes de zone en repli si une API externe est indisponible)
+3. Persiste ces variables comme `AnalyseParcelle` (remplace la saisie manuelle)
+4. Normalise avec `StandardScaler`
+5. Prédit avec `OneVsRestClassifier(RandomForestClassifier).predict_proba()` — une
+   probabilité d'aptitude indépendante par culture (classifieur multi-étiquettes)
+6. Retourne le **top-3** avec probabilité d'aptitude, rang, périodes, conseils
+7. Sauvegarde en Firestore, chaque recommandation avec son propre statut de validation expert
 
-**Features d'entrée (ordre) :** N, P, K, température, humidité_atmo, pH, pluviométrie
+**Features d'entrée (16, ordre du modèle) :** azote, phosphore, potassium, pH, argile,
+sable, limon, carbone organique, température moyenne/max/min, humidité, pluviométrie
+annuelle/hivernage, NDVI moyen annuel/hivernage.
 
-**Cultures cibles :** mil, sorgho, arachide, niébé, maïs, sésame, tomate, oignon, riz, coton
+**Cultures cibles (8, avec nom wolof) :** arachide (gerte), maïs (mbóq), manioc (ñambi),
+mil (dugub), niébé (ñebbe), riz (ceeb), sorgho (bàkka), tomate (tamaate).
 
-### Module 2 — Détection de maladies
+Un premier moteur (SVM, 7 variables, 1 seule classe prédite) avait été prévu pour
+comparaison dans le mémoire, mais ses artefacts n'ont jamais été présents dans ce
+dépôt — il a été retiré. Seules ses fiches techniques par culture ont été conservées,
+dans `app/services/fiches_cultures.py`.
 
-**Endpoint :** `POST /diagnostics/analyser/{imageId}`
+## Agent conversationnel IA
 
-**Workflow :**
-1. Lit les métadonnées Firestore de l'image (dont `nomFichierMinio`)
-2. **Télécharge l'image depuis MinIO** via `MinioService.telecharger_image()`
-3. Redimensionne à 224×224, normalise [0, 1]
-4. Inférence TFLite (EfficientNetB0)
-5. Retourne **top-3 prédictions** avec scores
-6. Si score < seuil (0.7) → statut `EN_ATTENTE` (validation expert requise)
-7. Si score ≥ seuil → `AUTO_CONFIRME`
-8. Si gravité ELEVE/CRITIQUE → alerte push FCM
+**Endpoint :** `POST /agent/chat`
+
+Chat bilingue français/wolof (Qwen via OpenRouter, clé dans `OPENROUTER_API_KEY`).
+L'agent décide seul, par function calling, d'appeler l'outil de recommandation de
+cultures (à partir du nom d'une localité) ou de répondre directement (maladies,
+techniques culturales…). Chaque échange est persisté comme `MessageChat`, regroupé
+par `conversationId`.
 
 ---
 
@@ -257,11 +262,9 @@ Obtenu côté Flutter : `await user.getIdToken()`
 | GET | `/auth/me` | Profil utilisateur courant |
 | GET | `/champs/agriculteur/{id}` | Champs d'un agriculteur |
 | POST | `/champs` | Créer un champ |
-| POST | `/donnees-agronomiques` | Saisir mesures agronomiques |
-| **POST** | **`/recommandations/generer/{champId}`** | **Lancer Module IA 1** |
-| POST | `/images/upload` | Upload image plante → MinIO |
-| **POST** | **`/diagnostics/analyser/{imageId}`** | **Lancer Module IA 2** |
-| POST | `/diagnostics/{id}/valider` | Validation expert |
+| **POST** | **`/recommandations/v2/generer/{champId}`** | **Lancer le module IA de recommandation** |
+| GET | `/recommandations/v2/champ/{champId}` | Historique des recommandations d'un champ |
+| **POST** | **`/agent/chat`** | **Discuter avec l'agent conversationnel** |
 | GET | `/meteo/actuelle/{champId}` | Météo actuelle du champ |
 | GET | `/admin/statistiques-globales` | Statistiques admin |
 
@@ -274,14 +277,12 @@ Documentation complète : http://localhost:8000/docs
 | Collection | Description |
 |-----------|-------------|
 | `users` | Profils utilisateurs (agriculteurs, experts, admins) |
-| `champs` | Champs agricoles |
-| `donneesAgronomiques` | Mesures pH, NPK, humidité |
-| `cultures` | Catalogue des cultures |
-| `recommandationsCulture` | Résultats Module IA 1 |
-| `imagesPlantes` | Métadonnées MinIO (urlMinio, nomFichierMinio, bucketMinio) |
-| `diagnosticsMaladie` | Résultats Module IA 2 |
-| `maladies` | Catalogue des maladies |
-| `traitementsRecommandes` | Traitements par maladie |
+| `champs` | Champs agricoles (rattachés à une zone agroécologique) |
+| `zonesAgroecologiques` | Référentiel des 6 zones agroécologiques du Sénégal |
+| `analysesParcelles` | 16 variables sol/climat/NDVI collectées pour un champ |
+| `cultures` | Catalogue des cultures (avec nom wolof) |
+| `recommandationsCulture` | Résultats du module IA de recommandation |
+| `messagesChat` | Historique de l'agent conversationnel |
 | `interventions` | Interventions d'experts |
 | `conseils` | Conseils experts → agriculteurs |
 | `notifications` | Historique notifications push FCM |
@@ -312,12 +313,12 @@ pytest tests/test_detection.py tests/test_recommandation.py -v
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | Chemin JSON Firebase | `./firebase_service_account.json` |
-| `FIREBASE_PROJECT_ID` | ID du projet Firebase | `agrismart-final` |
+| `FIREBASE_PROJECT_ID` | ID du projet Firebase | `koobalatec-final` |
 | `MINIO_ENDPOINT` | Endpoint MinIO | `localhost:9000` |
-| `MINIO_ACCESS_KEY` | Clé d'accès MinIO | `agrismartadmin` |
-| `MINIO_SECRET_KEY` | Secret MinIO | `AgriSmart2026!Secret` |
+| `MINIO_ACCESS_KEY` | Clé d'accès MinIO | `koobalatecadmin` |
+| `MINIO_SECRET_KEY` | Secret MinIO | `KoobalaTech2026!Secret` |
 | `MINIO_SECURE` | HTTPS pour MinIO | `false` |
-| `MINIO_BUCKET_IMAGES` | Nom du bucket images | `agrismart-images` |
+| `MINIO_BUCKET_IMAGES` | Nom du bucket images | `koobalatec-images` |
 | `OPENWEATHER_API_KEY` | Clé API OpenWeatherMap | — |
 | `API_SECRET_KEY` | Secret JWT interne | `changeme` |
 | `ENV` | Environnement | `development` |
@@ -342,4 +343,4 @@ uvicorn main:app --reload
 
 ## Licence
 
-Projet AgriSmart — Développé pour les agriculteurs sénégalais.
+Projet KoobalaTech — Développé pour les agriculteurs sénégalais.

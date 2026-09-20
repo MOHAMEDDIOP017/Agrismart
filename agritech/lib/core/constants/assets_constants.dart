@@ -1,4 +1,4 @@
-/// Chemins des assets (Lottie, images) de l'application
+﻿/// Chemins des assets (Lottie, images) de l'application
 class AssetsConstants {
   AssetsConstants._();
 
@@ -19,7 +19,7 @@ class AssetsConstants {
   static const String lottieOnboarding3 = 'assets/lottie/onboarding_disease.json';
 
   // Images
-  static const String logoAgriSmart = 'assets/images/logo.png';
+  static const String logoKoobalaTech = 'assets/images/logo.png';
   static const String defaultFieldImage = 'assets/images/default_field.jpg';
   static const String defaultAvatar = 'assets/images/default_avatar.png';
 

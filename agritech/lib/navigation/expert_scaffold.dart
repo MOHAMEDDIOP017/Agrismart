@@ -17,11 +17,6 @@ class ExpertScaffold extends StatelessWidget {
       label: 'Dashboard',
     ),
     BottomNavigationBarItem(
-      icon: Icon(Icons.biotech_outlined),
-      activeIcon: Icon(Icons.biotech),
-      label: 'Diagnostics',
-    ),
-    BottomNavigationBarItem(
       icon: Icon(Icons.terrain_outlined),
       activeIcon: Icon(Icons.terrain),
       label: 'Champs',
@@ -83,7 +78,6 @@ class ExpertScaffold extends StatelessWidget {
 /// Extensions de navigation Expert
 extension ExpertNavigationExt on BuildContext {
   void goToExpertDashboard() => go(ExpertRoutes.expertDashboard);
-  void goToExpertDiagnostics() => go(ExpertRoutes.expertDiagnostics);
   void goToExpertChamps() => go(ExpertRoutes.expertChamps);
   void goToExpertConseils() => go(ExpertRoutes.expertConseils);
   void goToExpertProfil() => go(ExpertRoutes.expertProfil);

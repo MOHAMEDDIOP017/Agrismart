@@ -6,7 +6,7 @@ import '../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../features/champs/presentation/providers/champ_provider.dart';
 import '../../../features/notifications/presentation/providers/notifications_provider.dart';
 import '../../../features/alertes/presentation/providers/alertes_provider.dart';
-import '../../../features/detection/presentation/providers/historique_provider.dart';
+import '../../../features/auth/presentation/providers/historique_provider.dart';
 import '../../../features/recommandations/presentation/providers/recommandation_provider.dart';
 // Providers expert
 import '../../../features/expert/presentation/providers/expert_provider.dart';
@@ -38,11 +38,9 @@ class DeconnexionService {
     // expertIdProvider surveille authProvider → passe à '' lors du logout.
     // Il faut invalider tous les providers qui l'utilisent avant que cela arrive.
     ref.invalidate(profilExpertProvider);
-    ref.invalidate(diagnosticsNotifier);
     ref.invalidate(champsSupervisionProvider);
     ref.invalidate(interventionsProvider);
     ref.invalidate(conseilsProvider);
-    ref.invalidate(alertesZoneProvider);
 
     // ── Providers admin ──────────────────────────────────────────────────────
     ref.invalidate(statistiquesProvider);

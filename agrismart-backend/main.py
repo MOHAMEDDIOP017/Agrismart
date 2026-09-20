@@ -2,9 +2,16 @@
 KoobalaTech Backend — Point d'entrée principal FastAPI.
 
 Application d'assistance agricole intelligente pour les agriculteurs sénégalais.
-Modules IA :
-  - Module 1 : Recommandation de cultures (Random Forest)
-  - Module 2 : Détection de maladies (EfficientNetB0 TFLite)
+Module IA :
+  - Recommandation de cultures — RandomForest multi-label (One-vs-Rest), 16 variables
+    sol/climat/NDVI, 8 cultures, top-3 avec probabilité d'aptitude par culture
+  - Agent conversationnel IA bilingue français/wolof (Qwen via OpenRouter)
+
+Note historique : un premier moteur SVM (7 variables, 1 seule classe prédite) avait
+été prévu pour comparaison dans le mémoire, mais ses artefacts (svm_crop.pkl,
+scaler_crop.pkl, label_encoder_crop.pkl) n'ont jamais été présents dans le dépôt —
+il a été retiré. Seules ses fiches techniques par culture ont été conservées, dans
+`app/services/fiches_cultures.py`.
 """
 
 import logging
@@ -24,18 +31,16 @@ from app.routers import (
     auth,
     utilisateurs,
     champs,
-    donnees_agronomiques,
     cultures,
     recommandations,
-    images,
-    diagnostics,
-    maladies,
-    traitements,
+    recommandations_v2,
+    agent,
     interventions,
     conseils,
     notifications,
     meteo,
     admin,
+    suivi_culture,
 )
 
 # ─── Configuration du logging ────────────────────────────────────────────────
@@ -61,27 +66,35 @@ async def lifespan(app: FastAPI):
             "Configurez FIREBASE_SERVICE_ACCOUNT_PATH dans votre .env pour activer Firebase."
         )
 
-    # Préchargement du modèle SVM (évite la latence au premier appel)
+    # Seed du référentiel ZoneAgroecologique (6 zones du Sénégal, diagramme UML) —
+    # idempotent, ne fait rien si la collection est déjà peuplée.
     try:
-        from app.services.recommandation_service import recommandation_service
-        recommandation_service._charger_modeles()
-        if recommandation_service._modeles_charges:
-            logger.info(f"[OK] Modele SVM precharge : {recommandation_service._version_modele}")
-        else:
-            logger.warning("[WARN] Modele SVM non charge -- mode degrade heuristique actif")
+        from app.services.zone_service import seed_si_vide
+        nb_zones = await seed_si_vide()
+        if nb_zones:
+            logger.info(f"[OK] {nb_zones} zones agroécologiques créées (premier démarrage).")
     except Exception as e:
-        logger.error(f"❌ Erreur chargement modèle SVM au démarrage : {e}")
+        logger.warning(f"Seed des zones agroécologiques ignoré (Firestore indisponible ?) : {e}")
 
-    # Préchargement du modèle EfficientNetB0 (évite la latence au premier diagnostic)
+    # Seed du référentiel Culture (8 cultures + nomWolof, diagramme UML) — idempotent.
     try:
-        from app.services.detection_service import detection_service
-        detection_service._charger_modele()
-        if detection_service._modele_charge:
-            logger.info("[OK] Modele EfficientNetB0 precharge")
-        else:
-            logger.warning("[WARN] Modele EfficientNetB0 non charge -- mode mock actif")
+        from app.services.culture_service import seed_si_vide as seed_cultures_si_vide
+        nb_cultures = await seed_cultures_si_vide()
+        if nb_cultures:
+            logger.info(f"[OK] {nb_cultures} cultures créées (référentiel initial).")
     except Exception as e:
-        logger.error(f"❌ Erreur chargement modèle EfficientNetB0 au démarrage : {e}")
+        logger.warning(f"Seed du référentiel cultures ignoré (Firestore indisponible ?) : {e}")
+
+    # Préchargement du modèle multi-label v2 (modele_final.joblib)
+    try:
+        from app.services.recommandation_service_v2 import recommandation_service_v2
+        recommandation_service_v2._charger_modele()
+        if recommandation_service_v2.modeles_charges:
+            logger.info("[OK] Modele multi-label v2 precharge (modele_final.joblib)")
+        else:
+            logger.warning("[WARN] Modele multi-label v2 non charge -- /recommandations/v2 indisponible")
+    except Exception as e:
+        logger.error(f"❌ Erreur chargement modèle multi-label v2 au démarrage : {e}")
 
     logger.info("KoobalaTech Backend prêt à recevoir des requêtes.")
     yield
@@ -99,17 +112,17 @@ app = FastAPI(
 
 API backend pour l'application mobile Flutter KoobalaTech, destinée aux agriculteurs sénégalais.
 
-### Modules IA
+### Module IA
 
 | Module | Description | Modèle |
 |--------|-------------|--------|
-| **Recommandation cultures** | Analyse sol + météo → top-3 cultures | Random Forest (scikit-learn) |
-| **Détection maladies** | Analyse image plante → maladie + traitement | EfficientNetB0 (TFLite) |
+| **Recommandation cultures** | Analyse sol/climat/NDVI par zone agroécologique → aptitude par culture, top-3 | RandomForest multi-label, 16 variables (scikit-learn) |
+| **Agent conversationnel** | Chat bilingue FR/Wolof, function calling vers la recommandation | Qwen (OpenRouter) |
 
 ### Rôles utilisateurs
 
-- **AGRICULTEUR** : Gère ses champs, consulte ses diagnostics et recommandations
-- **EXPERT** : Valide les diagnostics, envoie des conseils, planifie des interventions
+- **AGRICULTEUR** : Gère ses champs et consulte ses recommandations
+- **EXPERT** : Envoie des conseils, planifie des interventions
 - **ADMIN** : Administration complète de la plateforme
 
 ### Authentification
@@ -177,18 +190,16 @@ async def gestionnaire_exceptions_generiques(request: Request, exc: Exception):
 app.include_router(auth.router)
 app.include_router(utilisateurs.router)
 app.include_router(champs.router)
-app.include_router(donnees_agronomiques.router)
 app.include_router(cultures.router)
 app.include_router(recommandations.router)
-app.include_router(images.router)
-app.include_router(diagnostics.router)
-app.include_router(maladies.router)
-app.include_router(traitements.router)
+app.include_router(recommandations_v2.router)
+app.include_router(agent.router)
 app.include_router(interventions.router)
 app.include_router(conseils.router)
 app.include_router(notifications.router)
 app.include_router(meteo.router)
 app.include_router(admin.router)
+app.include_router(suivi_culture.router)
 
 
 # ─── Routes utilitaires ──────────────────────────────────────────────────────
@@ -220,6 +231,6 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.env == "development",
+        reload=False,
         log_level="debug" if settings.env == "development" else "info",
     )

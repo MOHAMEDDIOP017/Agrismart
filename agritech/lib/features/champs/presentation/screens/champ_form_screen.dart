@@ -11,6 +11,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../data/models/champ_model.dart';
+import '../../domain/entities/champ_entity.dart';
 import '../providers/champ_provider.dart';
 
 /// Formulaire création/modification d'un champ
@@ -35,6 +37,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
   String? _photoPath;
   bool _isLoading = false;
   bool _isGpsLoading = false;
+  ChampEntity? _champOriginal;
 
   bool get _isEditing => widget.champId != null;
 
@@ -48,6 +51,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
     final champs = ref.read(champProvider).valueOrNull ?? [];
     final champ = champs.where((c) => c.id == widget.champId).firstOrNull;
     if (champ != null) {
+      _champOriginal = champ;
       _nomCtrl.text = champ.nom;
       _superficieCtrl.text = champ.superficie.toString();
       setState(() {
@@ -56,6 +60,9 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
         _cultureSelectionnee = champ.culture;
         _latitude = champ.latitude;
         _longitude = champ.longitude;
+        // N'initialise _photoPath que si c'est un chemin local (pas une URL distante)
+        final url = champ.photoUrl;
+        if (url != null && !url.startsWith('http')) _photoPath = url;
       });
     }
   }
@@ -108,16 +115,43 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
     }
 
     setState(() => _isLoading = true);
-    final success = await ref.read(champProvider.notifier).createChamp(
-          nom: _nomCtrl.text.trim(),
-          superficie: double.parse(_superficieCtrl.text.replaceAll(',', '.')),
-          typeSol: _typeSolSelectionne!,
-          statut: _statutSelectionne!,
-          culture: _cultureSelectionnee,
-          latitude: _latitude,
-          longitude: _longitude,
-          photoUrl: _photoPath,
-        );
+
+    bool success;
+    if (_isEditing) {
+      final original = _champOriginal;
+      if (original == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      success = await ref.read(champProvider.notifier).updateChamp(
+            ChampModel(
+              id: original.id,
+              nom: _nomCtrl.text.trim(),
+              superficie: double.parse(
+                  _superficieCtrl.text.replaceAll(',', '.')),
+              typeSol: _typeSolSelectionne!,
+              statut: _statutSelectionne!,
+              culture: _cultureSelectionnee,
+              latitude: _latitude,
+              longitude: _longitude,
+              photoUrl: _photoPath ?? original.photoUrl,
+              dateCreation: original.dateCreation,
+              userId: original.userId,
+            ),
+          );
+    } else {
+      success = await ref.read(champProvider.notifier).createChamp(
+            nom: _nomCtrl.text.trim(),
+            superficie: double.parse(
+                _superficieCtrl.text.replaceAll(',', '.')),
+            typeSol: _typeSolSelectionne!,
+            statut: _statutSelectionne!,
+            culture: _cultureSelectionnee,
+            latitude: _latitude,
+            longitude: _longitude,
+            photoUrl: _photoPath,
+          );
+    }
 
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -156,12 +190,14 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
                 .scale(begin: const Offset(0, 0), duration: 400.ms, curve: Curves.elasticOut),
             const SizedBox(height: 16),
             Text(
-              'Champ enregistré !',
+              _isEditing ? 'Champ mis à jour !' : 'Champ enregistré !',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 8),
             Text(
-              'Votre champ a été ajouté avec succès.',
+              _isEditing
+                  ? 'Les modifications ont été enregistrées.'
+                  : 'Votre champ a été ajouté avec succès.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),

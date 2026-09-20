@@ -3,15 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'navigation/app_router.dart';
 
-/// Point d'entrée principal de l'application AgriSmart
-class AgriSmartApp extends ConsumerWidget {
-  const AgriSmartApp({super.key});
+/// Point d'entrée principal de l'application KoobalaTech
+class KoobalaTechApp extends ConsumerWidget {
+  const KoobalaTechApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'AgriSmart',
+      title: 'KoobalaTech',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       routerConfig: router,

@@ -1,4 +1,4 @@
-class MeteoModel {
+﻿class MeteoModel {
   const MeteoModel({
     required this.ville,
     required this.temperature,
@@ -26,7 +26,7 @@ class MeteoModel {
   String get pluviometrieLabel => '${pluviometrie.toInt()} mm';
   String get ventLabel => '${vitesseVent.toInt()} km/h';
 
-  /// Parse le format renvoyé par le backend AgriSmart (champs plats).
+  /// Parse le format renvoyé par le backend KoobalaTech (champs plats).
   factory MeteoModel.fromJson(Map<String, dynamic> json) {
     final desc = (json['description'] as String? ?? 'inconnu').toLowerCase();
     final String icone;

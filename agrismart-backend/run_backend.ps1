@@ -1,4 +1,4 @@
-# AgriSmart Backend — Script de démarrage réseau
+﻿# KoobalaTech Backend — Script de démarrage réseau
 # Usage : .\run_backend.ps1
 
 # Détection automatique de l'IP Wi-Fi (fallback sur l'IP hardcodée si introuvable)
@@ -14,7 +14,7 @@ if (-not $ip) { $ip = "10.156.89.118" }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "   AgriSmart Backend - Mode reseau" -ForegroundColor Cyan
+Write-Host "   KoobalaTech Backend - Mode reseau" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Acces local       : " -NoNewline; Write-Host "http://localhost:8000" -ForegroundColor Green

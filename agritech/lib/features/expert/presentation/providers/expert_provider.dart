@@ -1,18 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/expert_repository_impl.dart';
-import '../../domain/entities/alerte_zone_entity.dart';
 import '../../domain/entities/champ_supervise_entity.dart';
 import '../../domain/entities/conseil_entity.dart';
-import '../../domain/entities/diagnostic_expert_entity.dart';
 import '../../domain/entities/expert_entity.dart';
 import '../../domain/entities/intervention_entity.dart';
-import '../../domain/enums/decision_expert.dart';
+import '../../domain/entities/recommandation_expert_entity.dart';
 import '../../domain/enums/statut_intervention.dart';
 import '../../domain/enums/type_conseil.dart';
 import '../../domain/enums/type_intervention.dart';
-import '../../../detection/domain/enums/type_traitement.dart';
 import '../../domain/repositories/expert_repository.dart';
-import '../../../detection/domain/enums/niveau_gravite.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 // ── Repository provider ──────────────────────────────────────────────────────
@@ -47,193 +43,6 @@ class ProfilExpertNotifier extends AsyncNotifier<ExpertEntity> {
 final profilExpertProvider = AsyncNotifierProvider<ProfilExpertNotifier, ExpertEntity>(
   ProfilExpertNotifier.new,
 );
-
-// ── Diagnostics en attente ───────────────────────────────────────────────────
-
-/// Filtre actif pour les diagnostics
-enum FiltreDiagnostic { tous, critique, eleve, modere, faible, aujourdhui, semaine }
-
-class DiagnosticsState {
-  const DiagnosticsState({
-    this.diagnostics = const [],
-    this.filtre = FiltreDiagnostic.tous,
-    this.triParGravite = false,
-  });
-
-  final List<DiagnosticExpertEntity> diagnostics;
-  final FiltreDiagnostic filtre;
-  final bool triParGravite;
-
-  DiagnosticsState copyWith({
-    List<DiagnosticExpertEntity>? diagnostics,
-    FiltreDiagnostic? filtre,
-    bool? triParGravite,
-  }) =>
-      DiagnosticsState(
-        diagnostics: diagnostics ?? this.diagnostics,
-        filtre: filtre ?? this.filtre,
-        triParGravite: triParGravite ?? this.triParGravite,
-      );
-
-  List<DiagnosticExpertEntity> get filtres {
-    final now = DateTime.now();
-    List<DiagnosticExpertEntity> liste = List.from(diagnostics);
-    switch (filtre) {
-      case FiltreDiagnostic.critique:
-        liste = liste.where((d) => d.niveauGraviteIA == NiveauGravite.critique).toList();
-      case FiltreDiagnostic.eleve:
-        liste = liste.where((d) => d.niveauGraviteIA == NiveauGravite.eleve).toList();
-      case FiltreDiagnostic.modere:
-        liste = liste.where((d) => d.niveauGraviteIA == NiveauGravite.modere).toList();
-      case FiltreDiagnostic.faible:
-        liste = liste.where((d) => d.niveauGraviteIA == NiveauGravite.faible).toList();
-      case FiltreDiagnostic.aujourdhui:
-        liste = liste
-            .where((d) => d.dateSoumission.day == now.day && d.dateSoumission.month == now.month)
-            .toList();
-      case FiltreDiagnostic.semaine:
-        final uneSemaine = now.subtract(const Duration(days: 7));
-        liste = liste.where((d) => d.dateSoumission.isAfter(uneSemaine)).toList();
-      case FiltreDiagnostic.tous:
-        break;
-    }
-    if (triParGravite) {
-      liste.sort((a, b) => b.niveauGraviteIA.index.compareTo(a.niveauGraviteIA.index));
-    } else {
-      liste.sort((a, b) => b.dateSoumission.compareTo(a.dateSoumission));
-    }
-    return liste;
-  }
-}
-
-class DiagnosticsNotifier extends AsyncNotifier<DiagnosticsState> {
-  ExpertRepository get _repo => ref.read(expertRepositoryProvider);
-
-  @override
-  Future<DiagnosticsState> build() async {
-    final expertId = ref.read(expertIdProvider);
-    final diagnostics = await _repo.getDiagnosticsEnAttente(expertId);
-    return DiagnosticsState(diagnostics: diagnostics);
-  }
-
-  Future<void> refresh() async {
-    state = const AsyncLoading();
-    final expertId = ref.read(expertIdProvider);
-    final diagnostics = await _repo.getDiagnosticsEnAttente(expertId);
-    state = AsyncData(DiagnosticsState(diagnostics: diagnostics));
-  }
-
-  void setFiltre(FiltreDiagnostic filtre) {
-    final current = state.valueOrNull;
-    if (current == null) return;
-    state = AsyncData(current.copyWith(filtre: filtre));
-  }
-
-  void toggleTri() {
-    final current = state.valueOrNull;
-    if (current == null) return;
-    state = AsyncData(current.copyWith(triParGravite: !current.triParGravite));
-  }
-
-  Future<bool> validerDiagnostic({
-    required String diagnosticId,
-    String? commentaire,
-    bool notifierAgriculteur = true,
-  }) async {
-    try {
-      final expertId = ref.read(expertIdProvider);
-      await _repo.validerDiagnostic(
-        diagnosticId: diagnosticId,
-        expertId: expertId,
-        commentaire: commentaire,
-        notifierAgriculteur: notifierAgriculteur,
-      );
-      await refresh();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> rejeterDiagnostic({
-    required String diagnosticId,
-    required String motifRejet,
-  }) async {
-    try {
-      final expertId = ref.read(expertIdProvider);
-      await _repo.rejeterDiagnostic(
-        diagnosticId: diagnosticId,
-        expertId: expertId,
-        motifRejet: motifRejet,
-      );
-      await refresh();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> corrigerDiagnostic({
-    required String diagnosticId,
-    required DecisionExpert decision,
-    required String maladieId,
-    required NiveauGravite niveauGravite,
-    required String traitement,
-    String? dosage,
-    String? frequence,
-    int? duree,
-    int? cout,
-    TypeTraitement? typeTraitement,
-    String? observations,
-    bool notifierAgriculteur = true,
-  }) async {
-    try {
-      final expertId = ref.read(expertIdProvider);
-      await _repo.corrigerDiagnostic(
-        diagnosticId: diagnosticId,
-        expertId: expertId,
-        decision: decision,
-        maladieCorrIgeeId: maladieId,
-        niveauGravite: niveauGravite,
-        traitementRecommande: traitement,
-        dosage: dosage,
-        frequence: frequence,
-        dureeJours: duree,
-        coutFCFA: cout,
-        typeTraitement: typeTraitement,
-        observations: observations,
-        notifierAgriculteur: notifierAgriculteur,
-      );
-      await refresh();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-}
-
-final diagnosticsNotifier = AsyncNotifierProvider<DiagnosticsNotifier, DiagnosticsState>(
-  DiagnosticsNotifier.new,
-);
-
-/// Diagnostic unique par ID
-final diagnosticDetailProvider = FutureProvider.family<DiagnosticExpertEntity, String>(
-  (ref, id) async {
-    final repo = ref.read(expertRepositoryProvider);
-    return repo.getDiagnosticDetail(id);
-  },
-);
-
-/// Nombre de diagnostics urgents (gravité CRITIQUE ou ÉLEVÉ)
-final nombreDiagnosticsUrgentsProvider = Provider<int>((ref) {
-  final state = ref.watch(diagnosticsNotifier).valueOrNull;
-  if (state == null) return 0;
-  return state.diagnostics
-      .where((d) =>
-          d.niveauGraviteIA == NiveauGravite.critique ||
-          d.niveauGraviteIA == NiveauGravite.eleve)
-      .length;
-});
 
 // ── Supervision champs ───────────────────────────────────────────────────────
 
@@ -360,52 +169,129 @@ final conseilsProvider = AsyncNotifierProvider<ConseilsNotifier, List<ConseilEnt
   ConseilsNotifier.new,
 );
 
-// ── Alertes zone ─────────────────────────────────────────────────────────────
+/// KPI globaux du dashboard
+final expertKpiProvider = Provider((ref) {
+  final champs = ref.watch(champsSupervisionProvider).valueOrNull ?? [];
+  final interventions = ref.watch(interventionsProvider).valueOrNull ?? [];
+  final recommandations = ref.watch(recommandationsExpertProvider).valueOrNull;
 
-class AlertesZoneNotifier extends AsyncNotifier<List<AlerteZoneEntity>> {
+  return {
+    'champsSupervises': champs.length,
+    'interventionsPlanifiees':
+        interventions.where((i) => i.statut == StatutIntervention.planifiee).length,
+    'recommandationsEnAttente': recommandations?.nombreEnAttente ?? 0,
+  };
+});
+
+// ── Recommandations cultures — boucle de validation expert ───────────────────
+
+class RecommandationsExpertState {
+  const RecommandationsExpertState({
+    this.recommandations = const [],
+    this.filtre = 'EN_ATTENTE',
+  });
+
+  final List<RecommandationExpertEntity> recommandations;
+
+  /// 'EN_ATTENTE' | 'VALIDEE' | 'CORRIGEE' | 'REJETEE' | 'TOUTES'
+  final String filtre;
+
+  RecommandationsExpertState copyWith({
+    List<RecommandationExpertEntity>? recommandations,
+    String? filtre,
+  }) =>
+      RecommandationsExpertState(
+        recommandations: recommandations ?? this.recommandations,
+        filtre: filtre ?? this.filtre,
+      );
+
+  List<RecommandationExpertEntity> get filtrees => filtre == 'TOUTES'
+      ? recommandations
+      : recommandations.where((r) => r.statutValidation == filtre).toList();
+
+  int get nombreEnAttente =>
+      recommandations.where((r) => r.estEnAttente).length;
+}
+
+class RecommandationsExpertNotifier
+    extends AsyncNotifier<RecommandationsExpertState> {
   ExpertRepository get _repo => ref.read(expertRepositoryProvider);
 
   @override
-  Future<List<AlerteZoneEntity>> build() async {
+  Future<RecommandationsExpertState> build() async {
     final expertId = ref.read(expertIdProvider);
-    return _repo.getAlertesZone(expertId);
+    final recos = await _repo.getRecommandationsEnAttente(expertId);
+    return RecommandationsExpertState(recommandations: recos);
   }
 
-  Future<bool> prendreEnCharge(String alerteId) async {
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    final expertId = ref.read(expertIdProvider);
+    final recos = await _repo.getRecommandationsEnAttente(expertId);
+    state = AsyncData(RecommandationsExpertState(recommandations: recos));
+  }
+
+  void setFiltre(String filtre) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    state = AsyncData(current.copyWith(filtre: filtre));
+  }
+
+  Future<bool> valider({
+    required String recoId,
+    String? commentaire,
+    bool notifierAgriculteur = true,
+  }) async {
     try {
       final expertId = ref.read(expertIdProvider);
-      final updated = await _repo.prendreEnChargeAlerte(
-        alerteId: alerteId,
+      final mis = await _repo.validerRecommandation(
+        recoId: recoId,
         expertId: expertId,
+        commentaire: commentaire,
+        notifierAgriculteur: notifierAgriculteur,
       );
-      final current = state.valueOrNull ?? [];
-      state = AsyncData(
-        current.map((a) => a.id == alerteId ? updated : a).toList(),
-      );
+      _remplacerLocal(mis);
       return true;
     } catch (_) {
       return false;
     }
   }
+
+  Future<bool> corrigerOuRejeter({
+    required String recoId,
+    required String decision,
+    required String commentaire,
+    String? cultureCorrigee,
+    bool notifierAgriculteur = true,
+  }) async {
+    try {
+      final expertId = ref.read(expertIdProvider);
+      final mis = await _repo.corrigerOuRejeterRecommandation(
+        recoId: recoId,
+        expertId: expertId,
+        decision: decision,
+        commentaire: commentaire,
+        cultureCorrigee: cultureCorrigee,
+        notifierAgriculteur: notifierAgriculteur,
+      );
+      _remplacerLocal(mis);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _remplacerLocal(RecommandationExpertEntity mis) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final updated = current.recommandations
+        .map((r) => r.id == mis.id ? mis : r)
+        .toList();
+    state = AsyncData(current.copyWith(recommandations: updated));
+  }
 }
 
-final alertesZoneProvider = AsyncNotifierProvider<AlertesZoneNotifier, List<AlerteZoneEntity>>(
-  AlertesZoneNotifier.new,
+final recommandationsExpertProvider = AsyncNotifierProvider<
+    RecommandationsExpertNotifier, RecommandationsExpertState>(
+  RecommandationsExpertNotifier.new,
 );
-
-/// KPI globaux du dashboard
-final expertKpiProvider = Provider((ref) {
-  final diagnostics = ref.watch(diagnosticsNotifier).valueOrNull?.diagnostics ?? [];
-  final champs = ref.watch(champsSupervisionProvider).valueOrNull ?? [];
-  final interventions = ref.watch(interventionsProvider).valueOrNull ?? [];
-  final alertes = ref.watch(alertesZoneProvider).valueOrNull ?? [];
-
-  return {
-    'diagnosticsEnAttente': diagnostics.length,
-    'champsSupervises': champs.length,
-    'interventionsPlanifiees':
-        interventions.where((i) => i.statut == StatutIntervention.planifiee).length,
-    'alertesActives':
-        alertes.where((a) => a.statut != StatutAlerteZone.resolue).length,
-  };
-});

@@ -14,7 +14,6 @@ class ExpertEntity extends Equatable {
     required this.anneesExperience,
     this.photoUrl,
     this.notificationsActives = true,
-    this.nombreDiagnosticsValides = 0,
     this.nombreCorrections = 0,
     this.nombreInterventions = 0,
     this.nombreConseils = 0,
@@ -31,7 +30,6 @@ class ExpertEntity extends Equatable {
   final int anneesExperience;
   final String? photoUrl;
   final bool notificationsActives;
-  final int nombreDiagnosticsValides;
   final int nombreCorrections;
   final int nombreInterventions;
   final int nombreConseils;
@@ -41,6 +39,34 @@ class ExpertEntity extends Equatable {
 
   String get nomComplet => '$prenom $nom';
   String get tauxPrecisionFormate => '${(tauxPrecisionIA * 100).toStringAsFixed(1)}%';
+
+  ExpertEntity copyWith({
+    String? nom,
+    String? prenom,
+    String? email,
+    String? telephone,
+    String? regionCouverture,
+    SpecialiteExpert? specialite,
+    int? anneesExperience,
+    String? photoUrl,
+    bool? notificationsActives,
+  }) =>
+      ExpertEntity(
+        id: id,
+        nom: nom ?? this.nom,
+        prenom: prenom ?? this.prenom,
+        email: email ?? this.email,
+        telephone: telephone ?? this.telephone,
+        regionCouverture: regionCouverture ?? this.regionCouverture,
+        specialite: specialite ?? this.specialite,
+        anneesExperience: anneesExperience ?? this.anneesExperience,
+        photoUrl: photoUrl ?? this.photoUrl,
+        notificationsActives: notificationsActives ?? this.notificationsActives,
+        nombreCorrections: nombreCorrections,
+        nombreInterventions: nombreInterventions,
+        nombreConseils: nombreConseils,
+        tauxPrecisionIA: tauxPrecisionIA,
+      );
 
   @override
   List<Object?> get props => [id, email];

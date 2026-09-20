@@ -120,26 +120,6 @@ class NotificationService:
         except Exception as e:
             logger.error(f"Erreur FCM inattendue : {e}")
 
-    async def envoyer_alerte_maladie(
-        self,
-        agriculteur_id: str,
-        nom_maladie: str,
-        diagnostic_id: str,
-        gravite: str,
-    ) -> str:
-        """Raccourci pour envoyer une alerte de maladie détectée."""
-        emoji_gravite = {"CRITIQUE": "🚨", "ELEVE": "⚠️", "MODERE": "📋", "FAIBLE": "ℹ️"}
-        icone = emoji_gravite.get(gravite, "⚠️")
-
-        return await self.envoyer_notification(
-            destinataire_id=agriculteur_id,
-            type_notif=TypeNotification.ALERTE_MALADIE,
-            titre=f"{icone} Maladie détectée : {nom_maladie}",
-            corps=f"Une maladie de gravité {gravite.lower()} a été détectée sur votre champ. Consultez le diagnostic pour les recommandations de traitement.",
-            reference_id=diagnostic_id,
-            urgent=gravite in ["CRITIQUE", "ELEVE"],
-        )
-
     async def marquer_lue(self, notif_id: str, utilisateur_id: str) -> bool:
         """Marque une notification comme lue."""
         await notifications_svc.mettre_a_jour(

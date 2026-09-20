@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -97,52 +98,78 @@ class AuthRepositoryImpl implements AuthRepository {
     String? villageVille,
   }) async {
     try {
+      // 1. Création du compte Firebase Auth
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await credential.user!.updateDisplayName('$prenom $nom');
-      final token = await credential.user!.getIdToken(true);
+      final fbUser = credential.user!;
+      await fbUser.updateDisplayName('$prenom $nom');
 
-      // Crée le profil AGRICULTEUR complet + pose le Custom Claim Firebase
-      await _dio.post(
-        '/auth/register-agriculteur',
-        data: {
-          'nom': nom,
-          'prenom': prenom,
-          'telephone': telephone,
-          'zoneGeographique': zoneGeographique,
-          'role': 'AGRICULTEUR',
-          if (adresse != null) 'adresse': adresse,
-          if (villageVille != null) 'villageVille': villageVille,
-        },
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
+      // 2. Écriture du profil dans Firestore (collection users/{uid})
+      final now = DateTime.now();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(fbUser.uid)
+          .set({
+        'id': fbUser.uid,
+        'nom': nom,
+        'prenom': prenom,
+        'email': email,
+        'telephone': telephone,
+        'zone_geographique': zoneGeographique,
+        'role': 'AGRICULTEUR',
+        'actif': true,
+        'date_inscription': FieldValue.serverTimestamp(),
+        'nombre_champs': 0,
+        'nombre_recommandations': 0,
+        'nombre_evaluations': 0,
+        'notifications_actives': true,
+        if (adresse != null && adresse.isNotEmpty) 'adresse': adresse,
+        if (villageVille != null && villageVille.isNotEmpty)
+          'village_ville': villageVille,
+      });
 
-      // Déconnexion immédiate : l'utilisateur doit se connecter manuellement
-      await _firebaseAuth.signOut();
-      await _clearPersistedUser();
-
-      return UserModel(
-        id: credential.user!.uid,
-        nom: nom,
-        prenom: prenom,
-        email: email,
-        telephone: telephone,
-        zoneGeographique: zoneGeographique,
-        role: RoleUtilisateur.agriculteur,
-      );
+      // 3. Tenter de poser les Custom Claims via verify-token + récupérer le profil enrichi
+      try {
+        final token = await fbUser.getIdToken(true);
+        await _dio.post(
+          '/auth/verify-token',
+          options: Options(headers: {'Authorization': 'Bearer $token'}),
+        );
+        final freshToken = await fbUser.getIdToken(true);
+        final response = await _dio.get(
+          '/auth/me',
+          options: Options(headers: {'Authorization': 'Bearer $freshToken'}),
+        );
+        final user =
+            UserModel.fromBackendJson(response.data as Map<String, dynamic>);
+        await _persistUser(user);
+        return user;
+      } catch (_) {
+        // Backend inaccessible → construire l'entité depuis les données locales
+        final user = UserModel(
+          id: fbUser.uid,
+          nom: nom,
+          prenom: prenom,
+          email: email,
+          telephone: telephone,
+          zoneGeographique: zoneGeographique,
+          role: RoleUtilisateur.agriculteur,
+          adresse: adresse,
+          villageVille: villageVille,
+          actif: true,
+          dateInscription: now,
+        );
+        await _persistUser(user);
+        return user;
+      }
     } on FirebaseAuthException catch (e) {
       if (_isUserError(e)) throw Exception(_mapFirebaseError(e));
       throw Exception('Erreur lors de la création du compte. Réessayez.');
     } catch (e) {
       throw Exception('Erreur inattendue : $e');
     }
-  }
-
-  Future<void> _clearPersistedUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyUser);
   }
 
   // ─── Logout ───────────────────────────────────────────────────────────────

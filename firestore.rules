@@ -77,10 +77,13 @@ service cloud.firestore {
     }
 
     // ─────────────────────────────────────────────
-    // COLLECTION donneesAgronomiques
+    // COLLECTION analysesParcelles
+    // Remplace donneesAgronomiques (saisie manuelle supprimée) : instantané
+    // des 16 variables sol/climat/NDVI collectées automatiquement pour un
+    // champ. Créée par le backend (moteur v2) au moment d'une recommandation.
     // ─────────────────────────────────────────────
 
-    match /donneesAgronomiques/{donneeId} {
+    match /analysesParcelles/{analyseId} {
       allow read: if isAuthenticated()
                   && (
                     // Vérifie via le champ parent
@@ -96,33 +99,37 @@ service cloud.firestore {
                       || isExpert()
                     );
 
-      allow update: if isAuthenticated()
-                    && (
-                      get(/databases/$(database)/documents/champs/$(resource.data.champId)).data.agriculteurId == request.auth.uid
-                      || isAdmin()
-                    );
-
-      allow delete: if isAuthenticated()
-                    && (
-                      get(/databases/$(database)/documents/champs/$(resource.data.champId)).data.agriculteurId == request.auth.uid
-                      || isAdmin()
-                    );
+      // Traçabilité : pas de modification, seul l'admin supprime
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ─────────────────────────────────────────────
-    // COLLECTION diagnosticsMaladie
+    // COLLECTION zonesAgroecologiques
+    // Référentiel des 6 zones agroécologiques du Sénégal (lecture publique
+    // authentifiée, comme `cultures` ci-dessous ; seedé par le backend).
     // ─────────────────────────────────────────────
 
-    match /diagnosticsMaladie/{diagnosticId} {
-      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
+    match /zonesAgroecologiques/{zoneId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
 
-      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
-                    || isAdmin();
+    // ─────────────────────────────────────────────
+    // COLLECTION messagesChat
+    // Historique persisté de l'agent conversationnel (MessageChat) — chaque
+    // message appartient à l'agriculteur de la conversation.
+    // ─────────────────────────────────────────────
 
-      // Expert peut valider/corriger ; agriculteur peut évaluer
-      allow update: if isProprietaire(resource) || isAdmin() || isExpert();
+    match /messagesChat/{messageId} {
+      allow read: if isAuthenticated()
+                  && (resource.data.agriculteurId == request.auth.uid || isAdmin() || isExpert());
 
-      // Traçabilité : seul l'admin supprime
+      allow create: if isAuthenticated()
+                    && (request.resource.data.agriculteurId == request.auth.uid || isAdmin());
+
+      // Traçabilité : pas de modification, seul l'admin supprime
+      allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -161,19 +168,6 @@ service cloud.firestore {
 
       allow update: if isAdmin();
       allow delete: if isAdmin();
-    }
-
-    // ─────────────────────────────────────────────
-    // COLLECTION imagesPlantes
-    // ─────────────────────────────────────────────
-
-    match /imagesPlantes/{imageId} {
-      allow read: if isProprietaire(resource) || isAdmin() || isExpert();
-
-      allow create: if (isAgriculteur() && isProprietaireNouveau(request.resource.data))
-                    || isAdmin();
-
-      allow delete: if isProprietaire(resource) || isAdmin();
     }
 
     // ─────────────────────────────────────────────
@@ -244,16 +238,6 @@ service cloud.firestore {
     // ─────────────────────────────────────────────
 
     match /cultures/{cultureId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    match /maladies/{maladieId} {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin();
-    }
-
-    match /traitementsRecommandes/{traitementId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }

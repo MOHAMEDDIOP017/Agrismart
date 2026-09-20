@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
-/// Système typographique AgriSmart
+/// Système typographique KoobalaTech
 /// Poppins pour titres/labels, Inter pour corps/descriptions
 class AppTypography {
   AppTypography._();

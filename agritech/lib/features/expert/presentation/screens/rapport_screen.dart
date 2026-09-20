@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,11 +23,9 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
   @override
   Widget build(BuildContext context) {
     final profilAsync = ref.watch(profilExpertProvider);
-    final diagnosticsState = ref.watch(diagnosticsNotifier).valueOrNull;
     final interventions = ref.watch(interventionsProvider).valueOrNull ?? [];
     final conseils = ref.watch(conseilsProvider).valueOrNull ?? [];
 
-    final totalDiags = diagnosticsState?.diagnostics.length ?? 0;
     final totalIntvs = interventions.length;
     final totalConseils = conseils.length;
 
@@ -101,7 +98,6 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
             mainAxisSpacing: 10,
             childAspectRatio: 1.8,
             children: [
-              _kpiRecap('Diagnostics traités', '$totalDiags', AppColors.info),
               _kpiRecap('Interventions', '$totalIntvs', AppColors.amber),
               _kpiRecap('Conseils envoyés', '$totalConseils', AppColors.primary),
               profilAsync.when(
@@ -111,149 +107,6 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                 error: (_, __) => _kpiRecap('Taux précision IA', '—', AppColors.coral),
               ),
             ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // ── Graphique BarChart ─────────────────────────────────
-          _sectionTitle('Diagnostics par semaine'),
-          const SizedBox(height: 10),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SizedBox(
-                height: 180,
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: 6,
-                    barGroups: [
-                      _barGroup(0, 3),
-                      _barGroup(1, 5),
-                      _barGroup(2, 2),
-                      _barGroup(3, 4),
-                    ],
-                    titlesData: FlTitlesData(
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 24,
-                          getTitlesWidget: (v, _) => Text(
-                            '${v.toInt()}',
-                            style: GoogleFonts.inter(
-                                fontSize: 10, color: AppColors.textSecondary),
-                          ),
-                        ),
-                      ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (v, _) {
-                            const labels = ['S1', 'S2', 'S3', 'S4'];
-                            return Text(
-                              labels[v.toInt() % 4],
-                              style: GoogleFonts.poppins(
-                                  fontSize: 11, fontWeight: FontWeight.w600),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(
-                          sideTitles: SideTitles(showTitles: false)),
-                    ),
-                    gridData: FlGridData(
-                      drawHorizontalLine: true,
-                      getDrawingHorizontalLine: (_) => const FlLine(
-                        color: AppColors.border,
-                        strokeWidth: 1,
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── PieChart répartition maladies ─────────────────────
-          _sectionTitle('Répartition des maladies détectées'),
-          const SizedBox(height: 10),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 150,
-                    height: 150,
-                    child: PieChart(
-                      PieChartData(
-                        sections: [
-                          PieChartSectionData(
-                            value: 35,
-                            title: '35%',
-                            color: AppColors.danger,
-                            radius: 50,
-                            titleStyle: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
-                          PieChartSectionData(
-                            value: 25,
-                            title: '25%',
-                            color: AppColors.amber,
-                            radius: 50,
-                            titleStyle: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
-                          PieChartSectionData(
-                            value: 20,
-                            title: '20%',
-                            color: AppColors.primary,
-                            radius: 50,
-                            titleStyle: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
-                          PieChartSectionData(
-                            value: 20,
-                            title: '20%',
-                            color: AppColors.info,
-                            radius: 50,
-                            titleStyle: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white),
-                          ),
-                        ],
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 30,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _legendItem('Mildiou', AppColors.danger, '35%'),
-                        _legendItem('Anthracnose', AppColors.amber, '25%'),
-                        _legendItem('Cercosporiose', AppColors.primary, '20%'),
-                        _legendItem('Autres', AppColors.info, '20%'),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
 
           const SizedBox(height: 24),
@@ -316,18 +169,6 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
     );
   }
 
-  BarChartGroupData _barGroup(int x, double y) => BarChartGroupData(
-        x: x,
-        barRods: [
-          BarChartRodData(
-            toY: y,
-            color: AppColors.primary,
-            width: 20,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-          ),
-        ],
-      );
-
   Widget _kpiRecap(String label, String valeur, Color couleur) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -347,28 +188,6 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                     fontSize: 11, color: AppColors.textSecondary),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      );
-
-  Widget _legendItem(String label, Color couleur, String pct) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Container(
-                width: 12,
-                height: 12,
-                decoration:
-                    BoxDecoration(color: couleur, shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(label,
-                  style: GoogleFonts.inter(fontSize: 12),
-                  overflow: TextOverflow.ellipsis),
-            ),
-            Text(pct,
-                style: GoogleFonts.poppins(
-                    fontSize: 12, fontWeight: FontWeight.w600)),
           ],
         ),
       );

@@ -6,10 +6,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/expert_router.dart';
 import '../providers/expert_provider.dart';
 import '../widgets/kpi_card.dart';
-import '../widgets/diagnostic_urgent_card.dart';
-import '../widgets/alerte_expert_card.dart';
 import '../widgets/champ_supervision_card.dart';
-import '../../domain/entities/alerte_zone_entity.dart';
 
 /// Tableau de bord principal de l'Expert
 class ExpertDashboardScreen extends ConsumerWidget {
@@ -19,8 +16,6 @@ class ExpertDashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profilAsync = ref.watch(profilExpertProvider);
     final kpi = ref.watch(expertKpiProvider);
-    final diagnosticsAsync = ref.watch(diagnosticsNotifier);
-    final alertesAsync = ref.watch(alertesZoneProvider);
     final champsAsync = ref.watch(champsSupervisionProvider);
 
     return Scaffold(
@@ -65,8 +60,8 @@ class ExpertDashboardScreen extends ConsumerWidget {
                       ),
                       // Icône notification avec badge
                       _NotificationBadge(
-                        count: kpi['diagnosticsEnAttente'] ?? 0,
-                        onTap: () => context.goNamed(ExpertRoutes.diagnosticsNom),
+                        count: kpi['recommandationsEnAttente'] ?? 0,
+                        onTap: () => context.goNamed(ExpertRoutes.recommandationsNom),
                       ),
                       const SizedBox(width: 8),
                       // Profil
@@ -110,10 +105,10 @@ class ExpertDashboardScreen extends ConsumerWidget {
                   childAspectRatio: 1.05,
                   children: [
                     KpiCard(
-                      valeur: kpi['diagnosticsEnAttente'] ?? 0,
-                      libelle: 'Diagnostics\nen attente',
-                      icone: Icons.biotech_outlined,
-                      couleur: AppColors.danger,
+                      valeur: kpi['recommandationsEnAttente'] ?? 0,
+                      libelle: 'Recommandations\nen attente',
+                      icone: Icons.tips_and_updates_outlined,
+                      couleur: AppColors.primary,
                       estAlerte: true,
                     ),
                     KpiCard(
@@ -128,147 +123,7 @@ class ExpertDashboardScreen extends ConsumerWidget {
                       icone: Icons.event_note_outlined,
                       couleur: AppColors.amber,
                     ),
-                    KpiCard(
-                      valeur: kpi['alertesActives'] ?? 0,
-                      libelle: 'Alertes actives\nma zone',
-                      icone: Icons.warning_amber_outlined,
-                      couleur: AppColors.coral,
-                      estAlerte: true,
-                    ),
                   ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Diagnostics urgents ───────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Diagnostics urgents',
-                          style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        diagnosticsAsync.when(
-                          data: (s) => _CountBadge(
-                            count: s.diagnostics.length,
-                            couleur: AppColors.danger,
-                          ),
-                          loading: () => const SizedBox(),
-                          error: (_, __) => const SizedBox(),
-                        ),
-                      ],
-                    ),
-                    TextButton(
-                      onPressed: () => context.goNamed(ExpertRoutes.diagnosticsNom),
-                      child: Text(
-                        'Voir tous',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                diagnosticsAsync.when(
-                  data: (state) => state.diagnostics.isEmpty
-                      ? _emptyCard('Tous les diagnostics ont été traités 👍')
-                      : SizedBox(
-                          height: 290,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: state.diagnostics.take(3).length,
-                            itemBuilder: (_, i) {
-                              final d = state.diagnostics[i];
-                              return DiagnosticUrgentCard(
-                                diagnostic: d,
-                                onTap: () => context.goNamed(
-                                  ExpertRoutes.diagnosticDetailNom,
-                                  pathParameters: {'id': d.id},
-                                ),
-                                onValider: () => context.goNamed(
-                                  ExpertRoutes.diagnosticDetailNom,
-                                  pathParameters: {'id': d.id},
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                  loading: () => const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    ),
-                  ),
-                  error: (_, __) => const SizedBox(),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Alertes zone ──────────────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Alertes actives — ma zone',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => context.goNamed(ExpertRoutes.alertesNom),
-                      child: Text(
-                        'Voir toutes',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                alertesAsync.when(
-                  data: (alertes) {
-                    final actives = alertes
-                        .where((a) => a.statut != StatutAlerteZone.resolue)
-                        .take(3)
-                        .toList();
-                    if (actives.isEmpty) {
-                      return _emptyCard('Aucune alerte active dans votre zone');
-                    }
-                    return Column(
-                      children: actives
-                          .map((a) => AlerteExpertCard(
-                                alerte: a,
-                                onPrendreEnCharge: () =>
-                                    ref.read(alertesZoneProvider.notifier).prendreEnCharge(a.id),
-                                onVoirDiagnostic: () {
-                                  if (a.diagnosticId != null) {
-                                    context.goNamed(
-                                      ExpertRoutes.diagnosticDetailNom,
-                                      pathParameters: {'id': a.diagnosticId!},
-                                    );
-                                  }
-                                },
-                              ))
-                          .toList(),
-                    );
-                  },
-                  loading: () => const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => const SizedBox(),
                 ),
 
                 const SizedBox(height: 24),
@@ -309,22 +164,6 @@ class ExpertDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _emptyCard(String message) => Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Center(
-          child: Text(
-            message,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
 }
 
 /// Badge de notification avec compteur animé pulsant si > 0
@@ -386,26 +225,3 @@ class _NotificationBadgeState extends State<_NotificationBadge>
   }
 }
 
-/// Badge compteur coloré
-class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.count, required this.couleur});
-  final int count;
-  final Color couleur;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: couleur,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text(
-          '$count',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-}

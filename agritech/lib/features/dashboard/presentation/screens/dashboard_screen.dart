@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -36,12 +36,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       couleur: Color(0xFF0D6E4E),
     ),
     _SlideData(
-      imageUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=900&q=80',
-      titre: 'Détectez les maladies',
-      sousTitre: 'IA de pointe pour protéger vos cultures',
-      couleur: Color(0xFF1A4A6B),
-    ),
-    _SlideData(
       imageUrl: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&q=80',
       titre: 'Optimisez vos rendements',
       sousTitre: 'Recommandations climatiques personnalisées',
@@ -55,7 +49,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     ),
     _SlideData(
       imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=900&q=80',
-      titre: 'AgriSmart Sénégal',
+      titre: 'KoobalaTech Sénégal',
       sousTitre: 'L\'agriculture de demain, aujourd\'hui',
       couleur: Color(0xFF3D1C00),
     ),
@@ -131,7 +125,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'AgriSmart',
+                  'KoobalaTech',
                   style: GoogleFonts.poppins(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -261,18 +255,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       onTap: () => context.go(AppRoutes.recommandations),
                     ),
                     _Feature(
-                      titre: 'Détection',
-                      sousTitre: 'Maladie IA',
-                      icone: Icons.document_scanner_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF00897B), Color(0xFF00695C)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      image: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=400&q=70',
-                      onTap: () => context.go(AppRoutes.detection),
-                    ),
-                    _Feature(
                       titre: 'Alertes',
                       sousTitre: '$alertesNonLues non lues',
                       icone: Icons.notifications_rounded,
@@ -303,20 +285,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 _QuickCard(
-                  imageUrl: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=700&q=70',
-                  titre: 'Données agronomiques',
-                  sousTitre: 'pH, NPK, humidité de vos champs',
-                  icone: Icons.science_outlined,
-                  onTap: () => context.push('/home/dashboard/donnees-agro'),
-                ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.1, end: 0),
-                const SizedBox(height: 12),
-                _QuickCard(
                   imageUrl: 'https://images.unsplash.com/photo-1536782376847-5c9d14d97cc0?w=700&q=70',
                   titre: 'Suivi des champs',
                   sousTitre: 'Vue liste et grille de vos parcelles',
                   icone: Icons.track_changes_rounded,
                   onTap: () => context.push('/home/dashboard/suivi'),
-                ).animate(delay: 600.ms).fadeIn().slideY(begin: 0.1, end: 0),
+                ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.1, end: 0),
+                const SizedBox(height: 12),
+                _QuickCard(
+                  imageUrl: 'https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=700&q=70',
+                  titre: 'Assistant AgriSmart',
+                  sousTitre: 'Posez vos questions en français ou en wolof',
+                  icone: Icons.forum_rounded,
+                  onTap: () => context.push(AppRoutes.assistant),
+                ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.1, end: 0),
                 const SizedBox(height: 32),
               ],
             ),

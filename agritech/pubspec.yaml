@@ -1,5 +1,5 @@
-name: agritech
-description: "AgriSmart - Application mobile d'assistance agricole intelligente pour l'Afrique subsaharienne"
+﻿name: agritech
+description: "KoobalaTech - Application mobile d'assistance agricole intelligente pour l'Afrique subsaharienne"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -27,6 +27,7 @@ dependencies:
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   firebase_messaging: ^15.2.10
+  cloud_firestore: ^5.4.4
 
   # Réseau & Cache
   dio: ^5.4.0

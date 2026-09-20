@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import require_admin
 from app.services.firestore_service import (
-    utilisateurs_service, champs_service, diagnostics_svc,
-    recommandations_svc, images_plantes_svc, interventions_svc,
+    utilisateurs_service, champs_service,
+    recommandations_svc, interventions_svc,
     conseils_svc,
 )
 from app.services.historique_service import historique_service
@@ -35,10 +35,7 @@ async def statistiques_globales(
     (
         nb_utilisateurs_actifs,
         nb_champs,
-        nb_diagnostics,
-        nb_diagnostics_en_attente,
         nb_recommandations,
-        nb_images,
         nb_interventions,
         nb_conseils,
         agriculteurs,
@@ -47,10 +44,7 @@ async def statistiques_globales(
     ) = await asyncio.gather(
         utilisateurs_service.compter(filtres=[("actif", "==", True)]),
         champs_service.compter(),
-        diagnostics_svc.compter(),
-        diagnostics_svc.compter(filtres=[("statut", "==", "EN_ATTENTE")]),
         recommandations_svc.compter(),
-        images_plantes_svc.compter(),
         interventions_svc.compter(),
         conseils_svc.compter(),
         utilisateurs_service.compter(filtres=[("role", "==", "AGRICULTEUR")]),
@@ -69,11 +63,6 @@ async def statistiques_globales(
         "champs": nb_champs,
         "ia_module1": {
             "total_recommandations": nb_recommandations,
-        },
-        "ia_module2": {
-            "total_diagnostics": nb_diagnostics,
-            "diagnostics_en_attente": nb_diagnostics_en_attente,
-            "total_images_analysees": nb_images,
         },
         "experts": {
             "interventions_planifiees": nb_interventions,

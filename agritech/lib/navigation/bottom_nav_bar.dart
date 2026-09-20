@@ -20,11 +20,11 @@ class MainScaffold extends StatelessWidget {
       activeIcon: Icon(Icons.terrain),
       label: 'Champs',
     ),
-    // Onglet 2 — Module Détection IA
+    // Onglet 2 — Météo locale
     BottomNavigationBarItem(
-      icon: Icon(Icons.document_scanner_outlined),
-      activeIcon: Icon(Icons.document_scanner),
-      label: 'Détection',
+      icon: Icon(Icons.wb_sunny_outlined),
+      activeIcon: Icon(Icons.wb_sunny_rounded),
+      label: 'Météo',
     ),
     BottomNavigationBarItem(
       icon: Icon(Icons.notifications_outlined),
@@ -80,7 +80,7 @@ class MainScaffold extends StatelessWidget {
 extension NavigationExt on BuildContext {
   void goToDashboard() => go(AppRoutes.dashboard);
   void goToChamps() => go(AppRoutes.champs);
-  void goToDetection() => go(AppRoutes.detection);
+  void goToMeteo() => go(AppRoutes.meteo);
   void goToAlertes() => go(AppRoutes.alertes);
   void goToProfil() => go(AppRoutes.profil);
   void goToLogin() => go(AppRoutes.login);

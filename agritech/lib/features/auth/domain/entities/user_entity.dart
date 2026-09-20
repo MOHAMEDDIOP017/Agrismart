@@ -20,9 +20,9 @@ enum RoleUtilisateur {
   String get description {
     switch (this) {
       case RoleUtilisateur.agriculteur:
-        return 'Gère ses champs, soumet des diagnostics, consulte des recommandations';
+        return 'Gère ses champs, consulte des recommandations';
       case RoleUtilisateur.expert:
-        return 'Valide les diagnostics IA, supervise les champs, conseille les agriculteurs';
+        return 'Supervise les champs, conseille les agriculteurs, valide les recommandations';
       case RoleUtilisateur.admin:
         return 'Gère les utilisateurs, consulte les statistiques globales';
     }
@@ -54,7 +54,6 @@ class UserEntity extends Equatable {
     this.role = RoleUtilisateur.agriculteur,
     this.photoUrl,
     this.nombreChamps = 0,
-    this.nombreDiagnostics = 0,
     this.nombreRecommandations = 0,
     this.nombreEvaluations = 0,
     this.notificationsActives = true,
@@ -67,8 +66,6 @@ class UserEntity extends Equatable {
     this.regionCouverture,
     this.specialite,
     this.anneesExperience,
-    this.nbDiagnosticsValides = 0,
-    this.tauxPrecisionValidee = 0.0,
     // Admin
     this.niveauAcces,
     this.dateCreation,
@@ -84,7 +81,6 @@ class UserEntity extends Equatable {
   final RoleUtilisateur role;
   final String? photoUrl;
   final int nombreChamps;
-  final int nombreDiagnostics;
   final int nombreRecommandations;
   final int nombreEvaluations;
   final bool notificationsActives;
@@ -99,8 +95,6 @@ class UserEntity extends Equatable {
   final String? regionCouverture;
   final String? specialite;
   final int? anneesExperience;
-  final int nbDiagnosticsValides;
-  final double tauxPrecisionValidee;
 
   // ── Attributs Admin ─────────────────────────────────────────────────────
   final int? niveauAcces;
@@ -146,15 +140,11 @@ class UserEntity extends Equatable {
       specialite: json['specialite'] as String?,
       anneesExperience:
           (json['annees_experience'] ?? json['anneesExperience']) as int?,
-      nbDiagnosticsValides: json['nb_diagnostics_valides'] as int? ?? 0,
-      tauxPrecisionValidee:
-          (json['taux_precision_validee'] as num?)?.toDouble() ?? 0.0,
       // Admin
       niveauAcces: (json['niveau_acces'] ?? json['niveauAcces']) as int?,
       dateCreation: _parseDate(json['date_creation'] ?? json['dateCreation']),
       // Statistiques
       nombreChamps: json['nombre_champs'] as int? ?? 0,
-      nombreDiagnostics: json['nombre_diagnostics'] as int? ?? 0,
       nombreRecommandations: json['nombre_recommandations'] as int? ?? 0,
       nombreEvaluations: json['nombre_evaluations'] as int? ?? 0,
       notificationsActives: json['notifications_actives'] as bool? ?? true,

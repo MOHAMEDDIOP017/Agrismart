@@ -1,6 +1,6 @@
-import 'package:intl/intl.dart';
+﻿import 'package:intl/intl.dart';
 
-/// Formatage de dates en français pour AgriSmart
+/// Formatage de dates en français pour KoobalaTech
 class DateFormatter {
   DateFormatter._();
 

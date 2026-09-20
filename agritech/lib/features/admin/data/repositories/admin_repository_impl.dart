@@ -280,18 +280,31 @@ class AdminRepositoryImpl implements AdminRepository {
   static StatistiquesGlobalesEntity _mapStats(Map<String, dynamic> json) {
     final u = (json['utilisateurs'] as Map<String, dynamic>?) ?? {};
     final m1 = (json['ia_module1'] as Map<String, dynamic>?) ?? {};
-    final m2 = (json['ia_module2'] as Map<String, dynamic>?) ?? {};
     final ex = (json['experts'] as Map<String, dynamic>?) ?? {};
+    final ch = (json['champs'] as Map<String, dynamic>?) ?? {};
 
-    final totalDiags = m2['total_diagnostics'] as int? ?? 0;
     final totalRec = m1['total_recommandations'] as int? ?? 0;
     final totalIntv = ex['interventions_planifiees'] as int? ?? 0;
+    final totalChamps = ch['total'] as int? ?? (json['total_champs'] as int? ?? 0);
+
+    // Top cultures recommandées
+    final culturesRaw = (m1['top_cultures'] as List?) ?? [];
+    final maxRec = culturesRaw.isEmpty
+        ? 1
+        : (culturesRaw.first as Map<String, dynamic>)['count'] as int? ?? 1;
+    final topCultures = culturesRaw
+        .cast<Map<String, dynamic>>()
+        .take(5)
+        .map((c) => CultureStatReco(
+              nom: (c['culture'] ?? c['nom'] ?? '—').toString(),
+              nombreRecommandations: c['count'] as int? ?? 0,
+              maxRecommandations: maxRec,
+            ))
+        .toList();
 
     return StatistiquesGlobalesEntity(
-      totalDiagnostics: totalDiags,
-      precisionIAPourcent: 92.0,
       totalRecommandations: totalRec,
-      totalAlertes: m2['diagnostics_en_attente'] as int? ?? 0,
+      totalAlertes: 0,
       totalInterventions: totalIntv,
       totalConseils: ex['conseils_envoyes'] as int? ?? 0,
       totalUtilisateurs: u['total'] as int? ?? 0,
@@ -299,38 +312,19 @@ class AdminRepositoryImpl implements AdminRepository {
       totalExperts: u['experts'] as int? ?? 0,
       totalAdmins: u['admins'] as int? ?? 0,
       interventionsEnCours: totalIntv,
+      totalChamps: totalChamps,
+      topCulturesRecommandees: topCultures,
       donneesBarChart: [
-        DonneeBarChart(
-            semaine: 'S1',
-            diagnostics: totalDiags * 0.2,
-            recommandations: totalRec * 0.2),
-        DonneeBarChart(
-            semaine: 'S2',
-            diagnostics: totalDiags * 0.25,
-            recommandations: totalRec * 0.25),
-        DonneeBarChart(
-            semaine: 'S3',
-            diagnostics: totalDiags * 0.3,
-            recommandations: totalRec * 0.3),
-        DonneeBarChart(
-            semaine: 'S4',
-            diagnostics: totalDiags * 0.25,
-            recommandations: totalRec * 0.25),
-      ],
-      topMaladies: const [],
-      donneesLineChart: const [
-        DonneeLineChart(mois: 'Jan', precisionBrute: 85, precisionValidee: 90),
-        DonneeLineChart(mois: 'Fév', precisionBrute: 87, precisionValidee: 91),
-        DonneeLineChart(mois: 'Mar', precisionBrute: 89, precisionValidee: 92),
-        DonneeLineChart(mois: 'Avr', precisionBrute: 91, precisionValidee: 93),
+        DonneeBarChart(semaine: 'S1', recommandations: totalRec * 0.2),
+        DonneeBarChart(semaine: 'S2', recommandations: totalRec * 0.25),
+        DonneeBarChart(semaine: 'S3', recommandations: totalRec * 0.3),
+        DonneeBarChart(semaine: 'S4', recommandations: totalRec * 0.25),
       ],
     );
   }
 
   static StatistiquesGlobalesEntity _statsVides() =>
       const StatistiquesGlobalesEntity(
-        totalDiagnostics: 0,
-        precisionIAPourcent: 0,
         totalRecommandations: 0,
         totalAlertes: 0,
         totalInterventions: 0,
@@ -340,9 +334,9 @@ class AdminRepositoryImpl implements AdminRepository {
         totalExperts: 0,
         totalAdmins: 0,
         interventionsEnCours: 0,
+        totalChamps: 0,
+        topCulturesRecommandees: [],
         donneesBarChart: [],
-        topMaladies: [],
-        donneesLineChart: [],
       );
 
   static UtilisateurAdminEntity _mapUser(Map<String, dynamic> json) {

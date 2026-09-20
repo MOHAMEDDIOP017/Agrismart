@@ -47,27 +47,11 @@ class ChampNonAccessibleException(KoobalaTechException):
         super().__init__(f"Accès au champ '{champ_id}' refusé", 403)
 
 
-class DonneesAgronomiquesAbsentesException(KoobalaTechException):
-    """Aucune donnée agronomique disponible pour le champ."""
-
-    def __init__(self, champ_id: str):
-        super().__init__(
-            f"Aucune donnée agronomique disponible pour le champ '{champ_id}'", 422
-        )
-
-
 class ImageInvalideException(KoobalaTechException):
     """Fichier image invalide (format, taille ou corruption)."""
 
     def __init__(self, raison: str = "Format ou taille d'image invalide"):
         super().__init__(raison, 400)
-
-
-class ImageNonTrouveException(KoobalaTechException):
-    """Image introuvable en Firestore ou dans MinIO."""
-
-    def __init__(self, image_id: str):
-        super().__init__(f"Image '{image_id}' introuvable", 404)
 
 
 class MinioIndisponibleException(KoobalaTechException):
@@ -94,11 +78,11 @@ class APIMeteoIndisponibleException(KoobalaTechException):
         super().__init__(detail, 503)
 
 
-class DiagnosticNonTrouveException(KoobalaTechException):
-    """Diagnostic de maladie introuvable."""
+class AgentIAIndisponibleException(KoobalaTechException):
+    """L'agent conversationnel (Qwen via OpenRouter) est mal configuré ou indisponible."""
 
-    def __init__(self, diagnostic_id: str):
-        super().__init__(f"Diagnostic '{diagnostic_id}' introuvable", 404)
+    def __init__(self, detail: str = "Agent conversationnel indisponible"):
+        super().__init__(detail, 503)
 
 
 class RessourceNonTrouveException(KoobalaTechException):

@@ -7,10 +7,11 @@ from app.core.dependencies import get_utilisateur_courant
 from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
 from app.models.champ import ChampCreate, ChampUpdate, ChampResponse, ScoreSanteChamp
 from app.services.firestore_service import (
-    champs_service, diagnostics_svc, recommandations_svc
+    champs_service, recommandations_svc
 )
 from app.services.storage_service import storage_service
 from app.services.historique_service import historique_service
+from app.services.zone_service import zone_id_pour_point
 from app.utils.helpers import calculer_score_sante_champ, maintenant_utc
 
 logger = logging.getLogger(__name__)
@@ -97,6 +98,8 @@ async def creer_champ(
     uid = courant["uid"]
     doc = donnees.model_dump()
     doc["agriculteurId"] = uid
+    # Relation "située dans" du diagramme UML : calculée depuis lat/lon, jamais saisie.
+    doc["zoneAgroecologiqueId"] = zone_id_pour_point(donnees.latitude, donnees.longitude)
 
     champ_id = await champs_service.creer(doc)
     await historique_service.enregistrer(
@@ -125,7 +128,13 @@ async def mettre_a_jour_champ(
     if courant.get("role") != "ADMIN" and champ.get("agriculteurId") != uid:
         raise HTTPException(status_code=403, detail="Modification non autorisée.")
 
-    await champs_service.mettre_a_jour(champ_id, donnees.model_dump(exclude_none=True))
+    maj = donnees.model_dump(exclude_none=True)
+    if "latitude" in maj or "longitude" in maj:
+        nouvelle_latitude = maj.get("latitude", champ.get("latitude"))
+        nouvelle_longitude = maj.get("longitude", champ.get("longitude"))
+        maj["zoneAgroecologiqueId"] = zone_id_pour_point(nouvelle_latitude, nouvelle_longitude)
+
+    await champs_service.mettre_a_jour(champ_id, maj)
     return await champs_service.lire(champ_id)
 
 
@@ -171,35 +180,21 @@ async def score_sante_champ(
     if courant.get("role") not in ["ADMIN", "EXPERT"] and champ.get("agriculteurId") != uid:
         raise HTTPException(status_code=403, detail="Accès refusé.")
 
-    # Compter les maladies récentes et recommandations
-    diagnostics = await diagnostics_svc.lister(
-        filtres=[("champId", "==", champ_id), ("statut", "!=", "REJETE")], limite=50
-    )
-    maladies_recentes = sum(
-        1 for d in diagnostics
-        if d.get("statut") in ["AUTO_CONFIRME", "VALIDE_EXPERT"]
-    )
     recommandations = await recommandations_svc.lister(
         filtres=[("champId", "==", champ_id)], limite=10
     )
 
     score, interpretation = calculer_score_sante_champ(
-        nb_maladies_recentes=maladies_recentes,
-        nb_diagnostics_confirmes=maladies_recentes,
+        nb_maladies_recentes=0,
+        nb_diagnostics_confirmes=0,
         nb_recommandations_actives=len(recommandations),
     )
-
-    dernier_diagnostic = None
-    if diagnostics:
-        dates = [d.get("dateAnalyse") for d in diagnostics if d.get("dateAnalyse")]
-        if dates:
-            dernier_diagnostic = max(dates)
 
     return ScoreSanteChamp(
         champId=champ_id,
         score=score,
         interpretation=interpretation,
-        dernierDiagnostic=dernier_diagnostic,
-        nbMaladiesDetectees=maladies_recentes,
+        dernierDiagnostic=None,
+        nbMaladiesDetectees=0,
         nbRecommandationsActives=len(recommandations),
     )

@@ -1,6 +1,6 @@
-@echo off
+﻿@echo off
 echo ========================================
-echo   AgriSmart Backend - Mode reseau
+echo   KoobalaTech Backend - Mode reseau
 echo ========================================
 echo.
 echo Acces local       : http://localhost:8000

@@ -3,9 +3,6 @@
 from app.models.enums import (
     RoleUtilisateur,
     StatutCulture,
-    StatutValidation,
-    NiveauGravite,
-    TypeTraitement,
     TypeNotification,
     TypeIntervention,
     StatutIntervention,
@@ -16,9 +13,6 @@ from app.models.enums import (
 __all__ = [
     "RoleUtilisateur",
     "StatutCulture",
-    "StatutValidation",
-    "NiveauGravite",
-    "TypeTraitement",
     "TypeNotification",
     "TypeIntervention",
     "StatutIntervention",

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_typography.dart';
 
-/// Thème principal de l'application AgriSmart
+/// Thème principal de l'application KoobalaTech
 class AppTheme {
   AppTheme._();
 

@@ -37,6 +37,10 @@ class ChampResponse(ChampBase):
     id: str
     agriculteurId: str
     photoUrl: Optional[str] = None
+    # Zone agroécologique ("située dans" du diagramme UML) — calculée
+    # automatiquement depuis (latitude, longitude) à la création/mise à jour,
+    # jamais saisie par le client. Voir app/services/zone_service.py.
+    zoneAgroecologiqueId: Optional[str] = None
     dateCreation: datetime
 
     class Config:

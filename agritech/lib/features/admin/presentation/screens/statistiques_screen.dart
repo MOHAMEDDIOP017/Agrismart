@@ -104,28 +104,16 @@ class _ContenuStats extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               KpiAdminCard(
-                titre: 'Diagnostics effectués',
-                valeur: '${stats.totalDiagnostics}',
-                icone: Icons.biotech_outlined,
-                couleur: AppColors.teal,
-              ),
-              KpiAdminCard(
-                titre: 'Précision modèle IA',
-                valeur: '${stats.precisionIAPourcent.toInt()}%',
-                icone: Icons.psychology_outlined,
-                couleur: const Color(0xFF534AB7),
-              ),
-              KpiAdminCard(
                 titre: 'Recommandations',
                 valeur: '${stats.totalRecommandations}',
                 icone: Icons.tips_and_updates_outlined,
                 couleur: AppColors.primary,
               ),
               KpiAdminCard(
-                titre: 'Alertes déclenchées',
-                valeur: '${stats.totalAlertes}',
-                icone: Icons.warning_amber_outlined,
-                couleur: AppColors.coral,
+                titre: 'Champs enregistrés',
+                valeur: '${stats.totalChamps}',
+                icone: Icons.terrain_outlined,
+                couleur: AppColors.primary,
               ),
               KpiAdminCard(
                 titre: 'Interventions réalisées',
@@ -144,6 +132,15 @@ class _ContenuStats extends StatelessWidget {
 
           const SizedBox(height: 24),
 
+          // ── Top cultures recommandées ─────────────────────────────
+          if (stats.topCulturesRecommandees.isNotEmpty) ...[
+            const _SectionTitre(titre: 'Cultures les plus recommandées'),
+            const SizedBox(height: 12),
+            ...stats.topCulturesRecommandees
+                .map((c) => _CultureRecoCard(culture: c)),
+            const SizedBox(height: 20),
+          ],
+
           // ── BarChart — Activité hebdomadaire ─────────────────────
           const _SectionTitre(titre: 'Activité par semaine'),
           const SizedBox(height: 12),
@@ -159,22 +156,6 @@ class _ContenuStats extends StatelessWidget {
           _CarteGraphique(
             child: _PieChartUtilisateurs(stats: stats),
           ),
-
-          const SizedBox(height: 20),
-
-          // ── LineChart — Évolution précision IA ───────────────────
-          const _SectionTitre(titre: 'Évolution de la précision IA'),
-          const SizedBox(height: 12),
-          _CarteGraphique(
-            child: _LineChartPrecision(donnees: stats.donneesLineChart),
-          ),
-
-          const SizedBox(height: 20),
-
-          // ── Top maladies détectées ────────────────────────────────
-          const _SectionTitre(titre: 'Top 5 maladies détectées ce mois'),
-          const SizedBox(height: 12),
-          ...stats.topMaladies.map((m) => _MaladieStatCard(maladie: m)),
 
           const SizedBox(height: 16),
         ],
@@ -203,16 +184,9 @@ class _BarChartActivite extends StatelessWidget {
               x: i,
               barRods: [
                 BarChartRodData(
-                  toY: d.diagnostics,
-                  color: AppColors.teal,
-                  width: 10,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4)),
-                ),
-                BarChartRodData(
                   toY: d.recommandations,
                   color: AppColors.amber,
-                  width: 10,
+                  width: 16,
                   borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(4)),
                 ),
@@ -309,7 +283,6 @@ class _PieChartUtilisateurs extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Légende
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -324,112 +297,6 @@ class _PieChartUtilisateurs extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _LineChartPrecision extends StatelessWidget {
-  const _LineChartPrecision({required this.donnees});
-
-  final List<DonneeLineChart> donnees;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 200,
-      child: LineChart(
-        LineChartData(
-          lineBarsData: [
-            // Courbe précision brute
-            LineChartBarData(
-              spots: donnees
-                  .asMap()
-                  .entries
-                  .map((e) =>
-                      FlSpot(e.key.toDouble(), e.value.precisionBrute))
-                  .toList(),
-              isCurved: true,
-              color: AppColors.teal,
-              barWidth: 2.5,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
-                  radius: 4,
-                  color: AppColors.teal,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                ),
-              ),
-            ),
-            // Courbe précision après validation expert
-            LineChartBarData(
-              spots: donnees
-                  .asMap()
-                  .entries
-                  .map((e) =>
-                      FlSpot(e.key.toDouble(), e.value.precisionValidee))
-                  .toList(),
-              isCurved: true,
-              color: AppColors.primary,
-              barWidth: 2.5,
-              dashArray: [6, 3],
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
-                  radius: 4,
-                  color: AppColors.primary,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (v, _) {
-                  final i = v.toInt();
-                  if (i < 0 || i >= donnees.length) {
-                    return const SizedBox.shrink();
-                  }
-                  return Text(
-                    donnees[i].mois,
-                    style: AppTypography.textTheme.labelSmall!
-                        .copyWith(fontSize: 10),
-                  );
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 36,
-                getTitlesWidget: (v, _) => Text(
-                  '${v.toInt()}%',
-                  style: AppTypography.textTheme.labelSmall!
-                      .copyWith(fontSize: 9),
-                ),
-              ),
-            ),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (_) => const FlLine(
-              color: AppColors.border,
-              strokeWidth: 1,
-            ),
-          ),
-          minY: 65,
-          maxY: 100,
-        ),
-      ),
     );
   }
 }
@@ -505,60 +372,6 @@ class _Legende extends StatelessWidget {
   }
 }
 
-class _MaladieStatCard extends StatelessWidget {
-  const _MaladieStatCard({required this.maladie});
-
-  final MaladieStat maladie;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  maladie.nom,
-                  style: AppTypography.textTheme.bodySmall!.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              Text(
-                '${maladie.nombreDetections} cas',
-                style: AppTypography.textTheme.labelSmall!.copyWith(
-                  color: AppColors.coral,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: maladie.progression,
-              backgroundColor: AppColors.border,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(AppColors.coral),
-              minHeight: 6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ShimmerStats extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -580,6 +393,71 @@ class _ShimmerStats extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Top cultures recommandées ─────────────────────────────────────────────
+
+class _CultureRecoCard extends StatelessWidget {
+  const _CultureRecoCard({required this.culture});
+
+  final CultureStatReco culture;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.grass_rounded, size: 16, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  culture.nom,
+                  style: AppTypography.textTheme.bodySmall!.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${culture.nombreRecommandations}',
+                style: AppTypography.textTheme.labelSmall!.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'reco.',
+                style: AppTypography.textTheme.labelSmall!.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: culture.progression,
+              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              minHeight: 5,
+            ),
+          ),
+        ],
       ),
     );
   }

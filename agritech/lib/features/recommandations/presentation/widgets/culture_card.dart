@@ -57,9 +57,18 @@ class CultureCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      recommandation.culture,
-                      style: Theme.of(context).textTheme.titleMedium,
+                    Row(
+                      children: [
+                        _RangBadge(rang: index + 1, color: _scoreColor),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            recommandation.culture,
+                            style: Theme.of(context).textTheme.titleMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -83,6 +92,23 @@ class CultureCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    // Barre d'aptitude — même valeur que le score circulaire,
+                    // pour une lecture rapide en liste.
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(begin: 0, end: recommandation.scoreCompatibilite / 100),
+                        duration: const Duration(milliseconds: 1200),
+                        curve: Curves.easeOut,
+                        builder: (_, value, __) => LinearProgressIndicator(
+                          value: value,
+                          minHeight: 5,
+                          backgroundColor: _scoreColor.withValues(alpha: 0.15),
+                          valueColor: AlwaysStoppedAnimation(_scoreColor),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -100,6 +126,34 @@ class CultureCard extends StatelessWidget {
         .animate()
         .fadeIn(delay: (index * 150).ms, duration: 400.ms)
         .slideY(begin: 0.25, end: 0);
+  }
+}
+
+/// Badge de rang ("#1", "#2", "#3") — reflète l'ordre du top-k renvoyé par
+/// le moteur multi-label (RecommandationCultureV2Response.rang côté backend).
+class _RangBadge extends StatelessWidget {
+  const _RangBadge({required this.rang, required this.color});
+
+  final int rang;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '#$rang',
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 }
 

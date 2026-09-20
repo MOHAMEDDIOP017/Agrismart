@@ -20,7 +20,6 @@ class UtilisateurAdminEntity extends Equatable {
     this.anneesExperience,
     this.niveauAcces,
     this.nombreChamps = 0,
-    this.nombreDiagnostics = 0,
     this.nombreInterventions = 0,
   });
 
@@ -42,7 +41,6 @@ class UtilisateurAdminEntity extends Equatable {
   /// Niveau d'accès 1-3 — uniquement pour les admins
   final int? niveauAcces;
   final int nombreChamps;
-  final int nombreDiagnostics;
   final int nombreInterventions;
 
   String get nomComplet => '$prenom $nom';
@@ -66,7 +64,6 @@ class UtilisateurAdminEntity extends Equatable {
     int? anneesExperience,
     int? niveauAcces,
     int? nombreChamps,
-    int? nombreDiagnostics,
     int? nombreInterventions,
   }) {
     return UtilisateurAdminEntity(
@@ -85,7 +82,6 @@ class UtilisateurAdminEntity extends Equatable {
       anneesExperience: anneesExperience ?? this.anneesExperience,
       niveauAcces: niveauAcces ?? this.niveauAcces,
       nombreChamps: nombreChamps ?? this.nombreChamps,
-      nombreDiagnostics: nombreDiagnostics ?? this.nombreDiagnostics,
       nombreInterventions: nombreInterventions ?? this.nombreInterventions,
     );
   }

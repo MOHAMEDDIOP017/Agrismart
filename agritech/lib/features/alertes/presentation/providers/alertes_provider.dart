@@ -17,20 +17,15 @@ class AlertesNotifier extends AsyncNotifier<List<AlerteModel>> {
   }
 
   Future<List<AlerteModel>> _charger(String userId) async {
-    final resp = await _dio.get('/diagnostics/agriculteur/$userId?limite=50');
+    final resp =
+        await _dio.get('/notifications/utilisateur/$userId?limite=50');
     final data = resp.data as Map<String, dynamic>;
-    final diagnostics = (data['diagnostics'] as List? ?? [])
+    final list = (data['notifications'] as List? ?? [])
         .cast<Map<String, dynamic>>()
-        // Garde uniquement ceux avec alerteEnvoyee=true OU gravité ELEVE/CRITIQUE
-        .where((d) {
-          final alerte = d['alerteEnvoyee'] as bool? ?? false;
-          final g =
-              (d['niveauGravite'] ?? d['niveauGraviteIA'] ?? '').toString().toUpperCase();
-          return alerte || g == 'ELEVE' || g == 'CRITIQUE';
-        })
-        .map(_mapToAlerte)
+        .map(AlerteModel.fromNotificationJson)
         .toList();
-    return diagnostics;
+    list.sort((a, b) => b.dateCreation.compareTo(a.dateCreation));
+    return list;
   }
 
   Future<void> rafraichir() async {
@@ -41,30 +36,23 @@ class AlertesNotifier extends AsyncNotifier<List<AlerteModel>> {
     state = await AsyncValue.guard(() => _charger(userId));
   }
 
-  static AlerteModel _mapToAlerte(Map<String, dynamic> d) {
-    final graviteStr =
-        (d['niveauGravite'] ?? d['niveauGraviteIA'] ?? 'MODERE').toString().toUpperCase();
-    final niveau = switch (graviteStr) {
-      'CRITIQUE' => 'CRITIQUE',
-      'ELEVE' => 'ÉLEVÉ',
-      'FAIBLE' => 'FAIBLE',
-      _ => 'MODÉRÉ',
-    };
-    return AlerteModel(
-      id: (d['id'] ?? '') as String,
-      titre: 'Maladie détectée : ${d['maladieDetectee'] ?? 'Inconnue'}',
-      description:
-          'Score confiance : ${((d['scoreConfiance'] as num? ?? 0) * 100).toStringAsFixed(0)}%',
-      champId: (d['champId'] ?? '') as String,
-      champNom: (d['champNom'] ?? 'Champ') as String,
-      niveau: niveau,
-      maladieDetectee: (d['maladieDetectee'] ?? '') as String,
-      traitementConseille: '',
-      dateCreation:
-          DateTime.tryParse(d['dateAnalyse']?.toString() ?? '') ?? DateTime.now(),
-      imageUrl: d['imageUrl'] as String?,
-      isLue: d['statut'] != 'EN_ATTENTE',
-    );
+  Future<void> marquerLue(String alerteId) async {
+    try {
+      await _dio.patch('/notifications/$alerteId/marquer-lue');
+      state = AsyncData(
+        (state.valueOrNull ?? []).map((a) {
+          return a.id == alerteId ? a.copyWith(isLue: true) : a;
+        }).toList(),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> marquerToutesLues() async {
+    final nonLues =
+        (state.valueOrNull ?? []).where((a) => !a.isLue).toList();
+    for (final a in nonLues) {
+      await marquerLue(a.id);
+    }
   }
 }
 
@@ -72,3 +60,8 @@ final alertesProvider =
     AsyncNotifierProvider<AlertesNotifier, List<AlerteModel>>(
   AlertesNotifier.new,
 );
+
+final alertesNonLuesCountProvider = Provider<int>((ref) {
+  return ref.watch(alertesProvider).valueOrNull?.where((a) => !a.isLue).length ??
+      0;
+});

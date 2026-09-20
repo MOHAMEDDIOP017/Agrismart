@@ -500,29 +500,43 @@ class LogsState {
   const LogsState({
     this.logs = const [],
     this.filtre,
+    this.plageDate,
     this.rechercheActive = false,
   });
 
   final List<LogSystemeEntity> logs;
   final TypeLog? filtre;
+  final DateTimeRange? plageDate;
   final bool rechercheActive;
 
   LogsState copyWith({
     List<LogSystemeEntity>? logs,
     TypeLog? filtre,
     bool clearFiltre = false,
+    DateTimeRange? plageDate,
+    bool clearPlageDate = false,
     bool? rechercheActive,
   }) =>
       LogsState(
         logs: logs ?? this.logs,
         filtre: clearFiltre ? null : (filtre ?? this.filtre),
+        plageDate: clearPlageDate ? null : (plageDate ?? this.plageDate),
         rechercheActive: rechercheActive ?? this.rechercheActive,
       );
 
   List<LogSystemeEntity> get filtres {
-    final liste = logs.where((l) => !l.estArchive).toList();
-    if (filtre == null) return liste;
-    return liste.where((l) => l.type == filtre).toList();
+    var liste = logs.where((l) => !l.estArchive).toList();
+    if (filtre != null) {
+      liste = liste.where((l) => l.type == filtre).toList();
+    }
+    if (plageDate != null) {
+      liste = liste
+          .where((l) =>
+              !l.horodatage.isBefore(plageDate!.debut) &&
+              !l.horodatage.isAfter(plageDate!.fin))
+          .toList();
+    }
+    return liste;
   }
 }
 
@@ -544,6 +558,22 @@ class LogsNotifier extends AsyncNotifier<LogsState> {
       state = AsyncData(current.copyWith(filtre: filtre));
     }
   }
+
+  void setPlageDate(DateTimeRange? plage) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    if (plage == null) {
+      state = AsyncData(current.copyWith(clearPlageDate: true));
+    } else {
+      state = AsyncData(current.copyWith(plageDate: plage));
+    }
+  }
+
+  /// Pratique pour l'UI : évite d'importer DateTimeRange du domaine dans les écrans.
+  void setPlageFromDates(DateTime debut, DateTime fin) =>
+      setPlageDate(DateTimeRange(debut: debut, fin: fin));
+
+  void effacerPlage() => setPlageDate(null);
 
   Future<void> archiverLog(String logId) async {
     await _repo.archiverLog(logId);

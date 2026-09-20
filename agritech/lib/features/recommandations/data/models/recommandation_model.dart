@@ -5,6 +5,7 @@ import '../../../../core/constants/app_constants.dart';
 class RecommandationModel extends Equatable {
   const RecommandationModel({
     required this.id,
+    this.savedId,
     required this.champId,
     required this.culture,
     required this.scoreCompatibilite,
@@ -21,6 +22,8 @@ class RecommandationModel extends Equatable {
   });
 
   final String id;
+  /// ID Firestore de la recommandation sauvegardée (null si non encore persisté)
+  final String? savedId;
   final String champId;
   final String culture;
   final int scoreCompatibilite;
@@ -41,12 +44,57 @@ class RecommandationModel extends Equatable {
   String get prixLabel => '$prixMarcheEstime FCFA/kg';
   String get profitLabel => '$profitPotentiel FCFA/ha';
 
-  /// Construit un RecommandationModel depuis une PredictionCulture retournée par le backend
-  factory RecommandationModel.fromPrediction(
+  /// Construit un RecommandationModel depuis une RecommandationCultureV2Response
+  /// (moteur multi-label /recommandations/v2, diagramme UML) — même forme que
+  /// [fromPrediction], mais le score vient de `probabiliteAptitude` (0-1,
+  /// aptitude indépendante par culture) et l'id est le vrai id Firestore
+  /// (nécessaire pour les actions de validation expert).
+  factory RecommandationModel.fromPredictionV2(
     Map<String, dynamic> json,
     String champId,
     int index,
   ) {
+    final cultureNom = json['cultureNom'] as String;
+    final probabiliteAptitude = (json['probabiliteAptitude'] as num).toDouble();
+    final rendement = (json['rendementEstime'] as num).toDouble();
+    final prix = (json['prixMarcheEstime'] as num?)?.toInt() ?? 200;
+    final eau = (json['besoinEauMm'] as num?)?.toInt() ?? 400;
+
+    final engrais = (json['engraisConseilles'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
+    final maladies = (json['maladiesFrequentes'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [];
+
+    return RecommandationModel(
+      id: json['id'] as String,
+      savedId: json['id'] as String,
+      champId: champId,
+      culture: cultureNom,
+      scoreCompatibilite: (probabiliteAptitude * 100).round(),
+      periodeIdealePlantation: json['periodePlantation'] as String,
+      rendementEstime: rendement,
+      besoinEau: eau,
+      engAraisConseillesList: engrais,
+      maladiesFrequentes: maladies,
+      conseilsAgronomiques: json['conseil'] as String,
+      prixMarcheEstime: prix,
+      profitPotentiel: (rendement * 1000 * prix).round(),
+      imageUrl: AppConstants.imagesCultures[cultureNom],
+      dateGeneree: DateTime.now(),
+    );
+  }
+
+  /// Construit un RecommandationModel depuis une PredictionCulture retournée par le backend
+  factory RecommandationModel.fromPrediction(
+    Map<String, dynamic> json,
+    String champId,
+    int index, {
+    String? savedId,
+  }) {
     final cultureNom = json['cultureNom'] as String;
     final score = (json['score'] as num).toDouble();
     final rendement = (json['rendementEstime'] as num).toDouble();
@@ -64,6 +112,7 @@ class RecommandationModel extends Equatable {
 
     return RecommandationModel(
       id: 'reco_${DateTime.now().millisecondsSinceEpoch}_$index',
+      savedId: savedId,
       champId: champId,
       culture: cultureNom,
       scoreCompatibilite: (score * 100).round(),
@@ -81,5 +130,5 @@ class RecommandationModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, champId, culture];
+  List<Object?> get props => [id, savedId, champId, culture];
 }

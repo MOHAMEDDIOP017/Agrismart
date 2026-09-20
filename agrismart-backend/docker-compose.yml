@@ -1,16 +1,16 @@
-version: "3.8"
+﻿version: "3.8"
 
 services:
   # ── MinIO : stockage objet S3-compatible pour les images de plantes ──────────
   minio:
     image: minio/minio:latest
-    container_name: agrismart-minio
+    container_name: koobalatec-minio
     ports:
       - "9000:9000"   # API S3 (utilisée par le backend FastAPI)
       - "9001:9001"   # Console web MinIO (http://localhost:9001)
     environment:
-      MINIO_ROOT_USER: agrismartadmin
-      MINIO_ROOT_PASSWORD: AgriSmart2026!Secret
+      MINIO_ROOT_USER: koobalatecadmin
+      MINIO_ROOT_PASSWORD: KoobalaTech2026!Secret
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
@@ -23,11 +23,11 @@ services:
     restart: unless-stopped
 
   # ── Backend FastAPI ───────────────────────────────────────────────────────────
-  agrismart-backend:
+  koobalatec-backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: agrismart-backend
+    container_name: koobalatec-backend
     ports:
       - "8000:8000"
     volumes:
@@ -55,14 +55,14 @@ services:
   # ── Nginx (optionnel, activé via profil production) ──────────────────────────
   nginx:
     image: nginx:alpine
-    container_name: agrismart-nginx
+    container_name: koobalatec-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - agrismart-backend
+      - koobalatec-backend
     restart: unless-stopped
     profiles:
       - production

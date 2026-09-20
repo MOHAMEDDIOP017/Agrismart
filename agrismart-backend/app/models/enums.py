@@ -19,37 +19,10 @@ class StatutCulture(str, Enum):
     ABANDONNE = "ABANDONNE"
 
 
-class StatutValidation(str, Enum):
-    """Statut de validation d'un diagnostic de maladie."""
-    EN_ATTENTE = "EN_ATTENTE"
-    VALIDE_EXPERT = "VALIDE_EXPERT"
-    CORRIGE = "CORRIGE"
-    REJETE = "REJETE"
-    AUTO_CONFIRME = "AUTO_CONFIRME"
-
-
-class NiveauGravite(str, Enum):
-    """Niveau de gravité d'une maladie."""
-    FAIBLE = "FAIBLE"
-    MODERE = "MODERE"
-    ELEVE = "ELEVE"
-    CRITIQUE = "CRITIQUE"
-
-
-class TypeTraitement(str, Enum):
-    """Type d'un traitement recommandé."""
-    CHIMIQUE = "CHIMIQUE"
-    BIOLOGIQUE = "BIOLOGIQUE"
-    PREVENTIF = "PREVENTIF"
-    CURATIF = "CURATIF"
-
-
 class TypeNotification(str, Enum):
     """Type d'une notification push FCM."""
-    ALERTE_MALADIE = "ALERTE_MALADIE"
     RECOMMANDATION = "RECOMMANDATION"
     CONSEIL_EXPERT = "CONSEIL_EXPERT"
-    VALIDATION_DIAGNOSTIC = "VALIDATION_DIAGNOSTIC"
     INTERVENTION_PLANIFIEE = "INTERVENTION_PLANIFIEE"
 
 
@@ -84,3 +57,17 @@ class TypeRecommandationPostRecolte(str, Enum):
     """Type de recommandation post-récolte."""
     VENTE_BRUTE = "VENTE_BRUTE"
     TRANSFORMATION = "TRANSFORMATION"
+
+
+class StatutValidation(str, Enum):
+    """Statut de validation d'une RecommandationCulture par un expert (diagramme UML)."""
+    EN_ATTENTE = "EN_ATTENTE"
+    VALIDEE = "VALIDEE"
+    CORRIGEE = "CORRIGEE"
+    REJETEE = "REJETEE"
+
+
+class RoleMessage(str, Enum):
+    """Émetteur d'un MessageChat (diagramme UML)."""
+    UTILISATEUR = "UTILISATEUR"
+    AGENT = "AGENT"

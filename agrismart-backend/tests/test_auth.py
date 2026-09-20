@@ -11,13 +11,11 @@ from fastapi.testclient import TestClient
 def mock_firebase():
     """Mock des services Firebase pour les tests."""
     with patch("app.firebase_init.initialiser_firebase") as mock_init, \
-         patch("app.firebase_init.get_firestore") as mock_fs, \
-         patch("app.firebase_init.get_storage_bucket") as mock_bucket:
+         patch("app.firebase_init.get_firestore") as mock_fs:
 
         mock_init.return_value = None
         mock_fs.return_value = MagicMock()
-        mock_bucket.return_value = MagicMock()
-        yield mock_init, mock_fs, mock_bucket
+        yield mock_init, mock_fs
 
 
 @pytest.fixture
@@ -54,7 +52,7 @@ class TestHealthCheck:
 class TestVerifyToken:
     """Tests de vérification du token Firebase."""
 
-    @patch("app.core.security.verifier_token_firebase")
+    @patch("app.core.dependencies.verifier_token_firebase")
     @patch("app.services.auth_service.AuthService.verifier_ou_creer_utilisateur")
     def test_verify_token_valide(self, mock_creer, mock_verifier, client):
         """Un token valide doit retourner un profil utilisateur."""
@@ -83,7 +81,11 @@ class TestVerifyToken:
 
     def test_verify_token_sans_header_retourne_401(self, client):
         """Une requête sans token doit retourner 401."""
-        response = client.post("/auth/verify-token")
+        # Force dev_bypass_auth=False : évite que la valeur de l'environnement
+        # local (.env, hors dépôt) ne rende ce test non déterministe.
+        from app.config import settings
+        with patch.object(settings, "dev_bypass_auth", False):
+            response = client.post("/auth/verify-token")
         assert response.status_code == 401
 
     @patch("app.core.security.verifier_token_firebase")

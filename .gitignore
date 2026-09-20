@@ -36,3 +36,6 @@ venv/
 # Logs
 *.log
 **/logs/
+
+# Doublon local de config Firebase (autre projet, nom avec espace)
+agritech/android/app/google-services *.json

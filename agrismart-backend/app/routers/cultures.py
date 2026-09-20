@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_utilisateur_courant, require_admin
 from app.models.culture import CultureCreate, CultureUpdate
-from app.services.firestore_service import cultures_service, donnees_agronomiques_svc, champs_service
+from app.services.firestore_service import cultures_service, analyses_parcelles_svc, champs_service
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,10 @@ async def obtenir_culture(
     "/compatibles/{champ_id}",
     summary="Cultures compatibles avec un champ",
     description=(
-        "Analyse les données agronomiques d'un champ et retourne "
-        "les cultures les plus compatibles selon le pH, NPK et humidité."
+        "Analyse la dernière AnalyseParcelle d'un champ (collectée automatiquement) "
+        "et retourne les cultures les plus compatibles selon le pH et l'humidité. "
+        "Heuristique simple, indépendante du moteur multi-label (voir /recommandations/v2 "
+        "pour la recommandation IA à proprement parler)."
     ),
     status_code=status.HTTP_200_OK,
 )
@@ -59,19 +61,20 @@ async def cultures_compatibles(
     if champ is None:
         raise HTTPException(status_code=404, detail="Champ introuvable.")
 
-    donnees_list = await donnees_agronomiques_svc.lister(
+    analyses_list = await analyses_parcelles_svc.lister(
         filtres=[("champId", "==", champ_id)], limite=1,
-        ordre_par="dateSaisie", decroissant=True,
+        ordre_par="dateAnalyse", decroissant=True,
     )
-    if not donnees_list:
+    if not analyses_list:
         raise HTTPException(
             status_code=422,
-            detail="Aucune donnée agronomique disponible pour ce champ.",
+            detail="Aucune AnalyseParcelle disponible pour ce champ "
+                   "(générez d'abord une recommandation via /recommandations/v2).",
         )
 
-    donnees = donnees_list[0]
-    ph_sol = donnees.get("phSol", 6.5)
-    humidite = donnees.get("humiditeObservee", 50)
+    analyse = analyses_list[0]
+    ph_sol = analyse.get("phEau", 6.5)
+    humidite = analyse.get("humiditeMoy", 50)
 
     cultures = await cultures_service.lister(limite=200)
     compatibles = []

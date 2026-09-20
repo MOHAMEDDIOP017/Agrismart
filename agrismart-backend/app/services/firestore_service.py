@@ -88,7 +88,17 @@ class FirestoreService:
 
         resultats = await self._run(_fetch)
         if ordre_par:
-            resultats.sort(key=lambda d: d.get(ordre_par) or "", reverse=decroissant)
+            _DT_MIN = datetime.min.replace(tzinfo=timezone.utc)
+            is_datetime_field = any(isinstance(d.get(ordre_par), datetime) for d in resultats)
+            if is_datetime_field:
+                def _sort_key(d):
+                    val = d.get(ordre_par)
+                    return val if isinstance(val, datetime) else _DT_MIN
+            else:
+                def _sort_key(d):
+                    val = d.get(ordre_par)
+                    return str(val) if val is not None else ""
+            resultats.sort(key=_sort_key, reverse=decroissant)
         return resultats
 
     async def mettre_a_jour(self, doc_id: str, donnees: dict) -> bool:
@@ -130,16 +140,16 @@ class FirestoreService:
 
 utilisateurs_service = FirestoreService("users")
 champs_service = FirestoreService("champs")
-donnees_agronomiques_svc = FirestoreService("donneesAgronomiques")
 cultures_service = FirestoreService("cultures")
 culture_en_champ_svc = FirestoreService("cultureEnChamp")
 recommandations_svc = FirestoreService("recommandationsCulture")
 recommandations_pr_svc = FirestoreService("recommandationsPostRecolte")
-images_plantes_svc = FirestoreService("imagesPlantes")
-diagnostics_svc = FirestoreService("diagnosticsMaladie")
-maladies_service = FirestoreService("maladies")
-traitements_svc = FirestoreService("traitementsRecommandes")
 interventions_svc = FirestoreService("interventions")
 conseils_svc = FirestoreService("conseils")
+
+# Diagramme UML — nouvelles entités
+zones_agroecologiques_svc = FirestoreService("zonesAgroecologiques")
+analyses_parcelles_svc = FirestoreService("analysesParcelles")
+messages_chat_svc = FirestoreService("messagesChat")
 notifications_svc = FirestoreService("notifications")
 historique_svc = FirestoreService("historiqueActivites")

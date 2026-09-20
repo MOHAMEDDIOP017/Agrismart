@@ -1,12 +1,12 @@
-/// Constantes globales de l'application AgriSmart
+/// Constantes globales de l'application KoobalaTech
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'AgriSmart';
+  static const String appName = 'KoobalaTech';
   static const String appVersion = '1.0.0';
 
   // URL de base API (mock)
-  static const String baseUrl = 'https://api.agrismart.sn/v1';
+  static const String baseUrl = 'https://api.koobalatec.sn/v1';
 
   // Clés SharedPreferences
   static const String keyOnboardingDone = 'onboarding_done';

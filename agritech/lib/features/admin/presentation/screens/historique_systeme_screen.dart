@@ -29,6 +29,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
         actions: [
+          _BoutonFiltreDate(notifier: ref.read(logsProvider.notifier)),
           IconButton(
             icon: const Icon(Icons.download_outlined, color: Colors.white),
             tooltip: 'Exporter CSV',
@@ -42,7 +43,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // ── Filtres par type de log ─────────────────────────────
+          // ── Filtres par type de log + plage de dates ───────────
           Container(
             color: Colors.white,
             padding:
@@ -50,57 +51,84 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
             child: etatAsync.when(
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
-              data: (etat) => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    // Filtre "Tous"
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: const Text('Tous'),
-                        selected: etat.filtre == null,
-                        onSelected: (_) => notifier.setFiltre(null),
-                        selectedColor:
-                            _adminPrimary.withValues(alpha: 0.15),
-                        checkmarkColor: _adminPrimary,
-                        labelStyle: TextStyle(
-                          color: etat.filtre == null
-                              ? _adminPrimary
-                              : AppColors.textSecondary,
-                          fontWeight: etat.filtre == null
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    // Filtres par type
-                    ...TypeLog.values.map((t) {
-                      final sel = etat.filtre == t;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          avatar: Icon(t.icone,
-                              size: 14,
-                              color: sel ? t.couleur : AppColors.textSecondary),
-                          label: Text(t.libelle),
-                          selected: sel,
-                          onSelected: (_) =>
-                              notifier.setFiltre(sel ? null : t),
-                          selectedColor: t.couleur.withValues(alpha: 0.12),
-                          checkmarkColor: t.couleur,
-                          labelStyle: TextStyle(
-                            color: sel ? t.couleur : AppColors.textSecondary,
-                            fontWeight: sel
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                            fontSize: 12,
+              data: (etat) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Filtre "Tous"
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('Tous'),
+                            selected: etat.filtre == null,
+                            onSelected: (_) => notifier.setFiltre(null),
+                            selectedColor:
+                                _adminPrimary.withValues(alpha: 0.15),
+                            checkmarkColor: _adminPrimary,
+                            labelStyle: TextStyle(
+                              color: etat.filtre == null
+                                  ? _adminPrimary
+                                  : AppColors.textSecondary,
+                              fontWeight: etat.filtre == null
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
                           ),
                         ),
-                      );
-                    }),
+                        // Filtres par type
+                        ...TypeLog.values.map((t) {
+                          final sel = etat.filtre == t;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              avatar: Icon(t.icone,
+                                  size: 14,
+                                  color: sel
+                                      ? t.couleur
+                                      : AppColors.textSecondary),
+                              label: Text(t.libelle),
+                              selected: sel,
+                              onSelected: (_) =>
+                                  notifier.setFiltre(sel ? null : t),
+                              selectedColor:
+                                  t.couleur.withValues(alpha: 0.12),
+                              checkmarkColor: t.couleur,
+                              labelStyle: TextStyle(
+                                color: sel
+                                    ? t.couleur
+                                    : AppColors.textSecondary,
+                                fontWeight: sel
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                  // Chip plage de dates active
+                  if (etat.plageDate != null) ...[
+                    const SizedBox(height: 6),
+                    Chip(
+                      avatar: const Icon(Icons.date_range, size: 14),
+                      label: Text(
+                        '${_formatDate(etat.plageDate!.debut)} → ${_formatDate(etat.plageDate!.fin)}',
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      deleteIcon: const Icon(Icons.close, size: 14),
+                      onDeleted: () => notifier.setPlageDate(null),
+                      backgroundColor:
+                          _adminPrimary.withValues(alpha: 0.1),
+                      side: BorderSide(
+                          color: _adminPrimary.withValues(alpha: 0.3)),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
@@ -210,6 +238,51 @@ class _ShimmerLogs extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Bouton sélecteur de plage de dates ───────────────────────────────────
+
+String _formatDate(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+class _BoutonFiltreDate extends StatelessWidget {
+  const _BoutonFiltreDate({required this.notifier});
+  final LogsNotifier notifier;
+
+  static const Color _adminPrimary = Color(0xFF534AB7);
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(Icons.calendar_month_outlined, color: Colors.white),
+      tooltip: 'Filtrer par date',
+      onPressed: () async {
+        // showDateRangePicker retourne le DateTimeRange de Flutter (start/end).
+        // On le convertit ensuite en DateTimeRange custom du domaine (debut/fin).
+        final plage = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+          builder: (context, child) => Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(
+                primary: _adminPrimary,
+                onPrimary: Colors.white,
+              ),
+            ),
+            child: child!,
+          ),
+        );
+        if (plage != null) {
+          notifier.setPlageFromDates(
+            plage.start,
+            DateTime(
+                plage.end.year, plage.end.month, plage.end.day, 23, 59, 59),
+          );
+        }
+      },
     );
   }
 }

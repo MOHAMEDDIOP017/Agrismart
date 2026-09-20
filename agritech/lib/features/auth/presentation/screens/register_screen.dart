@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -104,41 +104,48 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           telephone: _telCtrl.text.trim(),
           zoneGeographique: _zoneSelectionnee!,
           password: _passwordCtrl.text,
-          adresse: _adresseCtrl.text.trim().isEmpty ? null : _adresseCtrl.text.trim(),
-          villageVille: _villageCtrl.text.trim().isEmpty ? null : _villageCtrl.text.trim(),
+          adresse: _adresseCtrl.text.trim().isEmpty
+              ? null
+              : _adresseCtrl.text.trim(),
+          villageVille: _villageCtrl.text.trim().isEmpty
+              ? null
+              : _villageCtrl.text.trim(),
         );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
+      final route = ref.read(authProvider).valueOrNull?.routeInitiale ??
+          AppRoutes.dashboard;
+      context.go(route);
+    } else {
+      final erreur = ref.read(authProvider).valueOrNull?.error ??
+          "Erreur lors de l'inscription.";
+      final message = erreur.replaceFirst(RegExp(r'^Exception:\s*'), '');
+      final emailDejaUtilise = message.contains('existe déjà');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text(
-              'Inscription réussie ! Connectez-vous avec vos identifiants.',
+            content: Text(
+              message,
+              style: GoogleFonts.inter(color: Colors.white),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.danger,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 4),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 5),
+            action: emailDejaUtilise
+                ? SnackBarAction(
+                    label: 'Se connecter',
+                    textColor: Colors.white70,
+                    onPressed: () => context.go(AppRoutes.login),
+                  )
+                : null,
           ),
         );
-        context.go(AppRoutes.login);
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            "Erreur lors de l'inscription. Réessayez.",
-            style: GoogleFonts.inter(color: Colors.white),
-          ),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
     }
   }
 
@@ -219,7 +226,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'AgriSmart',
+                      'KoobalaTech',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 17,
@@ -353,7 +360,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       // Email
                       _ChampTexte(
                         label: 'Email',
-                        hint: 'exemple@agrismart.sn',
+                        hint: 'exemple@koobalatec.sn',
                         controller: _emailCtrl,
                         icone: Icons.alternate_email_rounded,
                         type: TextInputType.emailAddress,

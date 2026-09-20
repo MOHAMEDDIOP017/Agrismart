@@ -11,17 +11,31 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 /// État de l'authentification
 class AuthState {
+  static const int maxTentatives = 3;
+  static const Duration dureeVerrouillage = Duration(seconds: 30);
+
   const AuthState({
     this.user,
     this.isLoading = false,
     this.error,
     this.isAuthenticated = false,
+    this.tentativesEchouees = 0,
+    this.isLocked = false,
   });
 
   final UserEntity? user;
   final bool isLoading;
   final String? error;
   final bool isAuthenticated;
+
+  /// Nombre de tentatives de connexion échouées consécutives
+  final int tentativesEchouees;
+
+  /// Vrai si le compte est temporairement verrouillé après trop d'échecs
+  final bool isLocked;
+
+  int get tentativesRestantes =>
+      (maxTentatives - tentativesEchouees).clamp(0, maxTentatives);
 
   /// Route d'accueil selon le rôle de l'utilisateur connecté
   String get routeInitiale {
@@ -34,12 +48,16 @@ class AuthState {
     bool? isLoading,
     String? error,
     bool? isAuthenticated,
+    int? tentativesEchouees,
+    bool? isLocked,
   }) =>
       AuthState(
         user: user ?? this.user,
         isLoading: isLoading ?? this.isLoading,
         error: error,
         isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+        tentativesEchouees: tentativesEchouees ?? this.tentativesEchouees,
+        isLocked: isLocked ?? this.isLocked,
       );
 }
 
@@ -57,13 +75,32 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }
 
   Future<bool> login({required String email, required String password}) async {
+    final current = state.valueOrNull ?? const AuthState();
+
+    // Accès verrouillé → refus immédiat
+    if (current.isLocked) return false;
+
     state = const AsyncLoading();
     try {
       final user = await _repo.login(email: email, password: password);
       state = AsyncData(AuthState(user: user, isAuthenticated: true));
       return true;
     } catch (e) {
-      state = AsyncData(AuthState(error: e.toString()));
+      final nouvelles = current.tentativesEchouees + 1;
+      final locked = nouvelles >= AuthState.maxTentatives;
+      state = AsyncData(AuthState(
+        error: e.toString(),
+        tentativesEchouees: nouvelles,
+        isLocked: locked,
+      ));
+      // Déverrouillage automatique après la durée configurée
+      if (locked) {
+        Future.delayed(AuthState.dureeVerrouillage, () {
+          if (state.valueOrNull?.isLocked == true) {
+            state = const AsyncData(AuthState());
+          }
+        });
+      }
       return false;
     }
   }
@@ -80,7 +117,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
   }) async {
     state = const AsyncLoading();
     try {
-      await _repo.register(
+      final user = await _repo.register(
         nom: nom,
         prenom: prenom,
         email: email,
@@ -90,8 +127,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         adresse: adresse,
         villageVille: villageVille,
       );
-      // Ne pas authentifier après inscription — l'utilisateur doit se connecter manuellement
-      state = const AsyncData(AuthState(isAuthenticated: false));
+      state = AsyncData(AuthState(user: user, isAuthenticated: true));
       return true;
     } catch (e) {
       state = AsyncData(AuthState(error: e.toString()));

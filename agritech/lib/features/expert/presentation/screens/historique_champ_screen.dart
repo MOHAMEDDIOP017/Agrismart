@@ -4,9 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/enums/statut_intervention.dart';
 import '../providers/expert_provider.dart';
-import '../widgets/gravite_badge.dart';
-
-/// Historique complet d'un champ — Diagnostics / Interventions / Données agro
+/// Historique complet d'un champ — Interventions / Données agro
 class HistoriqueChampScreen extends ConsumerStatefulWidget {
   const HistoriqueChampScreen({super.key, required this.champId});
   final String champId;
@@ -17,7 +15,7 @@ class HistoriqueChampScreen extends ConsumerStatefulWidget {
 
 class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
     with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 3, vsync: this);
+  late final TabController _tabs = TabController(length: 2, vsync: this);
 
   @override
   void dispose() {
@@ -28,8 +26,6 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
   @override
   Widget build(BuildContext context) {
     final champAsync = ref.watch(champSuperviseDetailProvider(widget.champId));
-    final diagnostics = ref.watch(diagnosticsNotifier).valueOrNull?.diagnostics ?? [];
-    final champDiags = diagnostics.where((d) => d.champId == widget.champId).toList();
     final interventions = ref.watch(interventionsProvider).valueOrNull ?? [];
     final champIntvs = interventions
         .where((i) => i.champId == widget.champId)
@@ -55,7 +51,6 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
           unselectedLabelColor: Colors.white60,
           labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
           tabs: const [
-            Tab(text: 'Diagnostics'),
             Tab(text: 'Interventions'),
             Tab(text: 'Données agro'),
           ],
@@ -64,27 +59,6 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
       body: TabBarView(
         controller: _tabs,
         children: [
-          // ── Onglet Diagnostics ────────────────────────────────
-          champDiags.isEmpty
-              ? _emptyState('Aucun diagnostic pour ce champ')
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: champDiags.length,
-                  itemBuilder: (_, i) {
-                    final d = champDiags[i];
-                    return _timelineItem(
-                      couleur: d.niveauGraviteIA.couleur,
-                      leading: Icon(d.niveauGraviteIA.icone,
-                          color: d.niveauGraviteIA.couleur, size: 18),
-                      title: d.maladieIA.nom,
-                      subtitle:
-                          '${d.dateSoumission.day}/${d.dateSoumission.month}/${d.dateSoumission.year}',
-                      trailing: GraviteBadge(
-                          gravite: d.niveauGraviteIA, compact: true),
-                    );
-                  },
-                ),
-
           // ── Onglet Interventions ──────────────────────────────
           champIntvs.isEmpty
               ? _emptyState('Aucune intervention pour ce champ')

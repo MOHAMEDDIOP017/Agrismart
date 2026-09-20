@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class CultureBase(BaseModel):
     """Données de référence d'une culture agricole."""
     nom: str = Field(..., max_length=100, description="Ex: Mil, Arachide, Niébé")
+    nomWolof: str = Field(..., max_length=100, description="Ex: dugub, gerte, ñebbe")
     variete: str = Field(..., max_length=100)
     cycleMaturation: int = Field(..., gt=0, description="Durée du cycle en jours")
     besoinsHydriques: str = Field(..., max_length=200)

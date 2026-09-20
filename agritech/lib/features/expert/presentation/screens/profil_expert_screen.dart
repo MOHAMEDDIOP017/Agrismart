@@ -3,10 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/auth/deconnexion_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../domain/entities/expert_entity.dart';
 import '../providers/expert_provider.dart';
 import '../widgets/animated_counter.dart';
 
-/// Profil complet de l'Expert avec statistiques et paramètres
+/// Profil de l'expert avec mode édition (nom, prénom, téléphone)
 class ProfilExpertScreen extends ConsumerStatefulWidget {
   const ProfilExpertScreen({super.key});
 
@@ -17,6 +18,74 @@ class ProfilExpertScreen extends ConsumerStatefulWidget {
 class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
   bool _notificationsActives = true;
   bool _editMode = false;
+  bool _enSauvegarde = false;
+
+  final _prenomCtrl = TextEditingController();
+  final _nomCtrl = TextEditingController();
+  final _telCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _prenomCtrl.dispose();
+    _nomCtrl.dispose();
+    _telCtrl.dispose();
+    super.dispose();
+  }
+
+  void _entrerEdition(ExpertEntity expert) {
+    _prenomCtrl.text = expert.prenom;
+    _nomCtrl.text = expert.nom;
+    _telCtrl.text = expert.telephone;
+    setState(() => _editMode = true);
+  }
+
+  Future<void> _sauvegarder(ExpertEntity expert) async {
+    final prenom = _prenomCtrl.text.trim();
+    final nom = _nomCtrl.text.trim();
+    final tel = _telCtrl.text.trim();
+
+    if (prenom.isEmpty || nom.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Le prénom et le nom sont obligatoires.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _enSauvegarde = true);
+
+    try {
+      await ref.read(profilExpertProvider.notifier).updateProfil(
+            expert.copyWith(prenom: prenom, nom: nom, telephone: tel),
+          );
+      if (mounted) {
+        setState(() {
+          _editMode = false;
+          _enSauvegarde = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Profil mis à jour.',
+                style: GoogleFonts.inter(color: Colors.white)),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _enSauvegarde = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erreur lors de la sauvegarde.'),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +98,7 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
         error: (e, _) => Center(child: Text('Erreur: $e')),
         data: (expert) => CustomScrollView(
           slivers: [
-            // ── En-tête vert foncé ──────────────────────────────
+            // ── En-tête ──────────────────────────────────────────
             SliverAppBar(
               expandedHeight: 200,
               pinned: true,
@@ -42,7 +111,6 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const SizedBox(height: 48),
-                      // Avatar cliquable
                       GestureDetector(
                         onTap: () {/* image picker */},
                         child: Stack(
@@ -62,9 +130,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(
-                                color: AppColors.amber,
-                                shape: BoxShape.circle,
-                              ),
+                                  color: AppColors.amber,
+                                  shape: BoxShape.circle),
                               child: const Icon(Icons.camera_alt,
                                   size: 14, color: Colors.white),
                             ),
@@ -87,11 +154,33 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                 ),
               ),
               actions: [
-                IconButton(
-                  icon: Icon(_editMode ? Icons.check : Icons.edit_outlined,
-                      color: Colors.white),
-                  onPressed: () => setState(() => _editMode = !_editMode),
-                ),
+                if (_enSauvegarde)
+                  const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    ),
+                  )
+                else if (_editMode) ...[
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => setState(() => _editMode = false),
+                    tooltip: 'Annuler',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.check, color: Colors.white),
+                    onPressed: () => _sauvegarder(expert),
+                    tooltip: 'Sauvegarder',
+                  ),
+                ] else
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                    onPressed: () => _entrerEdition(expert),
+                    tooltip: 'Modifier le profil',
+                  ),
               ],
             ),
 
@@ -102,22 +191,39 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                   // ── Informations ──────────────────────────────
                   _sectionTitle('Informations personnelles'),
                   const SizedBox(height: 10),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        children: [
-                          _infoRow(Icons.person_outline, 'Nom complet', expert.nomComplet),
-                          _infoRow(Icons.email_outlined, 'Email', expert.email),
-                          _infoRow(Icons.phone_outlined, 'Téléphone', expert.telephone),
-                          _infoRow(Icons.location_on_outlined, 'Région', expert.regionCouverture),
-                          _infoRow(Icons.science_outlined, 'Spécialité', expert.specialite.libelle),
-                          _infoRow(Icons.work_outline, 'Expérience',
-                              '${expert.anneesExperience} ans'),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _editMode
+                      ? _FormulaireEdition(
+                          prenomCtrl: _prenomCtrl,
+                          nomCtrl: _nomCtrl,
+                          telCtrl: _telCtrl,
+                          email: expert.email,
+                        )
+                      : Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            side: const BorderSide(color: AppColors.border),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              children: [
+                                _infoRow(Icons.person_outline, 'Nom complet',
+                                    expert.nomComplet),
+                                _infoRow(
+                                    Icons.email_outlined, 'Email', expert.email),
+                                _infoRow(Icons.phone_outlined, 'Téléphone',
+                                    expert.telephone),
+                                _infoRow(Icons.location_on_outlined, 'Région',
+                                    expert.regionCouverture),
+                                _infoRow(Icons.science_outlined, 'Spécialité',
+                                    expert.specialite.libelle),
+                                _infoRow(Icons.work_outline, 'Expérience',
+                                    '${expert.anneesExperience} ans'),
+                              ],
+                            ),
+                          ),
+                        ),
 
                   const SizedBox(height: 20),
 
@@ -132,8 +238,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                     mainAxisSpacing: 10,
                     childAspectRatio: 1.5,
                     children: [
-                      _statCard('Diagnostics validés',
-                          expert.nombreDiagnosticsValides, AppColors.primary),
+                      _statCard('Interventions réalisées',
+                          expert.nombreInterventions, AppColors.primary),
                       _statCard('Corrections apportées',
                           expert.nombreCorrections, AppColors.amber),
                       _statCard('Interventions réalisées',
@@ -143,7 +249,6 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  // Taux précision IA
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -157,7 +262,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                       children: [
                         Text('Taux de précision IA corrigée',
                             style: GoogleFonts.inter(
-                                fontSize: 13, color: AppColors.textSecondary)),
+                                fontSize: 13,
+                                color: AppColors.textSecondary)),
                         Text(expert.tauxPrecisionFormate,
                             style: GoogleFonts.poppins(
                                 fontSize: 22,
@@ -173,6 +279,11 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                   _sectionTitle('Paramètres'),
                   const SizedBox(height: 10),
                   Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
                     child: Column(
                       children: [
                         _paramTile(
@@ -276,7 +387,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
     VoidCallback? onTap,
   }) =>
       ListTile(
-        leading: Icon(icon, color: couleur ?? AppColors.textSecondary, size: 20),
+        leading:
+            Icon(icon, color: couleur ?? AppColors.textSecondary, size: 20),
         title: Text(label,
             style: GoogleFonts.poppins(
                 fontSize: 13,
@@ -300,14 +412,16 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text('Annuler',
-                style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+                style:
+                    GoogleFonts.poppins(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               await DeconnexionService.deconnecter(ref);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
             child: Text('Déconnexion',
                 style: GoogleFonts.poppins(
                     color: Colors.white, fontWeight: FontWeight.w600)),
@@ -316,4 +430,131 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
       ),
     );
   }
+}
+
+// ── Formulaire d'édition ────────────────────────────────────────────────────
+
+class _FormulaireEdition extends StatelessWidget {
+  const _FormulaireEdition({
+    required this.prenomCtrl,
+    required this.nomCtrl,
+    required this.telCtrl,
+    required this.email,
+  });
+
+  final TextEditingController prenomCtrl;
+  final TextEditingController nomCtrl;
+  final TextEditingController telCtrl;
+  final String email;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _ChampEdition(
+                      label: 'Prénom',
+                      controller: prenomCtrl,
+                      icone: Icons.person_outline,
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ChampEdition(
+                      label: 'Nom',
+                      controller: nomCtrl,
+                      icone: Icons.person_outline,
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Email en lecture seule
+              InputDecorator(
+                decoration: InputDecoration(
+                  labelText: 'Email (non modifiable)',
+                  prefixIcon: const Icon(Icons.email_outlined,
+                      size: 18, color: AppColors.textSecondary),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+                child: Text(email,
+                    style: GoogleFonts.inter(
+                        fontSize: 13, color: AppColors.textSecondary)),
+              ),
+              const SizedBox(height: 12),
+              _ChampEdition(
+                label: 'Téléphone',
+                controller: telCtrl,
+                icone: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _ChampEdition extends StatelessWidget {
+  const _ChampEdition({
+    required this.label,
+    required this.controller,
+    required this.icone,
+    this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final IconData icone;
+  final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+
+  @override
+  Widget build(BuildContext context) => TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        textCapitalization: textCapitalization,
+        style: GoogleFonts.poppins(fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.inter(
+              fontSize: 12, color: AppColors.textSecondary),
+          prefixIcon:
+              Icon(icone, size: 18, color: AppColors.textSecondary),
+          border:
+              OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.border),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide:
+                const BorderSide(color: AppColors.primaryDark, width: 1.5),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+      );
 }

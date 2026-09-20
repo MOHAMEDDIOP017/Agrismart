@@ -60,8 +60,12 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
       state = state.copyWith(progressMessage: 'Consultation du modèle IA...');
 
       final dio = ref.read(dioProvider);
+      // Moteur v2 (seul moteur actif) : classifieur multi-label (16 variables
+      // sol/climat/NDVI dérivées de la position du champ, 8 cultures dont
+      // Manioc, aptitude indépendante par culture). L'ancien moteur SVM et son
+      // endpoint /recommandations/generer ont été retirés du backend.
       final response = await dio.post(
-        ApiEndpoints.genererRecommandations(champId),
+        ApiEndpoints.genererRecommandationsV2(champId),
       );
 
       state = state.copyWith(progressMessage: 'Génération des recommandations...');
@@ -71,7 +75,7 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
       final topRecos = (data['topRecommandations'] as List)
           .asMap()
           .entries
-          .map((e) => RecommandationModel.fromPrediction(
+          .map((e) => RecommandationModel.fromPredictionV2(
                 e.value as Map<String, dynamic>,
                 champId,
                 e.key,
@@ -96,8 +100,10 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final dio = ref.read(dioProvider);
+      // Historique du moteur v2 (RecommandationCulture, diagramme UML) — seul
+      // moteur actif, l'ancien endpoint v1 a été retiré du backend.
       final response = await dio.get(
-        ApiEndpoints.recommandationsChamp(champId),
+        ApiEndpoints.recommandationsChampV2(champId),
       );
       final data = response.data as Map<String, dynamic>;
       final list = data['recommandations'] as List? ?? [];
@@ -115,13 +121,14 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
                 ?.map((e) => e.toString())
                 .toList() ??
             const [];
+        final score = ((item['probabiliteAptitude'] as num? ?? 0) * 100).round();
         return RecommandationModel(
           id: (item['id'] as String?) ?? 'reco_${e.key}',
           champId: champId,
           culture: (item['cultureNom'] as String?) ??
               (item['cultureRecommandeeId'] as String?) ??
               'Culture',
-          scoreCompatibilite: ((item['score'] as num? ?? 0) * 100).round(),
+          scoreCompatibilite: score,
           periodeIdealePlantation: (item['periodePlantation'] as String?) ?? '',
           rendementEstime: rendement,
           besoinEau: eau,

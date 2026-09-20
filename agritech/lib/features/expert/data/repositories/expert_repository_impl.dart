@@ -1,21 +1,14 @@
 import 'package:dio/dio.dart';
-import '../../domain/entities/diagnostic_expert_entity.dart';
 import '../../domain/entities/intervention_entity.dart';
 import '../../domain/entities/conseil_entity.dart';
-import '../../domain/entities/alerte_zone_entity.dart';
 import '../../domain/entities/champ_supervise_entity.dart';
 import '../../domain/entities/expert_entity.dart';
-import '../../domain/enums/decision_expert.dart';
+import '../../domain/entities/recommandation_expert_entity.dart';
 import '../../domain/enums/statut_intervention.dart';
 import '../../domain/enums/type_conseil.dart';
 import '../../domain/enums/type_intervention.dart';
 import '../../domain/enums/specialite_expert.dart';
 import '../../domain/repositories/expert_repository.dart';
-import '../../../detection/domain/entities/maladie_entity.dart';
-import '../../../detection/domain/entities/prediction_entity.dart';
-import '../../../detection/domain/enums/niveau_gravite.dart';
-import '../../../detection/domain/enums/statut_validation.dart';
-import '../../../detection/domain/enums/type_traitement.dart';
 import '../../../../core/network/api_client.dart';
 
 class ExpertRepositoryImpl implements ExpertRepository {
@@ -40,124 +33,6 @@ class ExpertRepositoryImpl implements ExpertRepository {
       'anneesExperience': expert.anneesExperience,
     });
     return expert;
-  }
-
-  // ── Diagnostics ───────────────────────────────────────────────────────────
-
-  @override
-  Future<List<DiagnosticExpertEntity>> getDiagnosticsEnAttente(String expertId) async {
-    final resp = await _dio.get('/diagnostics/en-attente?limite=30');
-    final data = resp.data as Map<String, dynamic>;
-    return (data['diagnostics'] as List? ?? [])
-        .cast<Map<String, dynamic>>()
-        .map(_mapDiagnostic)
-        .toList();
-  }
-
-  @override
-  Future<DiagnosticExpertEntity> getDiagnosticDetail(String diagnosticId) async {
-    final resp = await _dio.get('/diagnostics/$diagnosticId');
-    return _mapDiagnostic(resp.data as Map<String, dynamic>);
-  }
-
-  @override
-  Future<DiagnosticExpertEntity> validerDiagnostic({
-    required String diagnosticId,
-    required String expertId,
-    String? commentaire,
-    bool notifierAgriculteur = true,
-  }) async {
-    await _dio.post('/diagnostics/$diagnosticId/valider', data: {
-      'maladieId': null,
-      'commentaireExpert': commentaire ?? 'Diagnostic validé.',
-    });
-    final diag = await getDiagnosticDetail(diagnosticId);
-    // Retourne le diagnostic mis à jour avec le statut validé
-    return DiagnosticExpertEntity(
-      id: diag.id,
-      agriculteurId: diag.agriculteurId,
-      agriculteurNom: diag.agriculteurNom,
-      agriculteurTelephone: diag.agriculteurTelephone,
-      agriculteurVillage: diag.agriculteurVillage,
-      champId: diag.champId,
-      champNom: diag.champNom,
-      champSuperficie: diag.champSuperficie,
-      maladieIA: diag.maladieIA,
-      scoreConfiance: diag.scoreConfiance,
-      topPredictions: diag.topPredictions,
-      niveauGraviteIA: diag.niveauGraviteIA,
-      dateSoumission: diag.dateSoumission,
-      statut: StatutValidation.valideExpert,
-      imageUrl: diag.imageUrl,
-      expertId: expertId,
-      decisionExpert: DecisionExpert.correct,
-      commentaireValidation: commentaire,
-      notifierAgriculteur: notifierAgriculteur,
-      dateValidation: DateTime.now(),
-    );
-  }
-
-  @override
-  Future<DiagnosticExpertEntity> corrigerDiagnostic({
-    required String diagnosticId,
-    required String expertId,
-    required DecisionExpert decision,
-    required String maladieCorrIgeeId,
-    required NiveauGravite niveauGravite,
-    required String traitementRecommande,
-    String? dosage,
-    String? frequence,
-    int? dureeJours,
-    int? coutFCFA,
-    TypeTraitement? typeTraitement,
-    String? observations,
-    bool notifierAgriculteur = true,
-  }) async {
-    await _dio.post('/diagnostics/$diagnosticId/corriger', data: {
-      'maladieIdCorrecte': maladieCorrIgeeId,
-      'commentaireExpert': observations ?? traitementRecommande,
-    });
-    final diag = await getDiagnosticDetail(diagnosticId);
-    return DiagnosticExpertEntity(
-      id: diag.id,
-      agriculteurId: diag.agriculteurId,
-      agriculteurNom: diag.agriculteurNom,
-      agriculteurTelephone: diag.agriculteurTelephone,
-      agriculteurVillage: diag.agriculteurVillage,
-      champId: diag.champId,
-      champNom: diag.champNom,
-      champSuperficie: diag.champSuperficie,
-      maladieIA: diag.maladieIA,
-      scoreConfiance: diag.scoreConfiance,
-      topPredictions: diag.topPredictions,
-      niveauGraviteIA: diag.niveauGraviteIA,
-      dateSoumission: diag.dateSoumission,
-      statut: StatutValidation.valideExpert,
-      imageUrl: diag.imageUrl,
-      expertId: expertId,
-      decisionExpert: decision,
-      niveauGraviteCorrige: niveauGravite,
-      traitementRecommande: traitementRecommande,
-      dosageTraitement: dosage,
-      frequenceApplication: frequence,
-      dureeTraitement: dureeJours,
-      coutEstimeFCFA: coutFCFA,
-      typeTraitement: typeTraitement,
-      observationsExpert: observations,
-      notifierAgriculteur: notifierAgriculteur,
-      dateValidation: DateTime.now(),
-    );
-  }
-
-  @override
-  Future<void> rejeterDiagnostic({
-    required String diagnosticId,
-    required String expertId,
-    required String motifRejet,
-  }) async {
-    await _dio.post('/diagnostics/$diagnosticId/rejeter', data: {
-      'motifRejet': motifRejet,
-    });
   }
 
   // ── Champs supervisés ────────────────────────────────────────────────────
@@ -277,50 +152,6 @@ class ExpertRepositoryImpl implements ExpertRepository {
     return _mapConseil(resp.data as Map<String, dynamic>);
   }
 
-  // ── Alertes zone ──────────────────────────────────────────────────────────
-
-  @override
-  Future<List<AlerteZoneEntity>> getAlertesZone(String expertId) async {
-    // Les alertes zone = diagnostics EN_ATTENTE avec gravité ELEVE ou CRITIQUE
-    final resp = await _dio.get('/diagnostics/en-attente?limite=50');
-    final data = resp.data as Map<String, dynamic>;
-    return (data['diagnostics'] as List? ?? [])
-        .cast<Map<String, dynamic>>()
-        .where((d) {
-          final g = (d['niveauGravite'] ?? d['niveauGraviteIA'] ?? '').toString().toUpperCase();
-          return g == 'ELEVE' || g == 'CRITIQUE';
-        })
-        .map(_mapAlerte)
-        .toList();
-  }
-
-  @override
-  Future<AlerteZoneEntity> prendreEnChargeAlerte({
-    required String alerteId,
-    required String expertId,
-  }) async {
-    // Valider le diagnostic = prendre en charge l'alerte
-    await _dio.post('/diagnostics/$alerteId/valider', data: {
-      'maladieId': null,
-      'commentaireExpert': 'Prise en charge par l\'expert.',
-    });
-    final diag = await getDiagnosticDetail(alerteId);
-    return AlerteZoneEntity(
-      id: diag.id,
-      agriculteurId: diag.agriculteurId,
-      agriculteurNom: diag.agriculteurNom,
-      champId: diag.champId,
-      champNom: diag.champNom,
-      maladie: diag.maladieIA.nom,
-      niveauGravite: diag.niveauGraviteIA,
-      statut: StatutAlerteZone.enCours,
-      dateEmission: diag.dateSoumission,
-      region: 'Sénégal',
-      diagnosticId: diag.id,
-      expertEnChargeId: expertId,
-    );
-  }
-
   // ── Mappers ───────────────────────────────────────────────────────────────
 
   static ExpertEntity _mapExpert(Map<String, dynamic> json) => ExpertEntity(
@@ -336,63 +167,6 @@ class ExpertRepositoryImpl implements ExpertRepository {
         anneesExperience: json['anneesExperience'] as int? ?? 0,
         photoUrl: json['photo_url'] as String?,
       );
-
-  static DiagnosticExpertEntity _mapDiagnostic(Map<String, dynamic> json) {
-    final graviteStr =
-        (json['niveauGravite'] ?? json['niveauGraviteIA'] ?? 'MODERE') as String;
-    final maladie = _maladiePlaceholder(
-      (json['maladieDetectee'] ?? 'Maladie inconnue') as String,
-      graviteStr,
-    );
-    final top = json['topPredictions'] as List? ?? [];
-    return DiagnosticExpertEntity(
-      id: (json['id'] ?? '') as String,
-      agriculteurId: (json['agriculteurId'] ?? '') as String,
-      agriculteurNom: (json['agriculteurNom'] ?? 'Agriculteur') as String,
-      agriculteurTelephone: (json['agriculteurTelephone'] ?? '') as String,
-      agriculteurVillage: (json['agriculteurVillage'] ?? 'Sénégal') as String,
-      champId: (json['champId'] ?? '') as String,
-      champNom: (json['champNom'] ?? 'Champ') as String,
-      champSuperficie: ((json['champSuperficie'] ?? 1.0) as num).toDouble(),
-      maladieIA: maladie,
-      scoreConfiance:
-          ((json['scoreConfiance'] ?? 0.0) as num).toDouble(),
-      topPredictions: _mapPredictions(top),
-      niveauGraviteIA: NiveauGravite.fromString(graviteStr),
-      dateSoumission:
-          DateTime.tryParse(json['dateAnalyse']?.toString() ?? '') ??
-              DateTime.now(),
-      statut: StatutValidation.fromString(
-          json['statut'] as String? ?? 'EN_ATTENTE'),
-      imageUrl: json['imageUrl'] as String?,
-      expertId: json['expertId'] as String?,
-      commentaireValidation: json['commentaireExpert'] as String?,
-    );
-  }
-
-  static MaladieEntity _maladiePlaceholder(String nom, String niveau) =>
-      MaladieEntity(
-        id: nom.toLowerCase().replaceAll(' ', '_'),
-        nom: nom,
-        nomScientifique: '',
-        description: '',
-        symptomes: const [],
-        gravite: NiveauGravite.fromString(niveau),
-        culturesAffectees: const [],
-      );
-
-  static List<PredictionEntity> _mapPredictions(List<dynamic> top) =>
-      top.asMap().entries.map((e) {
-        final pred = e.value as Map<String, dynamic>;
-        final nom = (pred['maladie'] ?? pred['nom'] ?? 'Inconnu') as String;
-        final score =
-            ((pred['score'] ?? pred['scoreConfiance'] ?? 0.0) as num).toDouble();
-        return PredictionEntity(
-          maladie: _maladiePlaceholder(nom, 'MODERE'),
-          score: score,
-          rang: e.key + 1,
-        );
-      }).toList();
 
   static ChampSuperviseEntity _mapChamp(Map<String, dynamic> json) =>
       ChampSuperviseEntity(
@@ -480,25 +254,160 @@ class ExpertRepositoryImpl implements ExpertRepository {
     );
   }
 
-  static AlerteZoneEntity _mapAlerte(Map<String, dynamic> json) {
-    final graviteStr =
-        (json['niveauGravite'] ?? json['niveauGraviteIA'] ?? 'ELEVE') as String;
-    return AlerteZoneEntity(
+  // ── Recommandations cultures ───────────────────────────────────────────────
+
+  // NB : `expertId` n'est plus envoyé au backend — le validateur est déduit
+  // du token Firebase (Depends(get_utilisateur_courant)) côté serveur. Le
+  // paramètre est conservé dans la signature (appelant inchangé) mais ignoré
+  // pour la requête HTTP elle-même, uniquement utilisé dans les fallbacks
+  // locaux ci-dessous.
+  @override
+  Future<List<RecommandationExpertEntity>> getRecommandationsEnAttente(
+      String expertId) async {
+    try {
+      final resp = await _dio.get('/recommandations/v2/en-attente');
+      final data = resp.data as Map<String, dynamic>;
+      return (data['recommandations'] as List? ?? [])
+          .cast<Map<String, dynamic>>()
+          .map(_mapRecommandationExpert)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  @override
+  Future<RecommandationExpertEntity> validerRecommandation({
+    required String recoId,
+    required String expertId,
+    String? commentaire,
+    bool notifierAgriculteur = true,
+  }) async {
+    try {
+      final resp = await _dio.post(
+        '/recommandations/v2/analyses/$recoId/valider',
+        data: {
+          'commentaire': commentaire ?? 'Recommandation validée par l\'expert.',
+        },
+      );
+      return _mapRecommandationExpert(resp.data as Map<String, dynamic>);
+    } on DioException {
+      // Fallback : retourne une entité avec le statut mis à jour localement
+      return RecommandationExpertEntity(
+        id: recoId,
+        champId: '',
+        champNom: '',
+        champRegion: '',
+        agriculteurId: '',
+        agriculteurNom: '',
+        agriculteurTelephone: '',
+        top3Cultures: const [],
+        snapshot: const SnapshotAgronomique(),
+        statutValidation: 'VALIDEE',
+        dateGeneree: DateTime.now(),
+        expertId: expertId,
+        commentaireExpert: commentaire,
+        dateValidation: DateTime.now(),
+      );
+    }
+  }
+
+  @override
+  Future<RecommandationExpertEntity> corrigerOuRejeterRecommandation({
+    required String recoId,
+    required String expertId,
+    required String decision,
+    required String commentaire,
+    String? cultureCorrigee,
+    bool notifierAgriculteur = true,
+  }) async {
+    final endpoint = decision == 'CORRIGEE'
+        ? '/recommandations/v2/analyses/$recoId/corriger'
+        : '/recommandations/v2/analyses/$recoId/rejeter';
+
+    try {
+      final resp = await _dio.post(endpoint, data: {
+        if (decision == 'CORRIGEE') 'commentaire': commentaire,
+        if (decision == 'CORRIGEE' && cultureCorrigee != null)
+          'cultureCorrigeeNom': cultureCorrigee,
+        if (decision != 'CORRIGEE') 'motif': commentaire,
+      });
+      return _mapRecommandationExpert(resp.data as Map<String, dynamic>);
+    } on DioException {
+      return RecommandationExpertEntity(
+        id: recoId,
+        champId: '',
+        champNom: '',
+        champRegion: '',
+        agriculteurId: '',
+        agriculteurNom: '',
+        agriculteurTelephone: '',
+        top3Cultures: const [],
+        snapshot: const SnapshotAgronomique(),
+        statutValidation: decision,
+        dateGeneree: DateTime.now(),
+        expertId: expertId,
+        commentaireExpert: commentaire,
+        cultureCorrigee: cultureCorrigee,
+        dateValidation: DateTime.now(),
+      );
+    }
+  }
+
+  static RecommandationExpertEntity _mapRecommandationExpert(
+      Map<String, dynamic> json) {
+    final cultures = (json['top_cultures'] ?? json['predictions'] as List?) ?? [];
+    final top3 = (cultures as List)
+        .cast<Map<String, dynamic>>()
+        .asMap()
+        .entries
+        .take(3)
+        .map((e) => CultureScoreEntity(
+              nom: (e.value['cultureNom'] ?? e.value['culture'] ?? '—').toString(),
+              score: ((e.value['score'] ?? 0.0) as num).toDouble(),
+              rang: e.key + 1,
+              rendementEstime:
+                  (e.value['rendementEstime'] as num?)?.toDouble(),
+              periodeIdealePlantation:
+                  e.value['periodePlantation'] as String?,
+            ))
+        .toList();
+
+    final snap = (json['snapshot'] ?? json['donnees_entree'] as Map?) ?? {};
+    final snapshot = SnapshotAgronomique(
+      azote: (snap['azote'] ?? snap['N'] as num?)?.toDouble(),
+      phosphore: (snap['phosphore'] ?? snap['P'] as num?)?.toDouble(),
+      potassium: (snap['potassium'] ?? snap['K'] as num?)?.toDouble(),
+      ph: (snap['ph'] ?? snap['pH'] as num?)?.toDouble(),
+      humidite: (snap['humidite'] as num?)?.toDouble(),
+      temperature: (snap['temperature'] as num?)?.toDouble(),
+      pluviometrie: (snap['pluviometrie'] as num?)?.toDouble(),
+      typeSol: snap['typeSol'] as String?,
+    );
+
+    return RecommandationExpertEntity(
       id: (json['id'] ?? '') as String,
-      agriculteurId: (json['agriculteurId'] ?? '') as String,
-      agriculteurNom: (json['agriculteurNom'] ?? 'Agriculteur') as String,
       champId: (json['champId'] ?? '') as String,
       champNom: (json['champNom'] ?? 'Champ') as String,
-      maladie: (json['maladieDetectee'] ?? 'Maladie inconnue') as String,
-      niveauGravite: NiveauGravite.fromString(graviteStr),
-      statut: StatutAlerteZone.nonTraitee,
-      dateEmission:
-          DateTime.tryParse(json['dateAnalyse']?.toString() ?? '') ??
+      champRegion: (json['region'] ?? json['champRegion'] ?? 'Sénégal') as String,
+      agriculteurId: (json['agriculteurId'] ?? '') as String,
+      agriculteurNom: (json['agriculteurNom'] ?? 'Agriculteur') as String,
+      agriculteurTelephone: (json['agriculteurTelephone'] ?? '') as String,
+      top3Cultures: top3,
+      snapshot: snapshot,
+      statutValidation:
+          (json['statutValidation'] ?? json['statut'] ?? 'EN_ATTENTE')
+              .toString()
+              .toUpperCase(),
+      dateGeneree:
+          DateTime.tryParse(json['dateGeneree']?.toString() ?? '') ??
               DateTime.now(),
-      region: 'Sénégal',
-      diagnosticId: json['id'] as String?,
-      description: json['maladieDetectee'] as String?,
-      expertEnChargeId: json['expertId'] as String?,
+      expertId: json['expertId'] as String?,
+      commentaireExpert: json['commentaireExpert'] as String?,
+      cultureCorrigee: json['cultureCorrigee'] as String?,
+      dateValidation:
+          DateTime.tryParse(json['dateValidation']?.toString() ?? ''),
+      modeleIAVersion: json['modeleIAVersion'] as String?,
     );
   }
 }

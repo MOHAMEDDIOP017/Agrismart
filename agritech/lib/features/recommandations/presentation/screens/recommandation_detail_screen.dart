@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../data/models/recommandation_model.dart';
+import '../providers/post_recolte_provider.dart';
 
 /// BottomSheet détail d'une recommandation de culture
-class RecommandationDetailSheet extends StatelessWidget {
+class RecommandationDetailSheet extends ConsumerWidget {
   const RecommandationDetailSheet({super.key, required this.recommandation});
 
   final RecommandationModel recommandation;
@@ -17,7 +20,7 @@ class RecommandationDetailSheet extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
@@ -145,41 +148,45 @@ class RecommandationDetailSheet extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Section post-récolte
-                  ExpansionTile(
-                    title: const Text('Informations post-récolte'),
-                    leading: const Icon(Icons.store_rounded, color: AppColors.amber),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    collapsedShape: RoundedRectangleBorder(
+                  // Section post-récolte statique (estimations locales)
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.border),
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
                     ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          children: [
-                            _PostRecolteRow(
-                              label: 'Prix marché estimé',
-                              value: recommandation.prixLabel,
-                              icon: Icons.sell_outlined,
-                            ),
-                            const SizedBox(height: 12),
-                            _PostRecolteRow(
-                              label: 'Profit potentiel',
-                              value: recommandation.profitLabel,
-                              icon: Icons.trending_up_rounded,
-                            ),
-                            const SizedBox(height: 12),
-                            const _PostRecolteRow(
-                              label: 'Options',
-                              value: 'Vente brute · Transformation',
-                              icon: Icons.swap_horiz_rounded,
-                            ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.store_rounded,
+                                  color: AppColors.amber, size: 18),
+                              const SizedBox(width: 8),
+                              Text('Estimations post-récolte',
+                                  style: Theme.of(context).textTheme.titleLarge),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _PostRecolteRow(
+                            label: 'Prix marché estimé',
+                            value: recommandation.prixLabel,
+                            icon: Icons.sell_outlined,
+                          ),
+                          const SizedBox(height: 8),
+                          _PostRecolteRow(
+                            label: 'Profit potentiel',
+                            value: recommandation.profitLabel,
+                            icon: Icons.trending_up_rounded,
+                          ),
+                          if (recommandation.savedId != null) ...[
+                            const SizedBox(height: 16),
+                            _PostRecolteButton(savedId: recommandation.savedId!),
                           ],
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
 
                   const SizedBox(height: 32),
@@ -301,6 +308,152 @@ class _PostRecolteRow extends StatelessWidget {
                 .titleSmall
                 ?.copyWith(color: AppColors.textPrimary)),
       ],
+    );
+  }
+}
+
+/// Bouton + affichage des scénarios post-récolte depuis le backend.
+class _PostRecolteButton extends ConsumerStatefulWidget {
+  const _PostRecolteButton({required this.savedId});
+  final String savedId;
+
+  @override
+  ConsumerState<_PostRecolteButton> createState() => _PostRecolteButtonState();
+}
+
+class _PostRecolteButtonState extends ConsumerState<_PostRecolteButton> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_expanded) {
+      return AppButton(
+        label: 'Analyse post-récolte détaillée',
+        icon: Icons.agriculture_rounded,
+        isOutlined: true,
+        color: AppColors.amber,
+        onPressed: () => setState(() => _expanded = true),
+      );
+    }
+
+    final scenariosAsync = ref.watch(postRecolteProvider(widget.savedId));
+    return scenariosAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Text(
+        'Impossible de charger les scénarios : $e',
+        style: const TextStyle(color: AppColors.danger, fontSize: 12),
+      ),
+      data: (scenarios) {
+        if (scenarios.isEmpty) {
+          return Text(
+            'Aucun scénario disponible.',
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textSecondary),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: scenarios.map((s) => _ScenarioCard(scenario: s)).toList(),
+        );
+      },
+    );
+  }
+}
+
+class _ScenarioCard extends StatelessWidget {
+  const _ScenarioCard({required this.scenario});
+  final Map<String, dynamic> scenario;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = scenario['typeRec'] as String? ?? '';
+    final isTransfo = type == 'TRANSFORMATION';
+    final profit = (scenario['profitPotentiel'] as num? ?? 0).toInt();
+    final cout = (scenario['coutTransformation'] as num? ?? 0).toInt();
+    final score = ((scenario['score'] as num? ?? 0) * 100).round();
+    final color = isTransfo ? AppColors.primary : AppColors.amber;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isTransfo ? Icons.precision_manufacturing_outlined : Icons.sell_outlined,
+                color: color,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isTransfo ? 'Transformation' : 'Vente brute',
+                style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Score $score%',
+                  style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _InfoLigne(label: 'Profit potentiel', value: '$profit FCFA'),
+          if (isTransfo && cout > 0)
+            _InfoLigne(label: 'Coût transformation', value: '$cout FCFA'),
+        ],
+      ),
+    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.15, end: 0);
+  }
+}
+
+class _InfoLigne extends StatelessWidget {
+  const _InfoLigne({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: AppColors.textSecondary)),
+          const Spacer(),
+          Text(value,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleSmall),
+        ],
+      ),
     );
   }
 }

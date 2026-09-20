@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/expert_router.dart';
 import '../../domain/entities/conseil_entity.dart';
+import '../../domain/entities/recommandation_expert_entity.dart';
 import '../providers/expert_provider.dart';
 
 /// Gestion des conseils et recommandations
@@ -105,47 +106,48 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
     );
   }
 
-  Widget _recosCultures() => ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Text('Recommandations personnalisées',
-              style: GoogleFonts.poppins(
-                  fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          ..._recosMock.map(
-            (r) => Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: const Icon(Icons.eco_outlined, color: AppColors.primary),
-                title: Text(r['titre']!,
+  Widget _recosCultures() {
+    final async = ref.watch(recommandationsExpertProvider);
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(
+        child: Text('Erreur : $e',
+            style: GoogleFonts.inter(color: AppColors.textSecondary)),
+      ),
+      data: (state) {
+        final validees = state.recommandations
+            .where((r) => r.estValidee || r.estCorrigee)
+            .toList();
+        if (validees.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.eco_outlined,
+                    size: 48, color: AppColors.textSecondary),
+                const SizedBox(height: 12),
+                Text('Aucune recommandation validée',
                     style: GoogleFonts.poppins(
-                        fontSize: 13, fontWeight: FontWeight.w600)),
-                subtitle: Text(r['detail']!,
-                    style: GoogleFonts.inter(fontSize: 11),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis),
-              ),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+                const SizedBox(height: 6),
+                Text('Les recommandations validées ou corrigées apparaîtront ici.',
+                    style: GoogleFonts.inter(
+                        fontSize: 12, color: AppColors.textSecondary),
+                    textAlign: TextAlign.center),
+              ],
             ),
-          ),
-        ],
-      );
-
-  static const _recosMock = [
-    {
-      'titre': 'Rotation mil-niébé recommandée',
-      'detail':
-          'Pour les sols sableux de la région de Thiès, alterner mil et niébé améliore la structure du sol.',
-    },
-    {
-      'titre': 'Variété de sorgho résistant à la sécheresse',
-      'detail': 'IRAT 204 recommandée pour les zones à faibles précipitations.',
-    },
-    {
-      'titre': 'Période de semis optimale arachide',
-      'detail':
-          'Semer entre le 15 juin et le 15 juillet pour maximiser le rendement.',
-    },
-  ];
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: validees.length,
+          itemBuilder: (_, i) => _RecoValideeCard(reco: validees[i]),
+        );
+      },
+    );
+  }
 }
 
 class _ConseilCard extends StatelessWidget {
@@ -210,6 +212,89 @@ class _ConseilCard extends StatelessWidget {
             color: conseil.estLu ? AppColors.primary : AppColors.textSecondary,
             shape: BoxShape.circle,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RecoValideeCard extends StatelessWidget {
+  const _RecoValideeCard({required this.reco});
+  final RecommandationExpertEntity reco;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleur =
+        reco.estCorrigee ? AppColors.info : AppColors.primary;
+    final premiere = reco.premiereCulture;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: couleur.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.eco_outlined, color: couleur, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    premiere?.nom ?? 'Culture non définie',
+                    style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: couleur),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: couleur.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    reco.statutLibelle,
+                    style: GoogleFonts.poppins(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: couleur),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${reco.champNom} · ${reco.agriculteurNom}',
+              style: GoogleFonts.inter(
+                  fontSize: 11, color: AppColors.textSecondary),
+            ),
+            if (reco.commentaireExpert != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                reco.commentaireExpert!,
+                style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text(
+              reco.tempsEcoule,
+              style: GoogleFonts.inter(
+                  fontSize: 10, color: AppColors.textSecondary),
+            ),
+          ],
         ),
       ),
     );

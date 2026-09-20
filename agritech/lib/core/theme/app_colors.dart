@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
-/// Palette de couleurs de l'application AgriSmart
+/// Palette de couleurs de l'application KoobalaTech
 class AppColors {
   AppColors._();
 

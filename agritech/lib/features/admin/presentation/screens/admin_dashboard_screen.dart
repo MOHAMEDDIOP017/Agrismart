@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -32,7 +32,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Administration AgriSmart',
+              'Administration KoobalaTech',
               style: AppTypography.textTheme.titleLarge!.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,

@@ -1,12 +1,12 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:agritech/app.dart';
 
 void main() {
-  testWidgets('AgriSmart smoke test', (WidgetTester tester) async {
+  testWidgets('KoobalaTech smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: AgriSmartApp()),
+      const ProviderScope(child: KoobalaTechApp()),
     );
-    expect(find.byType(AgriSmartApp), findsOneWidget);
+    expect(find.byType(KoobalaTechApp), findsOneWidget);
   });
 }
