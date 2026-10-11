@@ -112,7 +112,9 @@ class UserEntity extends Equatable {
       case RoleUtilisateur.admin:
         return '/admin/dashboard';
       case RoleUtilisateur.expert:
-        return '/expert/dashboard';
+        // La file de validation, et non l'ancien tableau de bord : c'est la
+        // tâche première du rôle, et elle n'avait aucune entrée de navigation.
+        return '/expert/recommandations';
       case RoleUtilisateur.agriculteur:
         return '/home/dashboard';
     }
@@ -125,12 +127,15 @@ class UserEntity extends Equatable {
       prenom: (json['prenom'] ?? '') as String,
       email: (json['email'] ?? '') as String,
       telephone: (json['telephone'] ?? '') as String,
-      zoneGeographique:
-          (json['zone_geographique'] ?? json['zoneGeographique'] ?? '') as String,
-      role: RoleUtilisateur.fromString(json['role'] as String? ?? 'AGRICULTEUR'),
+      zoneGeographique: (json['zone_geographique'] ??
+          json['zoneGeographique'] ??
+          '') as String,
+      role:
+          RoleUtilisateur.fromString(json['role'] as String? ?? 'AGRICULTEUR'),
       photoUrl: json['photo_url'] as String?,
       actif: json['actif'] as bool? ?? true,
-      dateInscription: _parseDate(json['date_inscription'] ?? json['dateInscription']),
+      dateInscription:
+          _parseDate(json['date_inscription'] ?? json['dateInscription']),
       // Agriculteur
       adresse: json['adresse'] as String?,
       villageVille: (json['village_ville'] ?? json['villageVille']) as String?,

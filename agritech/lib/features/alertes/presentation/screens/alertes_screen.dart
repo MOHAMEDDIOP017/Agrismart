@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/empty_state_widget.dart';
 import '../../data/models/alerte_model.dart';
 import '../providers/alertes_provider.dart';
 import '../widgets/alerte_card.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran liste des alertes avec filtres par niveau
 class AlertesScreen extends ConsumerStatefulWidget {
@@ -58,7 +57,7 @@ class _AlertesScreenState extends ConsumerState<AlertesScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.danger,
+                  color: context.couleurs.erreur,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -85,8 +84,7 @@ class _AlertesScreenState extends ConsumerState<AlertesScreen> {
           else
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
-              onPressed: () =>
-                  ref.read(alertesProvider.notifier).rafraichir(),
+              onPressed: () => ref.read(alertesProvider.notifier).rafraichir(),
             ),
         ],
       ),
@@ -107,35 +105,43 @@ class _AlertesScreenState extends ConsumerState<AlertesScreen> {
                   label: Text(_filtreLabels[filtre] ?? filtre),
                   selected: isSelected,
                   onSelected: (_) => setState(() => _filtreActif = filtre),
-                  selectedColor: AppColors.primary.withValues(alpha: 0.15),
-                  checkmarkColor: AppColors.primary,
+                  selectedColor:
+                      context.couleurs.primaire.withValues(alpha: 0.15),
+                  checkmarkColor: context.couleurs.primaire,
                   labelStyle: TextStyle(
-                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? context.couleurs.primaire
+                        : context.couleurs.texteSecondaire,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                     fontSize: 12,
                   ),
                 );
               },
             ),
-          ).animate().fadeIn(duration: 300.ms),
+          ),
 
           const Divider(height: 1),
 
           // Liste des alertes
           Expanded(
             child: alertes.isEmpty
-                ? const EmptyStateWidget(
-                    title: 'Aucune alerte',
+                ? const EtatVide(
+                    titre: 'Aucune alerte',
                     message: 'Aucune alerte pour ce niveau de filtre.',
-                    icon: Icons.notifications_off_outlined,
+                    sujet: SujetIllustration.recherche,
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(top: 8, bottom: 24),
                     itemCount: alertes.length,
-                    itemBuilder: (context, index) => AlerteCard(
-                      alerte: alertes[index],
+                    itemBuilder: (context, index) => ApparitionCascade(
                       index: index,
-                      onTap: () => context.push('/home/alertes/${alertes[index].id}'),
+                      child: AlerteCard(
+                        alerte: alertes[index],
+                        index: index,
+                        onTap: () =>
+                            context.push('/home/alertes/${alertes[index].id}'),
+                      ),
                     ),
                   ),
           ),

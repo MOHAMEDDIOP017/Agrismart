@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 
-/// Configuration centralisée de l'URL du backend KoobalaTech.
+/// Configuration centralisée de l'URL du backend AgriSmart.
 ///
 /// ⚠️ Quand l'IP change (nouveau réseau Wi-Fi) :
 ///   1. Exécuter dans PowerShell : ipconfig
@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 ///   5. Hot reload Flutter (R dans le terminal flutter run)
 class ApiConfig {
   // ── À mettre à jour si l'IP Wi-Fi du PC change ───────────────────────────
-  static const String _wifiPcIp = '10.86.209.5';
+  static const String _wifiPcIp = '10.221.57.5';
   // ──────────────────────────────────────────────────────────────────────────
 
   static const int _port = 8000;
@@ -20,7 +20,7 @@ class ApiConfig {
   static const bool _isProduction = false;
 
   /// URL du backend déployé (à configurer avant la mise en production).
-  static const String _productionUrl = 'https://api.koobalatec.example.com';
+  static const String _productionUrl = 'https://api.agrismart.example.com';
 
   /// URL de base du backend selon la plateforme et le mode.
   static String get baseUrl {
@@ -51,10 +51,11 @@ class ApiConfig {
     if (!kDebugMode) return;
     final platform = kIsWeb ? 'Web' : Platform.operatingSystem;
     debugPrint('═══════════════════════════════════════════════');
-    debugPrint('  KoobalaTech — Configuration réseau');
+    debugPrint('  AgriSmart — Configuration réseau');
     debugPrint('═══════════════════════════════════════════════');
     debugPrint('  Plateforme  : $platform');
-    debugPrint('  Mode        : ${_isProduction ? "Production" : "Développement"}');
+    debugPrint(
+        '  Mode        : ${_isProduction ? "Production" : "Développement"}');
     debugPrint('  URL backend : $baseUrl');
     debugPrint('═══════════════════════════════════════════════');
   }

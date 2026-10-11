@@ -38,13 +38,14 @@ class ExpertRepositoryImpl implements ExpertRepository {
   // ── Champs supervisés ────────────────────────────────────────────────────
 
   @override
-  Future<List<ChampSuperviseEntity>> getChampsSupervises(String expertId) async {
+  Future<List<ChampSuperviseEntity>> getChampsSupervises(
+      String expertId) async {
     // Récupère les interventions de l'expert, extrait les champIds uniques
     try {
       final resp = await _dio.get('/interventions/expert/$expertId');
       final data = resp.data as Map<String, dynamic>;
-      final interventions = (data['interventions'] as List? ?? [])
-          .cast<Map<String, dynamic>>();
+      final interventions =
+          (data['interventions'] as List? ?? []).cast<Map<String, dynamic>>();
 
       final champIds = interventions
           .map((i) => i['champId'] as String? ?? '')
@@ -98,8 +99,7 @@ class ExpertRepositoryImpl implements ExpertRepository {
     String agriculteurId = '';
     try {
       final champResp = await _dio.get('/champs/$champId');
-      agriculteurId =
-          (champResp.data['agriculteurId'] ?? '') as String;
+      agriculteurId = (champResp.data['agriculteurId'] ?? '') as String;
     } catch (_) {}
 
     final resp = await _dio.post('/interventions', data: {
@@ -160,8 +160,7 @@ class ExpertRepositoryImpl implements ExpertRepository {
         prenom: (json['prenom'] ?? '') as String,
         email: (json['email'] ?? '') as String,
         telephone: (json['telephone'] ?? '') as String,
-        regionCouverture:
-            (json['zone_geographique'] ?? 'Sénégal') as String,
+        regionCouverture: (json['zone_geographique'] ?? 'Sénégal') as String,
         specialite: SpecialiteExpert.fromString(
             json['specialite'] as String? ?? 'GENERALISTE'),
         anneesExperience: json['anneesExperience'] as int? ?? 0,
@@ -174,8 +173,7 @@ class ExpertRepositoryImpl implements ExpertRepository {
         nom: (json['nom'] ?? '') as String,
         agriculteurId: (json['agriculteurId'] ?? '') as String,
         agriculteurNom: (json['agriculteurNom'] ?? 'Agriculteur') as String,
-        agriculteurTelephone:
-            (json['agriculteurTelephone'] ?? '') as String,
+        agriculteurTelephone: (json['agriculteurTelephone'] ?? '') as String,
         superficie: ((json['superficie'] ?? 1.0) as num).toDouble(),
         typeSol: (json['typeSol'] ?? '') as String,
         statut: (json['statut'] ?? 'EN_COURS') as String,
@@ -194,8 +192,7 @@ class ExpertRepositoryImpl implements ExpertRepository {
       'CONSEIL' => TypeIntervention.conseil,
       _ => TypeIntervention.suivi,
     };
-    final statutStr =
-        (json['statut'] ?? 'PLANIFIEE').toString().toUpperCase();
+    final statutStr = (json['statut'] ?? 'PLANIFIEE').toString().toUpperCase();
     final statut = switch (statutStr) {
       'REALISEE' => StatutIntervention.realisee,
       'ANNULEE' => StatutIntervention.annulee,
@@ -218,14 +215,12 @@ class ExpertRepositoryImpl implements ExpertRepository {
       materielNecessaire:
           (json['materielNecessaire'] as List? ?? []).cast<String>(),
       notesRealisation: json['rapportIntervention'] as String?,
-      dateCreation:
-          DateTime.tryParse(json['dateCreation']?.toString() ?? ''),
+      dateCreation: DateTime.tryParse(json['dateCreation']?.toString() ?? ''),
     );
   }
 
   static ConseilEntity _mapConseil(Map<String, dynamic> json) {
-    final typeStr =
-        (json['typeConseil'] ?? 'AUTRE').toString().toUpperCase();
+    final typeStr = (json['typeConseil'] ?? 'AUTRE').toString().toUpperCase();
     final type = switch (typeStr) {
       'CULTURE' => TypeConseil.culture,
       'TRAITEMENT' => TypeConseil.traitement,
@@ -245,8 +240,8 @@ class ExpertRepositoryImpl implements ExpertRepository {
       titre: (json['titre'] ?? '') as String,
       corps: (json['contenu'] ?? json['corps'] ?? '') as String,
       statut: lu ? StatutConseil.lu : StatutConseil.envoye,
-      dateCreation:
-          DateTime.tryParse(json['dateEnvoi']?.toString() ?? '') ?? DateTime.now(),
+      dateCreation: DateTime.tryParse(json['dateEnvoi']?.toString() ?? '') ??
+          DateTime.now(),
       estUrgent: json['urgent'] as bool? ?? false,
       dateLecture: json['dateLecture'] != null
           ? DateTime.tryParse(json['dateLecture'].toString())
@@ -356,20 +351,20 @@ class ExpertRepositoryImpl implements ExpertRepository {
 
   static RecommandationExpertEntity _mapRecommandationExpert(
       Map<String, dynamic> json) {
-    final cultures = (json['top_cultures'] ?? json['predictions'] as List?) ?? [];
+    final cultures =
+        (json['top_cultures'] ?? json['predictions'] as List?) ?? [];
     final top3 = (cultures as List)
         .cast<Map<String, dynamic>>()
         .asMap()
         .entries
         .take(3)
         .map((e) => CultureScoreEntity(
-              nom: (e.value['cultureNom'] ?? e.value['culture'] ?? '—').toString(),
+              nom: (e.value['cultureNom'] ?? e.value['culture'] ?? '—')
+                  .toString(),
               score: ((e.value['score'] ?? 0.0) as num).toDouble(),
               rang: e.key + 1,
-              rendementEstime:
-                  (e.value['rendementEstime'] as num?)?.toDouble(),
-              periodeIdealePlantation:
-                  e.value['periodePlantation'] as String?,
+              rendementEstime: (e.value['rendementEstime'] as num?)?.toDouble(),
+              periodeIdealePlantation: e.value['periodePlantation'] as String?,
             ))
         .toList();
 
@@ -389,7 +384,8 @@ class ExpertRepositoryImpl implements ExpertRepository {
       id: (json['id'] ?? '') as String,
       champId: (json['champId'] ?? '') as String,
       champNom: (json['champNom'] ?? 'Champ') as String,
-      champRegion: (json['region'] ?? json['champRegion'] ?? 'Sénégal') as String,
+      champRegion:
+          (json['region'] ?? json['champRegion'] ?? 'Sénégal') as String,
       agriculteurId: (json['agriculteurId'] ?? '') as String,
       agriculteurNom: (json['agriculteurNom'] ?? 'Agriculteur') as String,
       agriculteurTelephone: (json['agriculteurTelephone'] ?? '') as String,
@@ -399,9 +395,8 @@ class ExpertRepositoryImpl implements ExpertRepository {
           (json['statutValidation'] ?? json['statut'] ?? 'EN_ATTENTE')
               .toString()
               .toUpperCase(),
-      dateGeneree:
-          DateTime.tryParse(json['dateGeneree']?.toString() ?? '') ??
-              DateTime.now(),
+      dateGeneree: DateTime.tryParse(json['dateGeneree']?.toString() ?? '') ??
+          DateTime.now(),
       expertId: json['expertId'] as String?,
       commentaireExpert: json['commentaireExpert'] as String?,
       cultureCorrigee: json['cultureCorrigee'] as String?,

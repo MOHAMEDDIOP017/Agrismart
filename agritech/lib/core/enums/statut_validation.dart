@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 enum StatutValidation {
   enAttente,
@@ -19,16 +20,39 @@ enum StatutValidation {
     }
   }
 
+  /// Couleur du statut, en mode clair.
+  ///
+  /// Conservée pour les écrans qui n'ont pas encore de `BuildContext` sous la
+  /// main. Un composant qui doit suivre le mode sombre appelle [couleurDe].
   Color get couleur {
     switch (this) {
       case StatutValidation.enAttente:
-        return const Color(0xFFEF9F27);
+        return AppPalette.avertissement;
       case StatutValidation.validee:
-        return const Color(0xFF1D9E75);
+        return AppPalette.succes;
       case StatutValidation.corrigee:
-        return const Color(0xFF1976D2);
+        return AppPalette.info;
       case StatutValidation.rejetee:
-        return const Color(0xFFE53935);
+        return AppPalette.erreur;
+    }
+  }
+
+  /// Couleur du statut résolue pour le mode d'affichage en cours.
+  ///
+  /// Le statut reste une donnée métier : l'enum décide quelle famille
+  /// sémantique lui correspond, le thème décide de la teinte. Les hex étaient
+  /// auparavant écrits ici en double de la palette, sans rien pour garantir
+  /// qu'ils resteraient synchronisés.
+  Color couleurDe(CouleursAgriSmart couleurs) {
+    switch (this) {
+      case StatutValidation.enAttente:
+        return couleurs.validationEnAttente;
+      case StatutValidation.validee:
+        return couleurs.validationValidee;
+      case StatutValidation.corrigee:
+        return couleurs.validationCorrigee;
+      case StatutValidation.rejetee:
+        return couleurs.validationRejetee;
     }
   }
 

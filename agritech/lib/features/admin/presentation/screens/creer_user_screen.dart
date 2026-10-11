@@ -17,9 +17,20 @@ class CreerUserScreen extends ConsumerStatefulWidget {
 class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
   static const Color _adminPrimary = Color(0xFF534AB7);
   static const List<String> _regions = [
-    'Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Ziguinchor',
-    'Tambacounda', 'Diourbel', 'Louga', 'Fatick', 'Kaffrine',
-    'Kédougou', 'Kolda', 'Matam', 'Sédhiou',
+    'Dakar',
+    'Thiès',
+    'Kaolack',
+    'Saint-Louis',
+    'Ziguinchor',
+    'Tambacounda',
+    'Diourbel',
+    'Louga',
+    'Fatick',
+    'Kaffrine',
+    'Kédougou',
+    'Kolda',
+    'Matam',
+    'Sédhiou',
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -44,8 +55,14 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
   @override
   void dispose() {
     for (final c in [
-      _prenomCtrl, _nomCtrl, _emailCtrl, _telCtrl,
-      _mdpCtrl, _confirmMdpCtrl, _villeCtrl, _zoneGeoCtrl,
+      _prenomCtrl,
+      _nomCtrl,
+      _emailCtrl,
+      _telCtrl,
+      _mdpCtrl,
+      _confirmMdpCtrl,
+      _villeCtrl,
+      _zoneGeoCtrl,
     ]) {
       c.dispose();
     }
@@ -56,19 +73,24 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _enChargement = true);
 
-    final erreur = await ref.read(gestionUtilisateursProvider.notifier).creerUtilisateur(
-      nom: _nomCtrl.text.trim(),
-      prenom: _prenomCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-      telephone: _telCtrl.text.trim(),
-      motDePasse: _mdpCtrl.text,
-      role: _role,
-      region: _regionSelectionnee ?? '',
-      ville: _villeCtrl.text.trim().isEmpty ? null : _villeCtrl.text.trim(),
-      specialite: _role == RoleUtilisateur.expert ? _specialiteSelectionnee : null,
-      anneesExperience: _role == RoleUtilisateur.expert ? _anneesExperience : null,
-      niveauAcces: _role == RoleUtilisateur.admin ? _niveauAcces.toInt() : null,
-    );
+    final erreur = await ref
+        .read(gestionUtilisateursProvider.notifier)
+        .creerUtilisateur(
+          nom: _nomCtrl.text.trim(),
+          prenom: _prenomCtrl.text.trim(),
+          email: _emailCtrl.text.trim(),
+          telephone: _telCtrl.text.trim(),
+          motDePasse: _mdpCtrl.text,
+          role: _role,
+          region: _regionSelectionnee ?? '',
+          ville: _villeCtrl.text.trim().isEmpty ? null : _villeCtrl.text.trim(),
+          specialite:
+              _role == RoleUtilisateur.expert ? _specialiteSelectionnee : null,
+          anneesExperience:
+              _role == RoleUtilisateur.expert ? _anneesExperience : null,
+          niveauAcces:
+              _role == RoleUtilisateur.admin ? _niveauAcces.toInt() : null,
+        );
 
     setState(() => _enChargement = false);
     if (!mounted) return;
@@ -79,7 +101,7 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
           content: Text(
             'Utilisateur ${_prenomCtrl.text} ${_nomCtrl.text} créé avec succès',
           ),
-          backgroundColor: AppColors.primary,
+          backgroundColor: context.couleurs.primaire,
         ),
       );
       Navigator.pop(context);
@@ -96,7 +118,7 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -114,7 +136,8 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Identité ────────────────────────────────────────
-              const AdminSectionTitre(titre: 'Identité', icone: Icons.person_outline),
+              const AdminSectionTitre(
+                  titre: 'Identité', icone: Icons.person_outline),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -168,8 +191,7 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
                 ctrl: _mdpCtrl,
                 label: 'Mot de passe',
                 afficher: _afficherMdp,
-                onToggle: () =>
-                    setState(() => _afficherMdp = !_afficherMdp),
+                onToggle: () => setState(() => _afficherMdp = !_afficherMdp),
                 validateur: (v) {
                   if (v!.isEmpty) return 'Champ requis';
                   if (v.length < 8) return 'Minimum 8 caractères';
@@ -194,7 +216,8 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
               const SizedBox(height: 24),
 
               // ── Rôle ────────────────────────────────────────────
-              const AdminSectionTitre(titre: 'Rôle', icone: Icons.admin_panel_settings_outlined),
+              const AdminSectionTitre(
+                  titre: 'Rôle', icone: Icons.admin_panel_settings_outlined),
               const SizedBox(height: 12),
               SegmentedButton<RoleUtilisateur>(
                 segments: const [
@@ -215,8 +238,7 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
                   ),
                 ],
                 selected: {_role},
-                onSelectionChanged: (s) =>
-                    setState(() => _role = s.first),
+                onSelectionChanged: (s) => setState(() => _role = s.first),
                 style: ButtonStyle(
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.selected)) {
@@ -237,11 +259,9 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
                   onSpecialiteChange: (v) =>
                       setState(() => _specialiteSelectionnee = v),
                   anneesExperience: _anneesExperience,
-                  onAnneesChange: (v) =>
-                      setState(() => _anneesExperience = v),
+                  onAnneesChange: (v) => setState(() => _anneesExperience = v),
                   niveauAcces: _niveauAcces,
-                  onNiveauChange: (v) =>
-                      setState(() => _niveauAcces = v),
+                  onNiveauChange: (v) => setState(() => _niveauAcces = v),
                 ),
               ),
 
@@ -253,14 +273,13 @@ class _CreerUserScreenState extends ConsumerState<CreerUserScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 value: _regionSelectionnee,
-                decoration: adminDecorChamp('Région', Icons.map_outlined),
+                decoration:
+                    adminDecorChamp(context, 'Région', Icons.map_outlined),
                 hint: const Text('Sélectionner une région'),
                 items: _regions
-                    .map((r) =>
-                        DropdownMenuItem(value: r, child: Text(r)))
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                     .toList(),
-                onChanged: (v) =>
-                    setState(() => _regionSelectionnee = v),
+                onChanged: (v) => setState(() => _regionSelectionnee = v),
                 validator: (v) =>
                     v == null ? 'Veuillez sélectionner une région' : null,
               ),
@@ -337,7 +356,7 @@ class _Champ extends StatelessWidget {
     return TextFormField(
       controller: ctrl,
       keyboardType: clavier,
-      decoration: adminDecorChamp(label, icone),
+      decoration: adminDecorChamp(context, label, icone),
       validator: validateur,
     );
   }
@@ -363,11 +382,11 @@ class _ChampMdp extends StatelessWidget {
     return TextFormField(
       controller: ctrl,
       obscureText: !afficher,
-      decoration: adminDecorChamp(label, Icons.lock_outline).copyWith(
+      decoration: adminDecorChamp(context, label, Icons.lock_outline).copyWith(
         suffixIcon: IconButton(
           icon: Icon(
             afficher ? Icons.visibility_off : Icons.visibility,
-            color: AppColors.textSecondary,
+            color: context.couleurs.texteSecondaire,
           ),
           onPressed: onToggle,
         ),
@@ -430,7 +449,8 @@ class _ChampsRoleSpecifiques extends StatelessWidget {
           children: [
             DropdownButtonFormField<String>(
               value: specialite,
-              decoration: adminDecorChamp('Spécialité', Icons.science_outlined),
+              decoration: adminDecorChamp(
+                  context, 'Spécialité', Icons.science_outlined),
               hint: const Text('Choisir une spécialité'),
               items: _specialites
                   .map((s) => DropdownMenuItem(value: s, child: Text(s)))
@@ -440,8 +460,8 @@ class _ChampsRoleSpecifiques extends StatelessWidget {
             const SizedBox(height: 16),
             Row(
               children: [
-                const Icon(Icons.work_history_outlined,
-                    size: 18, color: AppColors.textSecondary),
+                Icon(Icons.work_history_outlined,
+                    size: 18, color: context.couleurs.texteSecondaire),
                 const SizedBox(width: 8),
                 Text(
                   'Années d\'expérience : $anneesExperience',
@@ -470,8 +490,8 @@ class _ChampsRoleSpecifiques extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.security_outlined,
-                  size: 18, color: AppColors.textSecondary),
+              Icon(Icons.security_outlined,
+                  size: 18, color: context.couleurs.texteSecondaire),
               const SizedBox(width: 8),
               Text(
                 'Niveau d\'accès : ${niveauAcces.toInt()}',

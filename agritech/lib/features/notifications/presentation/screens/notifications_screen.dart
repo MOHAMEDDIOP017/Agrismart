@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../navigation/destinations_notifications.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/notification_model.dart';
 import '../providers/notifications_provider.dart';
 
@@ -24,7 +25,8 @@ class NotificationsScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => ref.read(notificationsProvider.notifier).rafraichir(),
+            onPressed: () =>
+                ref.read(notificationsProvider.notifier).rafraichir(),
             tooltip: 'Actualiser',
           ),
         ],
@@ -35,12 +37,15 @@ class NotificationsScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.wifi_off_rounded, size: 56, color: AppColors.textSecondary),
+              Icon(Icons.wifi_off_rounded,
+                  size: 56, color: context.couleurs.texteSecondaire),
               const SizedBox(height: 16),
-              Text('Impossible de charger les notifications', style: Theme.of(context).textTheme.bodyLarge),
+              Text('Impossible de charger les notifications',
+                  style: Theme.of(context).textTheme.bodyLarge),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => ref.read(notificationsProvider.notifier).rafraichir(),
+                onPressed: () =>
+                    ref.read(notificationsProvider.notifier).rafraichir(),
                 child: const Text('Réessayer'),
               ),
             ],
@@ -52,9 +57,16 @@ class NotificationsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none_rounded, size: 72, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+                  Icon(Icons.notifications_none_rounded,
+                      size: 72,
+                      color: context.couleurs.texteSecondaire
+                          .withValues(alpha: 0.4)),
                   const SizedBox(height: 16),
-                  Text('Aucune notification', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppColors.textSecondary)),
+                  Text('Aucune notification',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(color: context.couleurs.texteSecondaire)),
                 ],
               ),
             );
@@ -89,25 +101,41 @@ class _NotifTile extends ConsumerWidget {
         _ => Icons.notifications_rounded,
       };
 
-  Color _colorForType(String type) => switch (type) {
-        'ALERTE_MALADIE' => AppColors.danger,
-        'DIAGNOSTIC_PRET' => AppColors.primary,
-        'INTERVENTION_PLANIFIEE' => Colors.orange,
-        _ => AppColors.primaryDark,
+  Color _colorForType(BuildContext context, String type) => switch (type) {
+        'ALERTE_MALADIE' => context.couleurs.erreur,
+        'DIAGNOSTIC_PRET' => context.couleurs.primaire,
+        'INTERVENTION_PLANIFIEE' => context.couleurs.avertissement,
+        _ => context.couleurs.primaireFonce,
       };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final icon = _iconForType(notif.type);
-    final color = _colorForType(notif.type);
-    final dateStr = DateFormat('dd/MM · HH:mm', 'fr_FR').format(notif.dateEnvoi.toLocal());
+    final color = _colorForType(context, notif.type);
+    final dateStr =
+        DateFormat('dd/MM · HH:mm', 'fr_FR').format(notif.dateEnvoi.toLocal());
 
     return InkWell(
-      onTap: notif.estLue
-          ? null
-          : () => ref.read(notificationsProvider.notifier).marquerLue(notif.id),
+      // La notification mène à l'écran dont elle parle. Auparavant, l'appui ne
+      // faisait que la marquer comme lue, et une notification déjà lue n'était
+      // même plus touchable : l'information était signalée sans jamais être
+      // reliée à l'endroit où la consulter.
+      onTap: () {
+        if (!notif.estLue) {
+          ref.read(notificationsProvider.notifier).marquerLue(notif.id);
+        }
+        final role = ref.read(currentUserProvider)?.role;
+        final route = routeNotification({
+          'type': notif.type,
+          'referenceId': notif.referenceId ?? '',
+          'notifId': notif.id,
+        }, role);
+        if (route != null) context.push(route);
+      },
       child: Container(
-        color: notif.estLue ? null : AppColors.primary.withValues(alpha: 0.04),
+        color: notif.estLue
+            ? null
+            : context.couleurs.primaire.withValues(alpha: 0.04),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,17 +159,20 @@ class _NotifTile extends ConsumerWidget {
                       Expanded(
                         child: Text(
                           notif.titre,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: notif.estLue ? FontWeight.normal : FontWeight.bold,
-                              ),
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: notif.estLue
+                                        ? FontWeight.normal
+                                        : FontWeight.bold,
+                                  ),
                         ),
                       ),
                       if (!notif.estLue)
                         Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: context.couleurs.primaire,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -151,7 +182,7 @@ class _NotifTile extends ConsumerWidget {
                   Text(
                     notif.corps,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                         ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -160,7 +191,7 @@ class _NotifTile extends ConsumerWidget {
                   Text(
                     dateStr,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                           fontSize: 11,
                         ),
                   ),
@@ -170,6 +201,6 @@ class _NotifTile extends ConsumerWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(delay: (index * 40).ms).slideX(begin: 0.05, end: 0);
+    );
   }
 }

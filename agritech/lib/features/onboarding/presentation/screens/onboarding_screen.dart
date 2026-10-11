@@ -1,12 +1,13 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/app_router.dart';
+import '../../../../core/theme/app_motion.dart';
 
 /// Onboarding redesigné — images plein écran animées, typographie immersive
 class OnboardingScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     ));
     _textCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: AppDurees.moyenne,
     )..forward();
   }
 
@@ -75,7 +76,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _ctrl.nextPage(
-        duration: const Duration(milliseconds: 600),
+        duration: AppDurees.moyenne,
         curve: Curves.easeInOutCubic,
       );
     }
@@ -148,8 +149,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'KoobalaTech',
-                      style: GoogleFonts.poppins(
+                      'AgriSmart',
+                      style: AppTypography.police(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -172,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                       child: Text(
                         'Passer',
-                        style: GoogleFonts.inter(
+                        style: AppTypography.police(
                             color: Colors.white,
                             fontSize: 13,
                             fontWeight: FontWeight.w500),
@@ -208,7 +209,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                       child: Text(
                         _pages[_currentPage].tag,
-                        style: GoogleFonts.inter(
+                        style: AppTypography.police(
                           color: Colors.white,
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -221,7 +222,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                   // Grand titre
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
+                    duration: AppDurees.courte,
                     transitionBuilder: (child, anim) => SlideTransition(
                       position: Tween<Offset>(
                               begin: const Offset(0, 0.2), end: Offset.zero)
@@ -232,14 +233,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     child: Text(
                       _pages[_currentPage].titre,
                       key: ValueKey('title_$_currentPage'),
-                      style: GoogleFonts.poppins(
+                      style: AppTypography.police(
                         color: Colors.white,
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
                         height: 1.15,
                         shadows: [
-                          const Shadow(
-                              color: Colors.black54, blurRadius: 12),
+                          const Shadow(color: Colors.black54, blurRadius: 12),
                         ],
                       ),
                     ),
@@ -248,11 +248,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                   // Description
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 450),
+                    duration: AppDurees.courte,
                     child: Text(
                       _pages[_currentPage].sousTitre,
                       key: ValueKey('sub_$_currentPage'),
-                      style: GoogleFonts.inter(
+                      style: AppTypography.police(
                         color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 15,
                         height: 1.55,
@@ -310,7 +310,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             children: [
                               Text(
                                 isLast ? 'Commencer' : 'Suivant',
-                                style: GoogleFonts.poppins(
+                                style: AppTypography.police(
                                   color: Colors.white,
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -349,8 +349,8 @@ class _PageImage extends StatelessWidget {
       height: double.infinity,
       placeholder: (_, __) => Container(
         color: const Color(0xFF1A2E20),
-        child: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+        child: Center(
+          child: CircularProgressIndicator(color: context.couleurs.primaire),
         ),
       ),
       errorWidget: (_, __, ___) => Container(

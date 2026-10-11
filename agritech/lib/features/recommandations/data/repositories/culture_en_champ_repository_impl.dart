@@ -10,8 +10,7 @@ class CultureEnChampRepositoryImpl implements CultureEnChampRepository {
   final Dio _dio;
 
   @override
-  Future<List<CultureEnChampEntity>> getCulturesEnChamp(
-      String champId) async {
+  Future<List<CultureEnChampEntity>> getCulturesEnChamp(String champId) async {
     final response = await _dio.get(ApiEndpoints.culturesEnChamp(champId));
     final data = response.data;
     final list = (data is Map
@@ -25,10 +24,8 @@ class CultureEnChampRepositoryImpl implements CultureEnChampRepository {
 
   @override
   Future<CultureEnChampEntity> getCultureEnChampById(String id) async {
-    final response =
-        await _dio.get('${ApiEndpoints.culturesEnChampBase}/$id');
-    return CultureEnChampModel.fromJson(
-        response.data as Map<String, dynamic>);
+    final response = await _dio.get('${ApiEndpoints.culturesEnChampBase}/$id');
+    return CultureEnChampModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
@@ -44,8 +41,7 @@ class CultureEnChampRepositoryImpl implements CultureEnChampRepository {
         'statut': item.statut.toJson(),
       },
     );
-    return CultureEnChampModel.fromJson(
-        response.data as Map<String, dynamic>);
+    return CultureEnChampModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
@@ -61,8 +57,7 @@ class CultureEnChampRepositoryImpl implements CultureEnChampRepository {
         if (rendementReel != null) 'rendement_reel': rendementReel,
       },
     );
-    return CultureEnChampModel.fromJson(
-        response.data as Map<String, dynamic>);
+    return CultureEnChampModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override

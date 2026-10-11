@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
@@ -18,11 +17,11 @@ class AlerteCard extends StatelessWidget {
   final int index;
   final VoidCallback onTap;
 
-  Color get _niveauColor => switch (alerte.niveau) {
-        AppConstants.alerteCritique => AppColors.alerteCritique,
-        AppConstants.alerteEleve => AppColors.alerteEleve,
-        AppConstants.alerteModere => AppColors.alerteModere,
-        _ => AppColors.alerteFaible,
+  Color _niveauColor(BuildContext context) => switch (alerte.niveau) {
+        AppConstants.alerteCritique => context.couleurs.alerteCritique,
+        AppConstants.alerteEleve => context.couleurs.alerteElevee,
+        AppConstants.alerteModere => context.couleurs.alerteModeree,
+        _ => context.couleurs.alerteFaible,
       };
 
   @override
@@ -32,9 +31,9 @@ class AlerteCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.couleurs.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.couleurs.bordure),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -50,7 +49,7 @@ class AlerteCard extends StatelessWidget {
               Container(
                 width: 5,
                 decoration: BoxDecoration(
-                  color: _niveauColor,
+                  color: _niveauColor(context),
                   borderRadius: const BorderRadius.horizontal(
                     left: Radius.circular(12),
                   ),
@@ -66,12 +65,15 @@ class AlerteCard extends StatelessWidget {
                         children: [
                           // Icône pulsante si non lue
                           if (!alerte.isLue)
-                            _PulsingIcon(color: _niveauColor),
+                            _PulsingIcon(color: _niveauColor(context)),
                           if (!alerte.isLue) const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               alerte.titre,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
                                     fontWeight: alerte.isLue
                                         ? FontWeight.normal
                                         : FontWeight.bold,
@@ -81,7 +83,9 @@ class AlerteCard extends StatelessWidget {
                             ),
                           ),
                           // Badge niveau
-                          _NiveauBadge(niveau: alerte.niveau, color: _niveauColor),
+                          _NiveauBadge(
+                              niveau: alerte.niveau,
+                              color: _niveauColor(context)),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -94,15 +98,16 @@ class AlerteCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          const Icon(Icons.terrain_outlined,
-                              size: 12, color: AppColors.textSecondary),
+                          Icon(Icons.terrain_outlined,
+                              size: 12,
+                              color: context.couleurs.texteSecondaire),
                           const SizedBox(width: 4),
                           Text(
                             alerte.champNom,
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
-                                ?.copyWith(color: AppColors.primary),
+                                ?.copyWith(color: context.couleurs.primaire),
                           ),
                           const Spacer(),
                           Text(
@@ -119,10 +124,7 @@ class AlerteCard extends StatelessWidget {
           ),
         ),
       ),
-    )
-        .animate()
-        .fadeIn(delay: (index * 80).ms, duration: 350.ms)
-        .slideX(begin: 0.15, end: 0);
+    );
   }
 }
 
@@ -132,19 +134,7 @@ class _PulsingIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Icon(Icons.circle, size: 10, color: color)
-        .animate(onPlay: (c) => c.repeat())
-        .scale(
-          begin: const Offset(1, 1),
-          end: const Offset(1.4, 1.4),
-          duration: 700.ms,
-        )
-        .then()
-        .scale(
-          begin: const Offset(1.4, 1.4),
-          end: const Offset(1, 1),
-          duration: 700.ms,
-        );
+    return Icon(Icons.circle, size: 10, color: color);
   }
 }
 

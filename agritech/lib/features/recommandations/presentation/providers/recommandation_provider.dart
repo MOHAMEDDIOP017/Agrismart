@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_endpoints.dart';
+import '../../../../core/enums/statut_validation.dart';
 import '../../data/models/recommandation_model.dart';
 
 class RecommandationState {
@@ -9,6 +10,7 @@ class RecommandationState {
     this.isLoading = false,
     this.isAnalysing = false,
     this.champIdSelectionne,
+    this.sourcesDonnees = const {},
     this.error,
     this.progressMessage,
   });
@@ -17,6 +19,13 @@ class RecommandationState {
   final bool isLoading;
   final bool isAnalysing;
   final String? champIdSelectionne;
+
+  /// Origine de chaque bloc de variables du modèle (sol, climat, NDVI...) :
+  /// mesure temps réel ou moyenne de zone agroécologique. Rempli par
+  /// `AnalyseParcelle.sourceDonnees` côté backend ; sert à afficher à
+  /// l'agriculteur quand le moteur a dû se replier sur les moyennes.
+  final Map<String, String> sourcesDonnees;
+
   final String? error;
   final String? progressMessage;
 
@@ -25,6 +34,7 @@ class RecommandationState {
     bool? isLoading,
     bool? isAnalysing,
     String? champIdSelectionne,
+    Map<String, String>? sourcesDonnees,
     String? error,
     String? progressMessage,
   }) =>
@@ -33,6 +43,7 @@ class RecommandationState {
         isLoading: isLoading ?? this.isLoading,
         isAnalysing: isAnalysing ?? this.isAnalysing,
         champIdSelectionne: champIdSelectionne ?? this.champIdSelectionne,
+        sourcesDonnees: sourcesDonnees ?? this.sourcesDonnees,
         error: error,
         progressMessage: progressMessage,
       );
@@ -68,10 +79,15 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
         ApiEndpoints.genererRecommandationsV2(champId),
       );
 
-      state = state.copyWith(progressMessage: 'Génération des recommandations...');
+      state =
+          state.copyWith(progressMessage: 'Génération des recommandations...');
       await Future.delayed(const Duration(milliseconds: 400));
 
       final data = response.data as Map<String, dynamic>;
+      final sources = (data['sourcesDonnees'] as Map?)?.map(
+              (cle, valeur) => MapEntry(cle.toString(), valeur.toString())) ??
+          const <String, String>{};
+
       final topRecos = (data['topRecommandations'] as List)
           .asMap()
           .entries
@@ -79,6 +95,7 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
                 e.value as Map<String, dynamic>,
                 champId,
                 e.key,
+                sourcesDonnees: sources,
               ))
           .toList();
 
@@ -86,6 +103,7 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
         recommandations: topRecos,
         isAnalysing: false,
         champIdSelectionne: champId,
+        sourcesDonnees: sources,
       );
     } catch (e) {
       state = RecommandationState(
@@ -121,7 +139,8 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
                 ?.map((e) => e.toString())
                 .toList() ??
             const [];
-        final score = ((item['probabiliteAptitude'] as num? ?? 0) * 100).round();
+        final score =
+            ((item['probabiliteAptitude'] as num? ?? 0) * 100).round();
         return RecommandationModel(
           id: (item['id'] as String?) ?? 'reco_${e.key}',
           champId: champId,
@@ -137,6 +156,13 @@ class RecommandationNotifier extends Notifier<RecommandationState> {
           conseilsAgronomiques: (item['conseil'] as String?) ?? '',
           prixMarcheEstime: prix,
           profitPotentiel: (rendement * 1000 * prix).round(),
+          // L'origine des donnees vit sur l'AnalyseParcelle et n'est pas
+          // dupliquee sur chaque recommandation : en historique, seule la
+          // zone est connue, ce que la mention affiche alors.
+          zoneAgroecologique: item['zoneAgroecologique'] as String?,
+          rang: (item['rang'] as num?)?.toInt() ?? e.key + 1,
+          statutValidation: StatutValidation.fromString(
+              (item['statutValidation'] as String?) ?? ''),
           dateGeneree: item['date'] != null
               ? DateTime.tryParse(item['date'].toString()) ?? DateTime.now()
               : DateTime.now(),

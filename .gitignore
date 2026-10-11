@@ -39,3 +39,6 @@ venv/
 
 # Doublon local de config Firebase (autre projet, nom avec espace)
 agritech/android/app/google-services *.json
+
+# Reglages Claude Code personnels (permissions locales, non partagees)
+.claude/settings.local.json

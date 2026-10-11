@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 enum TypeNotification {
   recommandation,
@@ -35,13 +36,13 @@ enum TypeNotification {
   Color get couleur {
     switch (this) {
       case TypeNotification.recommandation:
-        return const Color(0xFF1D9E75);
+        return AppPalette.vert;
       case TypeNotification.conseilExpert:
-        return const Color(0xFF1976D2);
+        return AppPalette.info;
       case TypeNotification.interventionPlanifiee:
-        return const Color(0xFFEF9F27);
+        return AppPalette.avertissement;
       case TypeNotification.alerte:
-        return const Color(0xFFE53935);
+        return AppPalette.erreur;
     }
   }
 

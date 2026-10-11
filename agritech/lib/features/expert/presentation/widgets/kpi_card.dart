@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'animated_counter.dart';
 
 /// Carte KPI avec compteur animé — tableau de bord Expert
@@ -52,14 +52,13 @@ class KpiCard extends StatelessWidget {
                 ),
                 child: Icon(icone, color: couleur, size: 20),
               ),
-              if (estAlerte && valeur > 0)
-                _PulseDot(couleur: couleur),
+              if (estAlerte && valeur > 0) _PulseDot(couleur: couleur),
             ],
           ),
           const SizedBox(height: 12),
           AnimatedCounter(
             value: valeur,
-            style: GoogleFonts.poppins(
+            style: AppTypography.police(
               fontSize: 28,
               fontWeight: FontWeight.bold,
               color: estAlerte && valeur > 0 ? couleur : couleur,
@@ -68,7 +67,7 @@ class KpiCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             libelle,
-            style: GoogleFonts.inter(
+            style: AppTypography.police(
               fontSize: 12,
               color: Colors.black54,
               fontWeight: FontWeight.w500,
@@ -83,33 +82,20 @@ class KpiCard extends StatelessWidget {
 }
 
 /// Point pulsant rouge pour signaler une urgence
-class _PulseDot extends StatefulWidget {
+/// Point d'attention d'une carte d'indicateur.
+///
+/// Il clignotait en boucle. Un point qui bat attire l'œil en continu sur un
+/// écran que l'expert garde ouvert : il finit par être ignoré, et il occupe le
+/// processeur graphique pour cela.
+class _PulseDot extends StatelessWidget {
   const _PulseDot({required this.couleur});
+
   final Color couleur;
 
   @override
-  State<_PulseDot> createState() => _PulseDotState();
-}
-
-class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
-        ..repeat(reverse: true);
-  late final Animation<double> _a = Tween(begin: 0.4, end: 1.0).animate(_c);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => FadeTransition(
-        opacity: _a,
-        child: Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: widget.couleur, shape: BoxShape.circle),
-        ),
+  Widget build(BuildContext context) => Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(color: couleur, shape: BoxShape.circle),
       );
 }

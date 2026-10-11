@@ -5,6 +5,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/entities/assignation_entity.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/expert_selection_card_admin.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Formulaire de création d'une nouvelle assignation (Stepper 3 étapes)
 class NouvelleAssignationScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,7 @@ class _NouvelleAssignationScreenState
     final expertsAsync = ref.watch(expertsDisponiblesProvider(null));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -107,7 +108,8 @@ class _NouvelleAssignationScreenState
   }
 
   Future<void> _confirmer() async {
-    if (_interventionSelectionnee == null || _expertSelectionne == null ||
+    if (_interventionSelectionnee == null ||
+        _expertSelectionne == null ||
         _dateSouhaitee == null) {
       return;
     }
@@ -159,23 +161,25 @@ class _EtapeIntervention extends StatelessWidget {
         Text(
           'Choisissez l\'intervention à confier à un expert.',
           style: AppTypography.textTheme.bodySmall!.copyWith(
-            color: AppColors.textSecondary,
+            color: context.couleurs.texteSecondaire,
           ),
         ),
         const SizedBox(height: 16),
         assignationsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Erreur : $e'),
+          // Pas de bouton « Réessayer » ici : ce bloc vit dans un widget qui
+          // reçoit son état en paramètre et n'a pas accès aux providers. Le
+          // rafraîchissement se fait depuis l'écran parent.
+          error: (e, _) => BandeauErreur(erreur: e),
           data: (etat) {
-            final nonAssignees = etat.assignations
-                .where((a) => a.statut.estEnAttente)
-                .toList();
+            final nonAssignees =
+                etat.assignations.where((a) => a.statut.estEnAttente).toList();
             if (nonAssignees.isEmpty) {
               return Center(
                 child: Text(
                   'Aucune intervention en attente',
                   style: AppTypography.textTheme.bodyMedium!.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.couleurs.texteSecondaire,
                   ),
                 ),
               );
@@ -197,7 +201,7 @@ class _EtapeIntervention extends StatelessWidget {
                       border: Border.all(
                         color: sel
                             ? const Color(0xFF534AB7)
-                            : AppColors.border,
+                            : context.couleurs.bordure,
                         width: sel ? 2 : 1,
                       ),
                     ),
@@ -223,13 +227,14 @@ class _EtapeIntervention extends StatelessWidget {
                                 '${a.champNom} • ${a.region}',
                                 style: AppTypography.textTheme.bodySmall!
                                     .copyWith(
-                                        color: AppColors.textSecondary),
+                                        color:
+                                            context.couleurs.texteSecondaire),
                               ),
                               Row(
                                 children: [
                                   _Chip(
                                     texte: a.typeIntervention,
-                                    couleur: AppColors.info,
+                                    couleur: context.couleurs.info,
                                   ),
                                   const SizedBox(width: 6),
                                   _Chip(
@@ -280,13 +285,12 @@ class _EtapeExpert extends StatelessWidget {
         Text(
           'Choisissez l\'expert le plus adapté.',
           style: AppTypography.textTheme.bodySmall!
-              .copyWith(color: AppColors.textSecondary),
+              .copyWith(color: context.couleurs.texteSecondaire),
         ),
         const SizedBox(height: 16),
         expertsAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Text('Erreur : $e'),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => BandeauErreur(erreur: e),
           data: (experts) => Column(
             children: experts.map((e) {
               return Padding(
@@ -340,7 +344,7 @@ class _EtapeConfirmation extends StatelessWidget {
         _CarteRecap(
           titre: 'Intervention',
           icone: Icons.engineering_outlined,
-          couleur: AppColors.amber,
+          couleur: context.couleurs.secondaire,
           lignes: [
             'Agriculteur : ${intervention.agriculteurNom}',
             'Champ : ${intervention.champNom}',
@@ -387,7 +391,7 @@ class _EtapeConfirmation extends StatelessWidget {
               border: Border.all(
                 color: dateSouhaitee != null
                     ? const Color(0xFF534AB7)
-                    : AppColors.border,
+                    : context.couleurs.bordure,
               ),
             ),
             child: Row(
@@ -401,8 +405,8 @@ class _EtapeConfirmation extends StatelessWidget {
                       : 'Choisir une date',
                   style: AppTypography.textTheme.bodyMedium!.copyWith(
                     color: dateSouhaitee != null
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
+                        ? context.couleurs.textePrincipal
+                        : context.couleurs.texteSecondaire,
                   ),
                 ),
               ],
@@ -421,11 +425,11 @@ class _EtapeConfirmation extends StatelessWidget {
             fillColor: Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.couleurs.bordure),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.couleurs.bordure),
             ),
           ),
         ),
@@ -435,7 +439,7 @@ class _EtapeConfirmation extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.border),
+            side: BorderSide(color: context.couleurs.bordure),
           ),
           child: SwitchListTile(
             title: const Text('Notifier l\'expert immédiatement'),
@@ -478,9 +482,8 @@ class _IndicateurEtapes extends StatelessWidget {
                 Container(
                   width: 30,
                   height: 2,
-                  color: fait
-                      ? const Color(0xFF534AB7)
-                      : AppColors.border,
+                  color:
+                      fait ? const Color(0xFF534AB7) : context.couleurs.bordure,
                 ),
               Column(
                 children: [
@@ -490,16 +493,19 @@ class _IndicateurEtapes extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: actif || fait
                           ? const Color(0xFF534AB7)
-                          : AppColors.border,
+                          : context.couleurs.bordure,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: fait
-                          ? const Icon(Icons.check, color: Colors.white, size: 16)
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 16)
                           : Text(
                               '${e.key + 1}',
                               style: TextStyle(
-                                color: actif ? Colors.white : AppColors.textSecondary,
+                                color: actif
+                                    ? Colors.white
+                                    : context.couleurs.texteSecondaire,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
@@ -512,7 +518,7 @@ class _IndicateurEtapes extends StatelessWidget {
                     style: AppTypography.textTheme.labelSmall!.copyWith(
                       color: actif
                           ? const Color(0xFF534AB7)
-                          : AppColors.textSecondary,
+                          : context.couleurs.texteSecondaire,
                       fontWeight: actif ? FontWeight.w700 : FontWeight.normal,
                       fontSize: 10,
                     ),
@@ -548,9 +554,9 @@ class _BoutonNavigationEtapes extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
+        border: Border(top: BorderSide(color: context.couleurs.bordure)),
       ),
       child: Row(
         children: [
@@ -697,12 +703,12 @@ class _EcranSucces extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.couleurs.primaire.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check_circle_outline,
-                color: AppColors.primary,
+                color: context.couleurs.primaire,
                 size: 64,
               ),
             ),
@@ -711,14 +717,14 @@ class _EcranSucces extends StatelessWidget {
               'Assignation créée !',
               style: AppTypography.textTheme.headlineSmall!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.primary,
+                color: context.couleurs.primaire,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'L\'expert a été notifié de sa nouvelle intervention.',
               style: AppTypography.textTheme.bodyMedium!.copyWith(
-                color: AppColors.textSecondary,
+                color: context.couleurs.texteSecondaire,
               ),
               textAlign: TextAlign.center,
             ),
@@ -728,8 +734,8 @@ class _EcranSucces extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF534AB7),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               ),
               child: const Text('Retour',
                   style: TextStyle(fontWeight: FontWeight.w700)),

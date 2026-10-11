@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/enums/statut_intervention.dart';
 import '../providers/expert_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
+
 /// Historique complet d'un champ — Interventions / Données agro
 class HistoriqueChampScreen extends ConsumerStatefulWidget {
   const HistoriqueChampScreen({super.key, required this.champId});
   final String champId;
 
   @override
-  ConsumerState<HistoriqueChampScreen> createState() => _HistoriqueChampScreenState();
+  ConsumerState<HistoriqueChampScreen> createState() =>
+      _HistoriqueChampScreenState();
 }
 
 class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
@@ -33,14 +36,16 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
       ..sort((a, b) => b.dateIntervention.compareTo(a.dateIntervention));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: champAsync.when(
           data: (c) => Text('Historique — ${c.nom}',
-              style: GoogleFonts.poppins(
-                  fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+              style: AppTypography.police(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white)),
           loading: () => const Text('Historique'),
           error: (_, __) => const Text('Historique'),
         ),
@@ -49,7 +54,8 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
-          labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+          labelStyle:
+              AppTypography.police(fontSize: 13, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'Interventions'),
             Tab(text: 'Données agro'),
@@ -83,22 +89,30 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
           // ── Onglet Données agronomiques ───────────────────────
           champAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Erreur: $e')),
+            error: (e, _) => EtatErreur(
+              erreur: e,
+              onReessayer: () =>
+                  ref.invalidate(champSuperviseDetailProvider(widget.champId)),
+            ),
             data: (champ) => ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 if (champ.dateDerniereDonnee != null)
                   Text(
                     'Dernière saisie : ${champ.dateDerniereDonnee!.day}/${champ.dateDerniereDonnee!.month}/${champ.dateDerniereDonnee!.year}',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: AppColors.textSecondary),
+                    style: AppTypography.police(
+                        fontSize: 12, color: context.couleurs.texteSecondaire),
                   ),
                 const SizedBox(height: 16),
                 if (champ.ph != null) ...[
-                  _agroRow('pH', champ.ph!.toStringAsFixed(1), AppColors.info),
-                  _agroRow('Azote (N)', '${champ.azote} kg/ha', AppColors.primary),
-                  _agroRow('Phosphore (P)', '${champ.phosphore} kg/ha', AppColors.amber),
-                  _agroRow('Potassium (K)', '${champ.potassium} kg/ha', AppColors.coral),
+                  _agroRow('pH', champ.ph!.toStringAsFixed(1),
+                      context.couleurs.info),
+                  _agroRow('Azote (N)', '${champ.azote} kg/ha',
+                      context.couleurs.primaire),
+                  _agroRow('Phosphore (P)', '${champ.phosphore} kg/ha',
+                      context.couleurs.secondaire),
+                  _agroRow('Potassium (K)', '${champ.potassium} kg/ha',
+                      context.couleurs.alerteElevee),
                   _agroRow('Humidité', '${champ.humidite}%', Colors.blue),
                 ] else
                   _emptyState('Aucune donnée agronomique disponible'),
@@ -135,7 +149,8 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
                   ),
                   child: Center(child: leading),
                 ),
-                Container(width: 2, height: 40, color: AppColors.border),
+                Container(
+                    width: 2, height: 40, color: context.couleurs.bordure),
               ],
             ),
             const SizedBox(width: 12),
@@ -152,20 +167,22 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
                         children: [
                           Expanded(
                             child: Text(title,
-                                style: GoogleFonts.poppins(
+                                style: AppTypography.police(
                                     fontSize: 13, fontWeight: FontWeight.w600)),
                           ),
                           if (trailing != null) trailing,
                         ],
                       ),
                       Text(subtitle,
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: AppColors.textSecondary)),
+                          style: AppTypography.police(
+                              fontSize: 11,
+                              color: context.couleurs.texteSecondaire)),
                       if (expandedContent != null) ...[
                         const SizedBox(height: 4),
                         Text(expandedContent,
-                            style: GoogleFonts.inter(
-                                fontSize: 11, color: AppColors.textSecondary),
+                            style: AppTypography.police(
+                                fontSize: 11,
+                                color: context.couleurs.texteSecondaire),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis),
                       ],
@@ -190,10 +207,10 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    fontSize: 13, color: context.couleurs.texteSecondaire)),
             Text(valeur,
-                style: GoogleFonts.poppins(
+                style: AppTypography.police(
                     fontSize: 15, fontWeight: FontWeight.bold, color: couleur)),
           ],
         ),
@@ -206,18 +223,22 @@ class _HistoriqueChampScreenState extends ConsumerState<HistoriqueChampScreen>
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(statut.libelle,
-            style: GoogleFonts.poppins(
-                fontSize: 9, fontWeight: FontWeight.w600, color: statut.couleur)),
+            style: AppTypography.police(
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: statut.couleur)),
       );
 
   Widget _emptyState(String msg) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inbox_outlined, size: 48, color: AppColors.textSecondary),
+            Icon(Icons.inbox_outlined,
+                size: 48, color: context.couleurs.texteSecondaire),
             const SizedBox(height: 12),
             Text(msg,
-                style: GoogleFonts.inter(color: AppColors.textSecondary),
+                style: AppTypography.police(
+                    color: context.couleurs.texteSecondaire),
                 textAlign: TextAlign.center),
           ],
         ),

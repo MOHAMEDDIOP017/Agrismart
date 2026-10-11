@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/auth/deconnexion_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/expert_entity.dart';
 import '../providers/expert_provider.dart';
 import '../widgets/animated_counter.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Profil de l'expert avec mode édition (nom, prénom, téléphone)
 class ProfilExpertScreen extends ConsumerStatefulWidget {
@@ -46,9 +47,9 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
 
     if (prenom.isEmpty || nom.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le prénom et le nom sont obligatoires.'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Le prénom et le nom sont obligatoires.'),
+          backgroundColor: context.couleurs.erreur,
         ),
       );
       return;
@@ -68,8 +69,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Profil mis à jour.',
-                style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: AppColors.primary,
+                style: AppTypography.police(color: Colors.white)),
+            backgroundColor: context.couleurs.primaire,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -78,9 +79,9 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
       if (mounted) {
         setState(() => _enSauvegarde = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de la sauvegarde.'),
-            backgroundColor: AppColors.danger,
+          SnackBar(
+            content: const Text('Erreur lors de la sauvegarde.'),
+            backgroundColor: context.couleurs.erreur,
           ),
         );
       }
@@ -92,21 +93,24 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
     final profilAsync = ref.watch(profilExpertProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       body: profilAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur: $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(profilExpertProvider),
+        ),
         data: (expert) => CustomScrollView(
           slivers: [
             // ── En-tête ──────────────────────────────────────────
             SliverAppBar(
               expandedHeight: 200,
               pinned: true,
-              backgroundColor: AppColors.primaryDark,
+              backgroundColor: context.couleurs.primaireFonce,
               foregroundColor: Colors.white,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  color: AppColors.primaryDark,
+                  color: context.couleurs.primaireFonce,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -121,7 +125,7 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                               backgroundColor: Colors.white24,
                               child: Text(
                                 expert.prenom[0] + expert.nom[0],
-                                style: GoogleFonts.poppins(
+                                style: AppTypography.police(
                                     fontSize: 32,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white),
@@ -129,8 +133,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                             ),
                             Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                  color: AppColors.amber,
+                              decoration: BoxDecoration(
+                                  color: context.couleurs.secondaire,
                                   shape: BoxShape.circle),
                               child: const Icon(Icons.camera_alt,
                                   size: 14, color: Colors.white),
@@ -140,13 +144,13 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(expert.nomComplet,
-                          style: GoogleFonts.poppins(
+                          style: AppTypography.police(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white)),
                       Text(
                         '${expert.specialite.libelle} · ${expert.regionCouverture}',
-                        style: GoogleFonts.inter(
+                        style: AppTypography.police(
                             fontSize: 12, color: Colors.white70),
                       ),
                     ],
@@ -202,7 +206,7 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
-                            side: const BorderSide(color: AppColors.border),
+                            side: BorderSide(color: context.couleurs.bordure),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(14),
@@ -210,8 +214,8 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                               children: [
                                 _infoRow(Icons.person_outline, 'Nom complet',
                                     expert.nomComplet),
-                                _infoRow(
-                                    Icons.email_outlined, 'Email', expert.email),
+                                _infoRow(Icons.email_outlined, 'Email',
+                                    expert.email),
                                 _infoRow(Icons.phone_outlined, 'Téléphone',
                                     expert.telephone),
                                 _infoRow(Icons.location_on_outlined, 'Région',
@@ -238,37 +242,42 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                     mainAxisSpacing: 10,
                     childAspectRatio: 1.5,
                     children: [
+                      _statCard(
+                          'Interventions réalisées',
+                          expert.nombreInterventions,
+                          context.couleurs.primaire),
+                      _statCard(
+                          'Corrections apportées',
+                          expert.nombreCorrections,
+                          context.couleurs.secondaire),
                       _statCard('Interventions réalisées',
-                          expert.nombreInterventions, AppColors.primary),
-                      _statCard('Corrections apportées',
-                          expert.nombreCorrections, AppColors.amber),
-                      _statCard('Interventions réalisées',
-                          expert.nombreInterventions, AppColors.info),
-                      _statCard('Conseils envoyés',
-                          expert.nombreConseils, AppColors.coral),
+                          expert.nombreInterventions, context.couleurs.info),
+                      _statCard('Conseils envoyés', expert.nombreConseils,
+                          context.couleurs.alerteElevee),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.06),
+                      color: context.couleurs.primaire.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.2)),
+                          color:
+                              context.couleurs.primaire.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('Taux de précision IA corrigée',
-                            style: GoogleFonts.inter(
+                            style: AppTypography.police(
                                 fontSize: 13,
-                                color: AppColors.textSecondary)),
+                                color: context.couleurs.texteSecondaire)),
                         Text(expert.tauxPrecisionFormate,
-                            style: GoogleFonts.poppins(
+                            style: AppTypography.police(
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primary)),
+                                color: context.couleurs.primaire)),
                       ],
                     ),
                   ),
@@ -282,7 +291,7 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.couleurs.bordure),
                     ),
                     child: Column(
                       children: [
@@ -291,7 +300,7 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                           'Notifications',
                           trailing: Switch.adaptive(
                             value: _notificationsActives,
-                            activeColor: AppColors.primary,
+                            activeColor: context.couleurs.primaire,
                             onChanged: (v) =>
                                 setState(() => _notificationsActives = v),
                           ),
@@ -299,19 +308,19 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
                         const Divider(height: 1),
                         _paramTile(Icons.language_outlined, 'Langue',
                             trailing: Text('Français',
-                                style: GoogleFonts.inter(
+                                style: AppTypography.police(
                                     fontSize: 12,
-                                    color: AppColors.textSecondary))),
+                                    color: context.couleurs.texteSecondaire))),
                         const Divider(height: 1),
                         _paramTile(Icons.info_outline, 'À propos',
-                            trailing: const Icon(Icons.chevron_right,
-                                color: AppColors.textSecondary),
+                            trailing: Icon(Icons.chevron_right,
+                                color: context.couleurs.texteSecondaire),
                             onTap: () {}),
                         const Divider(height: 1),
                         _paramTile(
                           Icons.logout_outlined,
                           'Déconnexion',
-                          couleur: AppColors.danger,
+                          couleur: context.couleurs.erreur,
                           onTap: () => _confirmerDeconnexion(context),
                         ),
                       ],
@@ -330,24 +339,24 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
 
   Widget _sectionTitle(String t) => Text(
         t,
-        style: GoogleFonts.poppins(
+        style: AppTypography.police(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary),
+            color: context.couleurs.textePrincipal),
       );
 
   Widget _infoRow(IconData icon, String label, String valeur) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 5),
         child: Row(
           children: [
-            Icon(icon, size: 16, color: AppColors.textSecondary),
+            Icon(icon, size: 16, color: context.couleurs.texteSecondaire),
             const SizedBox(width: 8),
             Text('$label : ',
-                style: GoogleFonts.inter(
-                    fontSize: 12, color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    fontSize: 12, color: context.couleurs.texteSecondaire)),
             Expanded(
               child: Text(valeur,
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                       fontSize: 12, fontWeight: FontWeight.w500)),
             ),
           ],
@@ -367,12 +376,12 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
           children: [
             AnimatedCounter(
               value: valeur,
-              style: GoogleFonts.poppins(
+              style: AppTypography.police(
                   fontSize: 22, fontWeight: FontWeight.bold, color: couleur),
             ),
             Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 11, color: AppColors.textSecondary),
+                style: AppTypography.police(
+                    fontSize: 11, color: context.couleurs.texteSecondaire),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
           ],
@@ -387,13 +396,13 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
     VoidCallback? onTap,
   }) =>
       ListTile(
-        leading:
-            Icon(icon, color: couleur ?? AppColors.textSecondary, size: 20),
+        leading: Icon(icon,
+            color: couleur ?? context.couleurs.texteSecondaire, size: 20),
         title: Text(label,
-            style: GoogleFonts.poppins(
+            style: AppTypography.police(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: couleur ?? AppColors.textPrimary)),
+                color: couleur ?? context.couleurs.textePrincipal)),
         trailing: trailing,
         onTap: onTap,
       );
@@ -403,27 +412,27 @@ class _ProfilExpertScreenState extends ConsumerState<ProfilExpertScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text('Déconnexion',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+            style: AppTypography.police(fontWeight: FontWeight.bold)),
         content: Text(
           'Êtes-vous sûr de vouloir vous déconnecter ?',
-          style: GoogleFonts.inter(fontSize: 14),
+          style: AppTypography.police(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: Text('Annuler',
-                style:
-                    GoogleFonts.poppins(color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    color: context.couleurs.texteSecondaire)),
           ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               await DeconnexionService.deconnecter(ref);
             },
-            style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.danger),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: context.couleurs.erreur),
             child: Text('Déconnexion',
-                style: GoogleFonts.poppins(
+                style: AppTypography.police(
                     color: Colors.white, fontWeight: FontWeight.w600)),
           ),
         ],
@@ -452,7 +461,7 @@ class _FormulaireEdition extends StatelessWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          side: BorderSide(color: context.couleurs.primaire, width: 1.5),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -485,22 +494,22 @@ class _FormulaireEdition extends StatelessWidget {
               InputDecorator(
                 decoration: InputDecoration(
                   labelText: 'Email (non modifiable)',
-                  prefixIcon: const Icon(Icons.email_outlined,
-                      size: 18, color: AppColors.textSecondary),
+                  prefixIcon: Icon(Icons.email_outlined,
+                      size: 18, color: context.couleurs.texteSecondaire),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.border),
+                    borderSide: BorderSide(color: context.couleurs.bordure),
                   ),
                   filled: true,
-                  fillColor: AppColors.background,
+                  fillColor: context.couleurs.fond,
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
                 child: Text(email,
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.textSecondary)),
+                    style: AppTypography.police(
+                        fontSize: 13, color: context.couleurs.texteSecondaire)),
               ),
               const SizedBox(height: 12),
               _ChampEdition(
@@ -535,23 +544,22 @@ class _ChampEdition extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         textCapitalization: textCapitalization,
-        style: GoogleFonts.poppins(fontSize: 13),
+        style: AppTypography.police(fontSize: 13),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.inter(
-              fontSize: 12, color: AppColors.textSecondary),
+          labelStyle: AppTypography.police(
+              fontSize: 12, color: context.couleurs.texteSecondaire),
           prefixIcon:
-              Icon(icone, size: 18, color: AppColors.textSecondary),
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              Icon(icone, size: 18, color: context.couleurs.texteSecondaire),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide(color: context.couleurs.bordure),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide:
-                const BorderSide(color: AppColors.primaryDark, width: 1.5),
+                BorderSide(color: context.couleurs.primaireFonce, width: 1.5),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

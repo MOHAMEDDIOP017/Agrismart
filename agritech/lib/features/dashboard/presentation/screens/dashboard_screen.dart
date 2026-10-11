@@ -1,869 +1,594 @@
-﻿import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../meteo/presentation/providers/meteo_provider.dart';
-import '../../../alertes/presentation/providers/alertes_provider.dart';
-import '../../../notifications/presentation/providers/notifications_provider.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../navigation/app_router.dart';
+import '../../../../shared/widgets/widgets.dart';
+import '../../../alertes/presentation/providers/alertes_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../champs/presentation/providers/champ_provider.dart';
-import '../widgets/meteo_card.dart';
+import '../../../recommandations/presentation/providers/derniere_recommandation_provider.dart';
 
-/// Tableau de bord redesigné avec carousel animé et design moderne
-class DashboardScreen extends ConsumerStatefulWidget {
+/// Accueil de l'agriculteur.
+///
+/// L'écran répond à une seule question : que faire maintenant. Il s'ordonne
+/// donc en quatre blocs, du plus utile au moins urgent, et ne propose qu'une
+/// action pleine.
+///
+/// Ce qui a été retiré, et pourquoi.
+///
+/// **Le carrousel.** Quatre images d'illustration en 900 pixels, chargées
+/// depuis un service distant, défilant en boucle par un `Timer.periodic` de
+/// quatre secondes avec une animation de 700 ms. Sur un téléphone d'entrée de
+/// gamme, cela maintient le processeur graphique occupé en permanence sur
+/// l'écran d'ouverture. Hors couverture, les quatre images restaient vides.
+/// Et aucune des quatre n'était cliquable : la moitié supérieure de l'accueil
+/// ne menait nulle part.
+///
+/// **La grille de fonctionnalités.** Trois cartes illustrées, elles aussi par
+/// des images distantes, qui dupliquaient trois entrées de la barre de
+/// navigation. Avec les deux cartes d'accès rapide en dessous, l'écran offrait
+/// huit chemins de même poids visuel : aucun ne se détachait, donc aucun ne
+/// guidait.
+///
+/// **La pastille de notification pulsante.** Une animation en boucle infinie,
+/// purement décorative, sur un écran qui reste ouvert.
+///
+/// Ce qui reste tient en quatre blocs : qui vous êtes, l'action principale, où
+/// en sont vos parcelles, et ce que l'application a trouvé pour vous.
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
-}
-
-class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  final PageController _carouselCtrl = PageController();
-  int _carouselIndex = 0;
-  Timer? _carouselTimer;
-
-  // Images agricoles africaines du carousel
-  static const _carouselSlides = [
-    _SlideData(
-      imageUrl: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=900&q=80',
-      titre: 'Gérez vos parcelles',
-      sousTitre: 'Suivez chaque champ en temps réel',
-      couleur: Color(0xFF0D6E4E),
-    ),
-    _SlideData(
-      imageUrl: 'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&q=80',
-      titre: 'Optimisez vos rendements',
-      sousTitre: 'Recommandations climatiques personnalisées',
-      couleur: Color(0xFF5B3A00),
-    ),
-    _SlideData(
-      imageUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=900&q=80',
-      titre: 'Alertes intelligentes',
-      sousTitre: 'Ne ratez jamais une action critique',
-      couleur: Color(0xFF1D2E1A),
-    ),
-    _SlideData(
-      imageUrl: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=900&q=80',
-      titre: 'KoobalaTech Sénégal',
-      sousTitre: 'L\'agriculture de demain, aujourd\'hui',
-      couleur: Color(0xFF3D1C00),
-    ),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _startCarousel();
-  }
-
-  void _startCarousel() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      final next = (_carouselIndex + 1) % _carouselSlides.length;
-      _carouselCtrl.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeInOutCubic,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _carouselTimer?.cancel();
-    _carouselCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final champsState = ref.watch(champProvider);
-    final user = authState.valueOrNull?.user;
-    final meteoAsync = ref.watch(meteoProvider);
-    final alertesNonLues = ref.watch(alertesProvider).valueOrNull?.where((a) => !a.isLue).length ?? 0;
-    final notifsNonLues = ref.watch(nonLuesCountProvider);
-    final champsCount = champsState.valueOrNull?.length ?? 0;
-    final culturesActives =
-        champsState.valueOrNull?.where((c) => c.statut == 'EN_COURS').length ?? 0;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final utilisateur = ref.watch(authProvider).valueOrNull?.user;
+    final champsAsync = ref.watch(champProvider);
+    final derniereAsync = ref.watch(derniereRecommandationProvider);
+    final alertesNonLues =
+        ref.watch(alertesProvider).valueOrNull?.where((a) => !a.isLue).length ??
+            0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F2),
-      body: CustomScrollView(
-        slivers: [
-          // ── AppBar transparente ──────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            expandedHeight: 0,
-            toolbarHeight: 56,
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black54, Colors.transparent],
-                ),
-              ),
-            ),
-            title: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'KoobalaTech',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                    onPressed: () => context.push(AppRoutes.notifications),
-                  ),
-                  if (notifsNonLues > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: const BoxDecoration(
-                          color: AppColors.danger,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$notifsNonLues',
-                            style: const TextStyle(color: Colors.white, fontSize: 10),
-                          ),
-                        ),
-                      ).animate(onPlay: (c) => c.repeat())
-                          .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 700.ms)
-                          .then()
-                          .scale(begin: const Offset(1.2, 1.2), end: const Offset(1, 1), duration: 700.ms),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 4),
-            ],
-          ),
-
-          // ── Contenu ──────────────────────────────────────────
-          SliverToBoxAdapter(
-            child: Column(
-              children: [
-                // CAROUSEL HERO
-                _HeroCarousel(
-                  ctrl: _carouselCtrl,
-                  slides: _carouselSlides,
-                  indexActuel: _carouselIndex,
-                  onPageChanged: (i) => setState(() => _carouselIndex = i),
-                  user: user?.nomComplet ?? 'Agriculteur',
-                  ville: user?.zoneGeographique ?? 'Sénégal',
-                ),
-
-                // ── Stats flottantes ──────────────────────────
-                Transform.translate(
-                  offset: const Offset(0, -30),
-                  child: _StatsFlottantes(
-                    champsCount: champsCount,
-                    culturesActives: culturesActives,
-                    alertes: alertesNonLues,
-                  ),
-                ),
-
-                // ── Météo ─────────────────────────────────────
-                meteoAsync.when(
-                  data: (meteo) => meteo == null
-                      ? const SizedBox.shrink()
-                      : Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                          child: MeteoCard(meteo: meteo)
-                              .animate()
-                              .fadeIn(delay: 300.ms)
-                              .slideY(begin: 0.1, end: 0),
-                        ),
-                  loading: () => const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, 20),
-                    child: SizedBox(height: 90),
-                  ),
-                  error: (_, __) => const SizedBox.shrink(),
-                ),
-
-                // ── Fonctionnalités ───────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Fonctionnalités',
-                        style: GoogleFonts.poppins(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _FeatureGrid(
-                  features: [
-                    _Feature(
-                      titre: 'Mes Champs',
-                      sousTitre: '$champsCount parcelles',
-                      icone: Icons.terrain_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1D9E75), Color(0xFF0F6E56)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      image: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&q=70',
-                      onTap: () => context.go(AppRoutes.champs),
-                    ),
-                    _Feature(
-                      titre: 'Recommandations',
-                      sousTitre: 'IA climatique',
-                      icone: Icons.psychology_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEF9F27), Color(0xFFBA7517)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      image: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=70',
-                      onTap: () => context.go(AppRoutes.recommandations),
-                    ),
-                    _Feature(
-                      titre: 'Alertes',
-                      sousTitre: '$alertesNonLues non lues',
-                      icone: Icons.notifications_rounded,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFD85A30), Color(0xFFB04020)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      image: 'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400&q=70',
-                      onTap: () => context.go(AppRoutes.alertes),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── Accès rapide ──────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                  child: Text(
-                    'Accès rapide',
-                    style: GoogleFonts.poppins(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _QuickCard(
-                  imageUrl: 'https://images.unsplash.com/photo-1536782376847-5c9d14d97cc0?w=700&q=70',
-                  titre: 'Suivi des champs',
-                  sousTitre: 'Vue liste et grille de vos parcelles',
-                  icone: Icons.track_changes_rounded,
-                  onTap: () => context.push('/home/dashboard/suivi'),
-                ).animate(delay: 500.ms).fadeIn().slideY(begin: 0.1, end: 0),
-                const SizedBox(height: 12),
-                _QuickCard(
-                  imageUrl: 'https://images.unsplash.com/photo-1615811361523-6bd03d7748e7?w=700&q=70',
-                  titre: 'Assistant AgriSmart',
-                  sousTitre: 'Posez vos questions en français ou en wolof',
-                  icone: Icons.forum_rounded,
-                  onTap: () => context.push(AppRoutes.assistant),
-                ).animate(delay: 700.ms).fadeIn().slideY(begin: 0.1, end: 0),
-                const SizedBox(height: 32),
-              ],
-            ),
-          ),
-        ],
+      appBar: _EnTete(
+        prenom: utilisateur?.prenom ?? '',
+        lieu: utilisateur?.zoneGeographique ?? '',
+        alertesNonLues: alertesNonLues,
+        echelleTexte: MediaQuery.textScalerOf(context).scale(1),
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(champProvider);
+          ref.invalidate(derniereRecommandationProvider);
+          await ref.read(champProvider.future);
+        },
+        child: ListView(
+          padding: AppEspaces.liste,
+          children: [
+            // Ce que l'application a trouvé vient avant ce qu'elle propose de
+            // faire : on lit d'abord le résultat, puis on décide d'en relancer
+            // un. L'inverse demandait de passer devant un appel à l'action
+            // pour atteindre la réponse déjà disponible.
+            _DerniereRecommandation(derniereAsync: derniereAsync),
+            const SizedBox(height: AppEspaces.md),
+            const _ActionPrincipale(),
+            const SizedBox(height: AppEspaces.lg),
+            _ResumeChamps(champsAsync: champsAsync),
+            const SizedBox(height: AppEspaces.lg),
+            const _AccesAssistant(),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Hero Carousel ─────────────────────────────────────────────────
+// ── En-tête ──────────────────────────────────────────────────────────────────
 
-class _HeroCarousel extends StatelessWidget {
-  const _HeroCarousel({
-    required this.ctrl,
-    required this.slides,
-    required this.indexActuel,
-    required this.onPageChanged,
-    required this.user,
-    required this.ville,
+class _EnTete extends StatelessWidget implements PreferredSizeWidget {
+  const _EnTete({
+    required this.prenom,
+    required this.lieu,
+    required this.alertesNonLues,
+    required this.echelleTexte,
   });
 
-  final PageController ctrl;
-  final List<_SlideData> slides;
-  final int indexActuel;
-  final void Function(int) onPageChanged;
-  final String user;
-  final String ville;
+  final String prenom;
+  final String lieu;
+  final int alertesNonLues;
+
+  /// Facteur d'agrandissement du texte, lu par l'écran et transmis ici.
+  ///
+  /// `preferredSize` doit renvoyer une hauteur sans avoir accès au contexte,
+  /// donc sans pouvoir consulter `MediaQuery`. Avec une hauteur figée, l'en-tête
+  /// rognait son contenu dès que l'utilisateur agrandissait le texte de son
+  /// téléphone.
+  final double echelleTexte;
+
+  @override
+  Size get preferredSize => Size.fromHeight(64 * echelleTexte + 8);
+
+  /// Salutation selon l'heure. Le soir, « Bonjour » sonne faux.
+  String get _salutation {
+    final heure = DateTime.now().hour;
+    return (heure >= 18 || heure < 5) ? 'Bonsoir' : 'Bonjour';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 340,
-      child: Stack(
-        children: [
-          // Carousel
-          PageView.builder(
-            controller: ctrl,
-            itemCount: slides.length,
-            onPageChanged: onPageChanged,
-            itemBuilder: (_, i) => _SlideItem(slide: slides[i]),
-          ),
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
+    final titre = prenom.isEmpty ? _salutation : '$_salutation, $prenom';
 
-          // Salutation utilisateur (haut)
-          Positioned(
-            top: 64,
-            left: 20,
-            right: 80,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return AppBar(
+      automaticallyImplyLeading: false,
+      toolbarHeight: preferredSize.height,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            titre,
+            style: textes.titleLarge,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (lieu.isNotEmpty)
+            Row(
               children: [
-                Text(
-                  'Bonjour, 👋',
-                  style: GoogleFonts.inter(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 14,
+                Icon(Icons.place_outlined,
+                    size: 16, color: couleurs.texteSecondaire),
+                const SizedBox(width: AppEspaces.xxs),
+                Flexible(
+                  child: Text(
+                    lieu,
+                    style: textes.bodySmall
+                        ?.copyWith(color: couleurs.texteSecondaire),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Text(
-                  user,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      const Shadow(color: Colors.black45, blurRadius: 8),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_rounded,
-                        color: Colors.white70, size: 13),
-                    const SizedBox(width: 3),
-                    Text(
-                      ville,
-                      style: GoogleFonts.inter(
-                          color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
                 ),
               ],
             ),
-          ),
-
-          // Texte du slide (bas)
-          Positioned(
-            bottom: 50,
-            left: 20,
-            right: 20,
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              child: Column(
-                key: ValueKey(indexActuel),
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    slides[indexActuel].titre,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        const Shadow(color: Colors.black54, blurRadius: 10),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    slides[indexActuel].sousTitre,
-                    style: GoogleFonts.inter(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Indicateurs de page
-          Positioned(
-            bottom: 18,
-            left: 20,
-            child: Row(
-              children: List.generate(
-                slides.length,
-                (i) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 350),
-                  curve: Curves.easeOut,
-                  margin: const EdgeInsets.only(right: 6),
-                  width: i == indexActuel ? 24 : 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: i == indexActuel
-                        ? Colors.white
-                        : Colors.white.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-}
-
-class _SlideItem extends StatelessWidget {
-  const _SlideItem({required this.slide});
-
-  final _SlideData slide;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Image de fond
-        CachedNetworkImage(
-          imageUrl: slide.imageUrl,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => Container(color: slide.couleur),
-          errorWidget: (_, __, ___) => Container(
-            color: slide.couleur,
-            child: const Icon(Icons.eco, size: 80, color: Colors.white24),
-          ),
-        ),
-
-        // Gradient sombre pour lisibilité
-        DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withValues(alpha: 0.45),
-                Colors.black.withValues(alpha: 0.65),
-              ],
-            ),
-          ),
-        ),
+      actions: [
+        _AccesAlertes(nonLues: alertesNonLues),
+        const SizedBox(width: AppEspaces.xs),
       ],
     );
   }
 }
 
-// ── Stats flottantes ─────────────────────────────────────────────
+/// Entrée vers les alertes : une icône et son libellé écrit.
+///
+/// La cloche seule contrevenait à la règle que le projet s'impose, une icône
+/// n'allant jamais sans son mot. Une cloche se comprend dans beaucoup de
+/// cultures d'interface, mais « beaucoup » n'est pas « toutes », et c'est
+/// justement l'hypothèse que ce projet refuse de faire.
+///
+/// La disposition verticale reprend celle des onglets de la barre de
+/// navigation : même geste, même forme, un apprentissage au lieu de deux.
+class _AccesAlertes extends StatelessWidget {
+  const _AccesAlertes({required this.nonLues});
 
-class _StatsFlottantes extends StatelessWidget {
-  const _StatsFlottantes({
-    required this.champsCount,
-    required this.culturesActives,
-    required this.alertes,
-  });
-
-  final int champsCount;
-  final int culturesActives;
-  final int alertes;
+  final int nonLues;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    final couleurs = context.couleurs;
+
+    return Semantics(
+      button: true,
+      label: nonLues == 0
+          ? 'Alertes'
+          : 'Alertes, $nonLues non lue${nonLues > 1 ? 's' : ''}',
+      child: InkWell(
+        onTap: () => context.push(AppRoutes.alertes),
+        borderRadius: AppRayons.brCarte,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppEspaces.xs,
+            vertical: AppEspaces.xxs,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // La pastille est posée à côté de l'icône et non par-dessus.
+              // Superposée, elle recouvrait la cloche dès 130 % de taille de
+              // texte : le compteur grandissait, l'icône non, et il ne restait
+              // plus qu'un chiffre rouge sans objet auquel le rattacher.
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.notifications_outlined,
+                      size: 24, color: couleurs.textePrincipal),
+                  if (nonLues > 0) ...[
+                    const SizedBox(width: AppEspaces.xxs),
+                    _Pastille(nombre: nonLues),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 1),
+              // Même repli que dans la barre de navigation : le mot se réduit
+              // plutôt que d'être coupé.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Alertes',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: couleurs.textePrincipal,
+                      ),
+                ),
+              ),
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _StatItem(
-              valeur: '$champsCount',
-              label: 'Champs',
-              icone: Icons.terrain_rounded,
-              couleur: AppColors.primary,
-            ),
-            _Diviseur(),
-            _StatItem(
-              valeur: '$culturesActives',
-              label: 'En cours',
-              icone: Icons.grass_rounded,
-              couleur: AppColors.amber,
-            ),
-            _Diviseur(),
-            _StatItem(
-              valeur: '$alertes',
-              label: 'Alertes',
-              icone: Icons.notifications_active_rounded,
-              couleur: alertes > 0 ? AppColors.coral : AppColors.textSecondary,
-            ),
-          ],
-        ),
-      )
-          .animate()
-          .fadeIn(delay: 150.ms, duration: 500.ms)
-          .slideY(begin: 0.3, end: 0),
+      ),
     );
   }
 }
 
-class _StatItem extends StatelessWidget {
-  const _StatItem({
+class _Pastille extends StatelessWidget {
+  const _Pastille({required this.nombre});
+
+  final int nombre;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleurs = context.couleurs;
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: couleurs.erreur,
+        borderRadius: AppRayons.brPastille,
+        border: Border.all(color: couleurs.surface, width: 1.5),
+      ),
+      child: Text(
+        nombre > 99 ? '99+' : '$nombre',
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: couleurs.surErreur,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+      ),
+    );
+  }
+}
+
+// ── Action principale ────────────────────────────────────────────────────────
+
+/// Le seul bouton plein de l'écran.
+///
+/// Il était posé dans un encadré vert avec un titre et une phrase
+/// d'explication, qui occupaient à eux trois environ 40 % du premier écran.
+/// Le bloc disait ce que faisait le bouton ; le bouton le dit déjà. Réduit à
+/// sa seule étiquette, il laisse remonter le contenu réel, et reste le seul
+/// élément plein de la page, donc toujours le seul évident.
+class _ActionPrincipale extends StatelessWidget {
+  const _ActionPrincipale();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBouton.principal(
+      libelle: 'Obtenir une recommandation',
+      icone: Icons.auto_awesome_rounded,
+      onPressed: () => context.push(AppRoutes.recommandations),
+    );
+  }
+}
+
+// ── Résumé des parcelles ─────────────────────────────────────────────────────
+
+class _ResumeChamps extends ConsumerWidget {
+  const _ResumeChamps({required this.champsAsync});
+
+  final AsyncValue<List<dynamic>> champsAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Section(
+      titre: 'Mes champs',
+      actionLibelle: 'Voir tout',
+      onAction: () => context.go(AppRoutes.champs),
+      enfant: champsAsync.when(
+        loading: () => const ZoneSquelette(
+          child: Row(
+            children: [
+              Expanded(child: Squelette(hauteur: 76)),
+              SizedBox(width: AppEspaces.sm),
+              Expanded(child: Squelette(hauteur: 76)),
+            ],
+          ),
+        ),
+        error: (e, _) => BandeauErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(champProvider),
+        ),
+        data: (champs) {
+          if (champs.isEmpty) {
+            return _CarteInvite(
+              icone: Icons.add_location_alt_outlined,
+              titre: 'Aucune parcelle enregistrée',
+              message: 'Ajoutez votre première parcelle pour recevoir des '
+                  'recommandations.',
+              libelleAction: 'Ajouter un champ',
+              onAction: () => context.push('${AppRoutes.champs}/form'),
+            );
+          }
+
+          final enCours = champs.where((c) => c.statut == 'EN_COURS').length;
+          // `IntrinsicHeight` donne aux deux cartes la même hauteur, même
+          // quand un libellé passe à la ligne, ce qui arrive dès 130 % de
+          // taille de texte. Il faut l'envelopper ainsi parce que la liste ne
+          // borne pas la hauteur : un `stretch` seul demanderait une hauteur
+          // infinie. Le surcoût d'une passe de mesure supplémentaire est
+          // négligeable sur deux cartes, et il ne concerne que ce bloc.
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _Compteur(
+                    valeur: '${champs.length}',
+                    libelle: champs.length > 1 ? 'parcelles' : 'parcelle',
+                    icone: Icons.terrain_rounded,
+                  ),
+                ),
+                const SizedBox(width: AppEspaces.sm),
+                Expanded(
+                  child: _Compteur(
+                    valeur: '$enCours',
+                    libelle:
+                        enCours > 1 ? 'cultures en cours' : 'culture en cours',
+                    icone: Icons.grass_rounded,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Compteur extends StatelessWidget {
+  const _Compteur({
     required this.valeur,
-    required this.label,
+    required this.libelle,
     required this.icone,
-    required this.couleur,
   });
 
   final String valeur;
-  final String label;
+  final String libelle;
   final IconData icone;
-  final Color couleur;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppEspaces.md),
+      decoration: BoxDecoration(
+        color: couleurs.surface,
+        borderRadius: AppRayons.brCarte,
+        border: Border.all(color: couleurs.separateur),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icone, size: 22, color: couleurs.primaire),
+          const SizedBox(height: AppEspaces.xs),
+          Text(valeur, style: textes.headlineSmall),
+          Text(
+            libelle,
+            style: textes.bodySmall?.copyWith(color: couleurs.texteSecondaire),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Dernière recommandation ──────────────────────────────────────────────────
+
+class _DerniereRecommandation extends ConsumerWidget {
+  const _DerniereRecommandation({required this.derniereAsync});
+
+  final AsyncValue<DerniereRecommandation?> derniereAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Section(
+      titre: 'Dernière recommandation',
+      enfant: derniereAsync.when(
+        loading: () => const ZoneSquelette(child: SqueletteCarteCulture()),
+        // L'erreur est affichée en bandeau et non en plein écran : le reste de
+        // l'accueil reste utilisable, notamment l'action principale.
+        error: (e, _) => BandeauErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(derniereRecommandationProvider),
+        ),
+        data: (reco) {
+          if (reco == null) {
+            return const _CarteInvite(
+              icone: Icons.auto_awesome_outlined,
+              titre: 'Pas encore de recommandation',
+              message: 'Lancez une analyse sur l\'une de vos parcelles pour '
+                  'voir apparaître les cultures conseillées ici.',
+            );
+          }
+
+          return CarteCulture(
+            nomFrancais: reco.cultureNom,
+            nomWolof: AppConstants.nomWolof(reco.cultureNom),
+            tauxAptitude: reco.aptitudePct,
+            miseEnValeur: true,
+            informations: [
+              LigneInfoCulture(
+                icone: Icons.terrain_outlined,
+                texte: reco.champNom,
+              ),
+              if (reco.periodePlantation.isNotEmpty)
+                LigneInfoCulture(
+                  icone: Icons.calendar_today_outlined,
+                  texte: reco.periodePlantation,
+                ),
+            ],
+            onTap: () => context.push(AppRoutes.recommandations),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── Accès à l'assistant ──────────────────────────────────────────────────────
+
+class _AccesAssistant extends StatelessWidget {
+  const _AccesAssistant();
+
+  @override
+  Widget build(BuildContext context) {
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(AppEspaces.md),
+      decoration: BoxDecoration(
+        color: couleurs.surface,
+        borderRadius: AppRayons.brCarte,
+        border: Border.all(color: couleurs.separateur),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.forum_outlined, size: 24, color: couleurs.primaire),
+              const SizedBox(width: AppEspaces.xs),
+              Expanded(
+                child: Text('Une question ?', style: textes.titleSmall),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppEspaces.xxs),
+          Text(
+            'L\'assistant répond en français ou en wolof.',
+            style: textes.bodyMedium?.copyWith(color: couleurs.texteSecondaire),
+          ),
+          const SizedBox(height: AppEspaces.sm),
+          AppBouton.secondaire(
+            libelle: 'Ouvrir l\'assistant',
+            icone: Icons.chat_bubble_outline_rounded,
+            onPressed: () => context.go(AppRoutes.assistant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Briques communes ─────────────────────────────────────────────────────────
+
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.titre,
+    required this.enfant,
+    this.actionLibelle,
+    this.onAction,
+  });
+
+  final String titre;
+  final Widget enfant;
+  final String? actionLibelle;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: couleur.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icone, color: couleur, size: 20),
+        Row(
+          children: [
+            Expanded(
+              child: Text(titre, style: Theme.of(context).textTheme.titleSmall),
+            ),
+            if (actionLibelle != null && onAction != null)
+              AppBouton.texte(libelle: actionLibelle!, onPressed: onAction),
+          ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          valeur,
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: AppColors.textSecondary,
-          ),
-        ),
+        const SizedBox(height: AppEspaces.xs),
+        enfant,
       ],
     );
   }
 }
 
-class _Diviseur extends StatelessWidget {
+/// Carte d'invitation : ce qui manque, et comment l'obtenir.
+///
+/// Le même motif que [EtatVide], en version compacte, parce qu'ici le vide ne
+/// concerne qu'une section et non l'écran entier.
+class _CarteInvite extends StatelessWidget {
+  const _CarteInvite({
+    required this.icone,
+    required this.titre,
+    required this.message,
+    this.libelleAction,
+    this.onAction,
+  });
+
+  final IconData icone;
+  final String titre;
+  final String message;
+  final String? libelleAction;
+  final VoidCallback? onAction;
+
   @override
   Widget build(BuildContext context) {
-    return Container(height: 40, width: 1, color: AppColors.border);
-  }
-}
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
 
-// ── Feature Grid ─────────────────────────────────────────────────
-
-class _FeatureGrid extends StatelessWidget {
-  const _FeatureGrid({required this.features});
-
-  final List<_Feature> features;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: 1.1,
-        ),
-        itemCount: features.length,
-        itemBuilder: (_, i) => _FeatureCard(feature: features[i])
-            .animate(delay: Duration(milliseconds: 80 * i))
-            .fadeIn()
-            .scale(begin: const Offset(0.92, 0.92)),
+    return Container(
+      padding: const EdgeInsets.all(AppEspaces.md),
+      decoration: BoxDecoration(
+        color: couleurs.surface,
+        borderRadius: AppRayons.brCarte,
+        border: Border.all(color: couleurs.separateur),
       ),
-    );
-  }
-}
-
-class _FeatureCard extends StatefulWidget {
-  const _FeatureCard({required this.feature});
-
-  final _Feature feature;
-
-  @override
-  State<_FeatureCard> createState() => _FeatureCardState();
-}
-
-class _FeatureCardState extends State<_FeatureCard> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.feature.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: Stack(
-            fit: StackFit.expand,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              // Image de fond
-              CachedNetworkImage(
-                imageUrl: widget.feature.image,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  decoration: BoxDecoration(gradient: widget.feature.gradient),
-                ),
-                errorWidget: (_, __, ___) => Container(
-                  decoration: BoxDecoration(gradient: widget.feature.gradient),
-                ),
-              ),
-
-              // Overlay gradient
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.15),
-                      Colors.black.withValues(alpha: 0.70),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Contenu
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child:
-                          Icon(widget.feature.icone, color: Colors.white, size: 22),
-                    ),
-                    const Spacer(),
-                    Text(
-                      widget.feature.titre,
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      widget.feature.sousTitre,
-                      style: GoogleFonts.inter(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              Icon(icone, size: 24, color: couleurs.texteSecondaire),
+              const SizedBox(width: AppEspaces.xs),
+              Expanded(child: Text(titre, style: textes.titleSmall)),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ── Quick Card ───────────────────────────────────────────────────
-
-class _QuickCard extends StatelessWidget {
-  const _QuickCard({
-    required this.imageUrl,
-    required this.titre,
-    required this.sousTitre,
-    required this.icone,
-    required this.onTap,
-  });
-
-  final String imageUrl;
-  final String titre;
-  final String sousTitre;
-  final IconData icone;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: SizedBox(
-            height: 100,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Image
-                CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: AppColors.primary),
-                  errorWidget: (_, __, ___) => Container(
-                    decoration: const BoxDecoration(gradient: AppColors.primaryGradient),
-                  ),
-                ),
-
-                // Overlay
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.55),
-                        Colors.black.withValues(alpha: 0.2),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Contenu
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(icone, color: Colors.white, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              titre,
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              sousTitre,
-                              style: GoogleFonts.inter(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios_rounded,
-                          color: Colors.white, size: 16),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: AppEspaces.xxs),
+          Text(
+            message,
+            style: textes.bodyMedium?.copyWith(color: couleurs.texteSecondaire),
           ),
-        ),
+          if (libelleAction != null && onAction != null) ...[
+            const SizedBox(height: AppEspaces.sm),
+            AppBouton.secondaire(
+              libelle: libelleAction!,
+              icone: Icons.add_rounded,
+              onPressed: onAction,
+            ),
+          ],
+        ],
       ),
     );
   }
-}
-
-// ── Data classes ─────────────────────────────────────────────────
-
-class _SlideData {
-  const _SlideData({
-    required this.imageUrl,
-    required this.titre,
-    required this.sousTitre,
-    required this.couleur,
-  });
-
-  final String imageUrl;
-  final String titre;
-  final String sousTitre;
-  final Color couleur;
-}
-
-class _Feature {
-  const _Feature({
-    required this.titre,
-    required this.sousTitre,
-    required this.icone,
-    required this.gradient,
-    required this.image,
-    required this.onTap,
-  });
-
-  final String titre;
-  final String sousTitre;
-  final IconData icone;
-  final LinearGradient gradient;
-  final String image;
-  final VoidCallback onTap;
 }

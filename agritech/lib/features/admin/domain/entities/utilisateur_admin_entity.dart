@@ -34,10 +34,13 @@ class UtilisateurAdminEntity extends Equatable {
   final DateTime dateInscription;
   final String? ville;
   final String? photoUrl;
+
   /// Spécialité — uniquement pour les experts
   final String? specialite;
+
   /// Années d'expérience — uniquement pour les experts
   final int? anneesExperience;
+
   /// Niveau d'accès 1-3 — uniquement pour les admins
   final int? niveauAcces;
   final int nombreChamps;

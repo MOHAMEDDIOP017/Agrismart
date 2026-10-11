@@ -6,6 +6,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/enums/type_log.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/log_systeme_card.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran d'historique et de journalisation du système
 class HistoriqueSystemeScreen extends ConsumerWidget {
@@ -19,7 +20,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
     final notifier = ref.read(logsProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -46,8 +47,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
           // ── Filtres par type de log + plage de dates ───────────
           Container(
             color: Colors.white,
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: etatAsync.when(
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
@@ -71,7 +71,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
                             labelStyle: TextStyle(
                               color: etat.filtre == null
                                   ? _adminPrimary
-                                  : AppColors.textSecondary,
+                                  : context.couleurs.texteSecondaire,
                               fontWeight: etat.filtre == null
                                   ? FontWeight.w600
                                   : FontWeight.normal,
@@ -88,21 +88,19 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
                                   size: 14,
                                   color: sel
                                       ? t.couleur
-                                      : AppColors.textSecondary),
+                                      : context.couleurs.texteSecondaire),
                               label: Text(t.libelle),
                               selected: sel,
                               onSelected: (_) =>
                                   notifier.setFiltre(sel ? null : t),
-                              selectedColor:
-                                  t.couleur.withValues(alpha: 0.12),
+                              selectedColor: t.couleur.withValues(alpha: 0.12),
                               checkmarkColor: t.couleur,
                               labelStyle: TextStyle(
                                 color: sel
                                     ? t.couleur
-                                    : AppColors.textSecondary,
-                                fontWeight: sel
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
+                                    : context.couleurs.texteSecondaire,
+                                fontWeight:
+                                    sel ? FontWeight.w600 : FontWeight.normal,
                                 fontSize: 12,
                               ),
                             ),
@@ -122,8 +120,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
                       ),
                       deleteIcon: const Icon(Icons.close, size: 14),
                       onDeleted: () => notifier.setPlageDate(null),
-                      backgroundColor:
-                          _adminPrimary.withValues(alpha: 0.1),
+                      backgroundColor: _adminPrimary.withValues(alpha: 0.1),
                       side: BorderSide(
                           color: _adminPrimary.withValues(alpha: 0.3)),
                     ),
@@ -137,22 +134,13 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
           Expanded(
             child: etatAsync.when(
               loading: () => _ShimmerLogs(),
-              error: (e, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline,
-                        color: AppColors.danger, size: 48),
-                    const SizedBox(height: 12),
-                    Text('Erreur : $e'),
-                    const SizedBox(height: 8),
-                    ElevatedButton(
-                      onPressed: () =>
-                          ref.invalidate(logsProvider),
-                      child: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
+              error: (e, _) => EtatErreur(
+                erreur: e,
+                onReessayer: () => ref.invalidate(logsProvider),
+                // Seul écran où le détail technique est déplié d'office :
+                // c'est le journal système, et la personne qui le consulte
+                // cherche précisément la cause.
+                detailVisible: true,
               ),
               data: (etat) {
                 final logs = etat.filtres;
@@ -163,7 +151,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
                       children: [
                         Icon(Icons.history,
                             size: 64,
-                            color: AppColors.textSecondary
+                            color: context.couleurs.texteSecondaire
                                 .withValues(alpha: 0.4)),
                         const SizedBox(height: 12),
                         Text(
@@ -182,8 +170,7 @@ class HistoriqueSystemeScreen extends ConsumerWidget {
                     itemCount: logs.length,
                     itemBuilder: (_, i) => LogSystemeCard(
                       log: logs[i],
-                      onArchiver: () =>
-                          notifier.archiverLog(logs[i].id),
+                      onArchiver: () => notifier.archiverLog(logs[i].id),
                     ),
                   ),
                 );

@@ -8,6 +8,7 @@ import '../../domain/entities/assignation_entity.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/intervention_admin_card.dart';
 import 'assignation_detail_sheet.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran de gestion des assignations expert ↔ intervention
 class AssignationExpertsScreen extends ConsumerStatefulWidget {
@@ -43,7 +44,7 @@ class _AssignationExpertsScreenState
     final notifier = ref.read(assignationProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -55,9 +56,7 @@ class _AssignationExpertsScreenState
         bottom: TabBar(
           controller: _tabCtrl,
           onTap: (i) => notifier.setFiltre(
-            i == 0
-                ? FiltreAssignation.enAttente
-                : FiltreAssignation.assignees,
+            i == 0 ? FiltreAssignation.enAttente : FiltreAssignation.assignees,
           ),
           indicatorColor: Colors.white,
           labelColor: Colors.white,
@@ -72,9 +71,8 @@ class _AssignationExpertsScreenState
               Tab(text: 'Assignées'),
             ],
             data: (etat) {
-              final enAttente = etat.assignations
-                  .where((a) => a.statut.estEnAttente)
-                  .length;
+              final enAttente =
+                  etat.assignations.where((a) => a.statut.estEnAttente).length;
               return [
                 Tab(
                   child: Row(
@@ -87,7 +85,7 @@ class _AssignationExpertsScreenState
                           padding: const EdgeInsets.symmetric(
                               horizontal: 7, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.danger,
+                            color: context.couleurs.erreur,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
@@ -119,7 +117,10 @@ class _AssignationExpertsScreenState
       ),
       body: etatAsync.when(
         loading: () => _ShimmerListe(),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(assignationProvider),
+        ),
         data: (etat) => TabBarView(
           controller: _tabCtrl,
           children: [
@@ -178,7 +179,7 @@ class _ListeInterventions extends StatelessWidget {
                   ? Icons.assignment_turned_in_outlined
                   : Icons.assignment_outlined,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.4),
+              color: context.couleurs.texteSecondaire.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 16),
             Text(

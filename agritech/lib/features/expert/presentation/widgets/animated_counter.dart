@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_motion.dart';
 
 /// Compteur animé de 0 vers une valeur cible
 class AnimatedCounter extends StatefulWidget {
@@ -6,7 +7,7 @@ class AnimatedCounter extends StatefulWidget {
     super.key,
     required this.value,
     required this.style,
-    this.duration = const Duration(milliseconds: 1200),
+    this.duration = AppDurees.moyenne,
     this.suffix = '',
   });
 

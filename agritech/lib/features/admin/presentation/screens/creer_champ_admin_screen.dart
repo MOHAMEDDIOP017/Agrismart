@@ -71,9 +71,9 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (_typeSolSelectionne == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez sélectionner le type de sol'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Veuillez sélectionner le type de sol'),
+          backgroundColor: context.couleurs.erreur,
         ),
       );
       return;
@@ -83,8 +83,7 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
 
     final ok = await ref.read(champsAdminProvider.notifier).creerChamp(
           nom: _nomCtrl.text.trim(),
-          superficie:
-              double.parse(_superficieCtrl.text.replaceAll(',', '.')),
+          superficie: double.parse(_superficieCtrl.text.replaceAll(',', '.')),
           typeSol: _typeSolSelectionne!,
           latitude: _latitude,
           longitude: _longitude,
@@ -99,17 +98,17 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
 
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Champ créé avec succès'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: const Text('Champ créé avec succès'),
+          backgroundColor: context.couleurs.primaire,
         ),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erreur lors de la création du champ'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Erreur lors de la création du champ'),
+          backgroundColor: context.couleurs.erreur,
         ),
       );
     }
@@ -118,7 +117,7 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -145,7 +144,8 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
               // Nom du champ
               TextFormField(
                 controller: _nomCtrl,
-                decoration: adminDecorChamp('Nom du champ', Icons.label_outline),
+                decoration: adminDecorChamp(
+                    context, 'Nom du champ', Icons.label_outline),
                 validator: (v) =>
                     v == null || v.trim().isEmpty ? 'Champ requis' : null,
               ),
@@ -154,11 +154,14 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
               // Superficie
               TextFormField(
                 controller: _superficieCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+[\.,]?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+[\.,]?\d{0,2}')),
                 ],
-                decoration: adminDecorChamp('Superficie (ha)', Icons.straighten_rounded),
+                decoration: adminDecorChamp(
+                    context, 'Superficie (ha)', Icons.straighten_rounded),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Champ requis';
                   final n = double.tryParse(v.replaceAll(',', '.'));
@@ -171,7 +174,8 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
               // Type de sol
               DropdownButtonFormField<String>(
                 value: _typeSolSelectionne,
-                decoration: adminDecorChamp('Type de sol', Icons.layers_outlined),
+                decoration: adminDecorChamp(
+                    context, 'Type de sol', Icons.layers_outlined),
                 hint: const Text('Sélectionner'),
                 items: AppConstants.typesSol
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
@@ -184,7 +188,8 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
               // Culture
               DropdownButtonFormField<String>(
                 value: _cultureSelectionnee,
-                decoration: adminDecorChamp('Culture (optionnel)', Icons.grass_rounded),
+                decoration: adminDecorChamp(
+                    context, 'Culture (optionnel)', Icons.grass_rounded),
                 hint: const Text('Aucune'),
                 items: AppConstants.cultures
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -204,13 +209,15 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
                 'Optionnel — laissez vide pour attribuer le champ à votre compte admin.',
                 style: TextStyle(
                   fontSize: 12,
-                  color: AppColors.textSecondary.withValues(alpha: 0.8),
+                  color:
+                      context.couleurs.texteSecondaire.withValues(alpha: 0.8),
                 ),
               ),
               const SizedBox(height: 10),
               TextFormField(
                 controller: _agriculteurIdCtrl,
                 decoration: adminDecorChamp(
+                  context,
                   'ID de l\'agriculteur',
                   Icons.person_pin_outlined,
                 ),
@@ -231,20 +238,21 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: context.couleurs.primaire.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.3)),
+                        color:
+                            context.couleurs.primaire.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on_rounded,
-                          color: AppColors.primary, size: 18),
+                      Icon(Icons.location_on_rounded,
+                          color: context.couleurs.primaire, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         'Lat: ${_latitude!.toStringAsFixed(4)}, Lng: ${_longitude!.toStringAsFixed(4)}',
-                        style: const TextStyle(
-                            color: AppColors.primary, fontSize: 13),
+                        style: TextStyle(
+                            color: context.couleurs.primaire, fontSize: 13),
                       ),
                     ],
                   ),
@@ -261,8 +269,9 @@ class _CreerChampAdminScreenState extends ConsumerState<CreerChampAdminScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: Text(
-                      _isGpsLoading ? 'Localisation...' : 'Obtenir ma position GPS'),
+                  child: Text(_isGpsLoading
+                      ? 'Localisation...'
+                      : 'Obtenir ma position GPS'),
                 ),
               ),
 

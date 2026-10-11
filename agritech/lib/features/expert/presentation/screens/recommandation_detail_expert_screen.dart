@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/recommandation_expert_entity.dart';
 import '../providers/expert_provider.dart';
+import '../../../../core/theme/app_motion.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Détail d'une RecommandationCulture avec actions Valider / Corriger / Rejeter
 class RecommandationDetailExpertScreen extends ConsumerStatefulWidget {
@@ -24,13 +26,13 @@ class _RecommandationDetailExpertScreenState
     final async = ref.watch(recommandationsExpertProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Text(
           'Recommandation IA',
-          style: GoogleFonts.poppins(
+          style: AppTypography.police(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -46,22 +48,22 @@ class _RecommandationDetailExpertScreenState
               TextButton(
                 onPressed: _enChargement ? null : () => _valider(context, reco),
                 child: Text('Valider',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         color: Colors.white, fontWeight: FontWeight.w600)),
               ),
               TextButton(
                 onPressed:
                     _enChargement ? null : () => _corriger(context, reco),
                 child: Text('Corriger',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         color: Colors.amber, fontWeight: FontWeight.w600)),
               ),
               TextButton(
-                onPressed:
-                    _enChargement ? null : () => _rejeter(context, reco),
+                onPressed: _enChargement ? null : () => _rejeter(context, reco),
                 child: Text('Rejeter',
-                    style: GoogleFonts.poppins(
-                        color: AppColors.danger, fontWeight: FontWeight.w600)),
+                    style: AppTypography.police(
+                        color: context.couleurs.erreur,
+                        fontWeight: FontWeight.w600)),
               ),
             ];
           },
@@ -71,16 +73,19 @@ class _RecommandationDetailExpertScreenState
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(recommandationsExpertProvider),
+        ),
         data: (s) {
-          final reco = s.recommandations
-              .where((r) => r.id == widget.recoId)
-              .firstOrNull;
+          final reco =
+              s.recommandations.where((r) => r.id == widget.recoId).firstOrNull;
           if (reco == null) {
             return Center(
               child: Text(
                 'Recommandation introuvable',
-                style: GoogleFonts.inter(color: AppColors.textSecondary),
+                style: AppTypography.police(
+                    color: context.couleurs.texteSecondaire),
               ),
             );
           }
@@ -98,27 +103,26 @@ class _RecommandationDetailExpertScreenState
       titre: 'Valider la recommandation',
       description:
           'Vous confirmez que les cultures recommandées par l\'IA sont adaptées à ce champ.',
-      couleur: AppColors.primary,
+      couleur: context.couleurs.primaire,
       labelBouton: 'Confirmer la validation',
       commentaireRequis: false,
       onConfirmer: (commentaire, notifier) async {
         setState(() => _enChargement = true);
-        final ok = await ref.read(recommandationsExpertProvider.notifier).valider(
-              recoId: reco.id,
-              commentaire: commentaire,
-              notifierAgriculteur: notifier,
-            );
+        final ok =
+            await ref.read(recommandationsExpertProvider.notifier).valider(
+                  recoId: reco.id,
+                  commentaire: commentaire,
+                  notifierAgriculteur: notifier,
+                );
         if (mounted) setState(() => _enChargement = false);
         if (ok && ctx.mounted) {
           Navigator.pop(ctx);
           Navigator.pop(ctx);
         } else if (ctx.mounted) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(
-              content: Text('Erreur lors de la validation'),
-              backgroundColor: AppColors.danger,
-            ),
-          );
+          // `ctx` et non `context` : c'est lui que le `mounted` ci-dessus
+          // garde après l'attente, et lire le thème par l'autre reviendrait à
+          // se servir d'un contexte dont rien ne dit qu'il est encore monté.
+          RetourAction.echec(ctx, null);
         }
       },
     );
@@ -131,17 +135,16 @@ class _RecommandationDetailExpertScreenState
       titre: 'Corriger la recommandation',
       description:
           'Indiquez la culture que vous recommandez à la place et expliquez votre correction.',
-      couleur: AppColors.amber,
+      couleur: context.couleurs.secondaire,
       labelBouton: 'Soumettre la correction',
       commentaireRequis: true,
       champSupplementaire: TextField(
         controller: cultureCtrl,
         decoration: InputDecoration(
           labelText: 'Culture recommandée (optionnel)',
-          prefixIcon:
-              const Icon(Icons.eco_outlined, color: AppColors.primary, size: 20),
-          border:
-              OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          prefixIcon: Icon(Icons.eco_outlined,
+              color: context.couleurs.primaire, size: 20),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         ),
@@ -174,7 +177,7 @@ class _RecommandationDetailExpertScreenState
       titre: 'Rejeter la recommandation',
       description:
           'La recommandation sera marquée comme rejetée. Un motif obligatoire sera transmis à l\'agriculteur.',
-      couleur: AppColors.danger,
+      couleur: context.couleurs.erreur,
       labelBouton: 'Confirmer le rejet',
       commentaireRequis: true,
       onConfirmer: (commentaire, notifier) async {
@@ -231,17 +234,22 @@ class _Contenu extends StatelessWidget {
   final RecommandationExpertEntity reco;
   final bool enChargement;
 
-  static const _statutColors = {
-    'EN_ATTENTE': AppColors.amber,
-    'VALIDEE': AppColors.primary,
-    'CORRIGEE': AppColors.info,
-    'REJETEE': AppColors.danger,
-  };
+  /// Teinte du statut, résolue au rendu.
+  ///
+  /// C'était une table constante de couleurs figées, ce qui interdisait au
+  /// thème sombre de s'y appliquer : une constante de compilation ne peut pas
+  /// dépendre du mode d'affichage.
+  Color _couleurStatut(BuildContext context) => switch (reco.statutValidation) {
+        'EN_ATTENTE' => context.couleurs.avertissement,
+        'VALIDEE' => context.couleurs.succes,
+        'CORRIGEE' => context.couleurs.info,
+        'REJETEE' => context.couleurs.erreur,
+        _ => context.couleurs.texteSecondaire,
+      };
 
   @override
   Widget build(BuildContext context) {
-    final couleurStatut =
-        _statutColors[reco.statutValidation] ?? AppColors.textSecondary;
+    final couleurStatut = _couleurStatut(context);
 
     return Stack(
       children: [
@@ -265,7 +273,7 @@ class _Contenu extends StatelessWidget {
                         ),
                         child: Text(
                           reco.statutLibelle.toUpperCase(),
-                          style: GoogleFonts.poppins(
+                          style: AppTypography.police(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: couleurStatut),
@@ -274,8 +282,9 @@ class _Contenu extends StatelessWidget {
                       const Spacer(),
                       Text(
                         reco.tempsEcoule,
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: AppColors.textSecondary),
+                        style: AppTypography.police(
+                            fontSize: 12,
+                            color: context.couleurs.texteSecondaire),
                       ),
                     ],
                   ),
@@ -315,8 +324,8 @@ class _Contenu extends StatelessWidget {
                                         alignment: Alignment.center,
                                         decoration: BoxDecoration(
                                           color: c.rang == 1
-                                              ? AppColors.primary
-                                              : AppColors.info
+                                              ? context.couleurs.primaire
+                                              : context.couleurs.info
                                                   .withValues(alpha: 0.15),
                                           shape: BoxShape.circle,
                                         ),
@@ -325,7 +334,7 @@ class _Contenu extends StatelessWidget {
                                           style: TextStyle(
                                             color: c.rang == 1
                                                 ? Colors.white
-                                                : AppColors.info,
+                                                : context.couleurs.info,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -335,23 +344,24 @@ class _Contenu extends StatelessWidget {
                                       Expanded(
                                         child: Text(
                                           c.nom,
-                                          style: GoogleFonts.poppins(
+                                          style: AppTypography.police(
                                             fontSize: 14,
                                             fontWeight: c.rang == 1
                                                 ? FontWeight.w700
                                                 : FontWeight.w500,
-                                            color: AppColors.textPrimary,
+                                            color:
+                                                context.couleurs.textePrincipal,
                                           ),
                                         ),
                                       ),
                                       Text(
                                         c.scoreLabel,
-                                        style: GoogleFonts.poppins(
+                                        style: AppTypography.police(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w700,
                                           color: c.rang == 1
-                                              ? AppColors.primary
-                                              : AppColors.info,
+                                              ? context.couleurs.primaire
+                                              : context.couleurs.info,
                                         ),
                                       ),
                                     ],
@@ -359,16 +369,15 @@ class _Contenu extends StatelessWidget {
                                   const SizedBox(height: 6),
                                   TweenAnimationBuilder<double>(
                                     tween: Tween(begin: 0, end: c.score),
-                                    duration:
-                                        const Duration(milliseconds: 700),
+                                    duration: AppDurees.moyenne,
                                     builder: (_, v, __) =>
                                         LinearProgressIndicator(
                                       value: v,
-                                      backgroundColor: AppColors.border,
+                                      backgroundColor: context.couleurs.bordure,
                                       valueColor: AlwaysStoppedAnimation(
                                         c.rang == 1
-                                            ? AppColors.primary
-                                            : AppColors.info,
+                                            ? context.couleurs.primaire
+                                            : context.couleurs.info,
                                       ),
                                       minHeight: 6,
                                       borderRadius: BorderRadius.circular(4),
@@ -378,9 +387,10 @@ class _Contenu extends StatelessWidget {
                                     const SizedBox(height: 4),
                                     Text(
                                       'Rendement estimé : ${c.rendementLabel}',
-                                      style: GoogleFonts.inter(
+                                      style: AppTypography.police(
                                           fontSize: 11,
-                                          color: AppColors.textSecondary),
+                                          color:
+                                              context.couleurs.texteSecondaire),
                                     ),
                                   ],
                                 ],
@@ -411,14 +421,13 @@ class _Contenu extends StatelessWidget {
                             color: couleurStatut.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                                color:
-                                    couleurStatut.withValues(alpha: 0.2)),
+                                color: couleurStatut.withValues(alpha: 0.2)),
                           ),
                           child: Text(
                             reco.commentaireExpert!,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.police(
                               fontSize: 13,
-                              color: AppColors.textPrimary,
+                              color: context.couleurs.textePrincipal,
                             ),
                           ),
                         ),
@@ -461,25 +470,43 @@ class _SnapshotGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <(String, String, IconData)>[
       if (snapshot.azote != null)
-        ('Azote (N)', '${snapshot.azote!.toStringAsFixed(1)} mg/kg',
-            Icons.science_outlined),
+        (
+          'Azote (N)',
+          '${snapshot.azote!.toStringAsFixed(1)} mg/kg',
+          Icons.science_outlined
+        ),
       if (snapshot.phosphore != null)
-        ('Phosphore (P)', '${snapshot.phosphore!.toStringAsFixed(1)} mg/kg',
-            Icons.science_outlined),
+        (
+          'Phosphore (P)',
+          '${snapshot.phosphore!.toStringAsFixed(1)} mg/kg',
+          Icons.science_outlined
+        ),
       if (snapshot.potassium != null)
-        ('Potassium (K)', '${snapshot.potassium!.toStringAsFixed(1)} mg/kg',
-            Icons.science_outlined),
+        (
+          'Potassium (K)',
+          '${snapshot.potassium!.toStringAsFixed(1)} mg/kg',
+          Icons.science_outlined
+        ),
       if (snapshot.ph != null)
         ('pH', snapshot.ph!.toStringAsFixed(1), Icons.water_drop_outlined),
       if (snapshot.humidite != null)
-        ('Humidité', '${snapshot.humidite!.toStringAsFixed(0)} %',
-            Icons.water_outlined),
+        (
+          'Humidité',
+          '${snapshot.humidite!.toStringAsFixed(0)} %',
+          Icons.water_outlined
+        ),
       if (snapshot.temperature != null)
-        ('Température', '${snapshot.temperature!.toStringAsFixed(1)} °C',
-            Icons.thermostat_outlined),
+        (
+          'Température',
+          '${snapshot.temperature!.toStringAsFixed(1)} °C',
+          Icons.thermostat_outlined
+        ),
       if (snapshot.pluviometrie != null)
-        ('Pluviométrie', '${snapshot.pluviometrie!.toStringAsFixed(0)} mm',
-            Icons.cloud_outlined),
+        (
+          'Pluviométrie',
+          '${snapshot.pluviometrie!.toStringAsFixed(0)} mm',
+          Icons.cloud_outlined
+        ),
       if (snapshot.typeSol != null)
         ('Type de sol', snapshot.typeSol!, Icons.terrain_outlined),
     ];
@@ -487,8 +514,8 @@ class _SnapshotGrid extends StatelessWidget {
     if (items.isEmpty) {
       return Text(
         'Données d\'entrée non disponibles',
-        style: GoogleFonts.inter(
-            fontSize: 12, color: AppColors.textSecondary),
+        style: AppTypography.police(
+            fontSize: 12, color: context.couleurs.texteSecondaire),
       );
     }
 
@@ -501,18 +528,17 @@ class _SnapshotGrid extends StatelessWidget {
       childAspectRatio: 2.2,
       children: items
           .map((item) => Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: context.couleurs.primaire.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.15)),
+                      color: context.couleurs.primaire.withValues(alpha: 0.15)),
                 ),
                 child: Row(
                   children: [
-                    Icon(item.$3,
-                        size: 16, color: AppColors.primary),
+                    Icon(item.$3, size: 16, color: context.couleurs.primaire),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Column(
@@ -521,16 +547,16 @@ class _SnapshotGrid extends StatelessWidget {
                         children: [
                           Text(
                             item.$1,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.police(
                                 fontSize: 9,
-                                color: AppColors.textSecondary),
+                                color: context.couleurs.texteSecondaire),
                           ),
                           Text(
                             item.$2,
-                            style: GoogleFonts.poppins(
+                            style: AppTypography.police(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                              color: context.couleurs.textePrincipal,
                             ),
                           ),
                         ],
@@ -556,7 +582,7 @@ class _Section extends StatelessWidget {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: context.couleurs.bordure),
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -565,10 +591,10 @@ class _Section extends StatelessWidget {
             children: [
               Text(
                 titre,
-                style: GoogleFonts.poppins(
+                style: AppTypography.police(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
+                    color: context.couleurs.textePrincipal),
               ),
               const SizedBox(height: 10),
               ...enfants,
@@ -590,17 +616,17 @@ class _LigneInfo extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icone, size: 16, color: AppColors.textSecondary),
+            Icon(icone, size: 16, color: context.couleurs.texteSecondaire),
             const SizedBox(width: 8),
             Text('$label : ',
-                style: GoogleFonts.inter(
-                    fontSize: 12, color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    fontSize: 12, color: context.couleurs.texteSecondaire)),
             Expanded(
               child: Text(valeur,
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary)),
+                      color: context.couleurs.textePrincipal)),
             ),
           ],
         ),
@@ -661,7 +687,7 @@ class _FeuilleActionState extends State<_FeuilleAction> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: AppColors.border,
+                  color: context.couleurs.bordure,
                   borderRadius: BorderRadius.circular(2)),
             ),
             Expanded(
@@ -670,14 +696,15 @@ class _FeuilleActionState extends State<_FeuilleAction> {
                 padding: const EdgeInsets.all(20),
                 children: [
                   Text(widget.titre,
-                      style: GoogleFonts.poppins(
+                      style: AppTypography.police(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: widget.couleur)),
                   const SizedBox(height: 6),
                   Text(widget.description,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, color: AppColors.textSecondary)),
+                      style: AppTypography.police(
+                          fontSize: 13,
+                          color: context.couleurs.texteSecondaire)),
                   const SizedBox(height: 20),
 
                   // Champ supplémentaire (ex : culture corrigée)
@@ -691,7 +718,7 @@ class _FeuilleActionState extends State<_FeuilleAction> {
                     widget.commentaireRequis
                         ? 'Commentaire expert *'
                         : 'Commentaire expert (optionnel)',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
@@ -702,16 +729,17 @@ class _FeuilleActionState extends State<_FeuilleAction> {
                       hintText: widget.commentaireRequis
                           ? 'Expliquez votre décision...'
                           : 'Ajoutez vos observations (optionnel)...',
-                      hintStyle: GoogleFonts.inter(
-                          fontSize: 12, color: AppColors.textSecondary),
+                      hintStyle: AppTypography.police(
+                          fontSize: 12,
+                          color: context.couleurs.texteSecondaire),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide:
-                              const BorderSide(color: AppColors.border)),
+                              BorderSide(color: context.couleurs.bordure)),
                       enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                           borderSide:
-                              const BorderSide(color: AppColors.border)),
+                              BorderSide(color: context.couleurs.bordure)),
                       contentPadding: const EdgeInsets.all(12),
                     ),
                   ),
@@ -725,19 +753,18 @@ class _FeuilleActionState extends State<_FeuilleAction> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Notifier l\'agriculteur',
-                                style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500)),
+                                style: AppTypography.police(
+                                    fontSize: 13, fontWeight: FontWeight.w500)),
                             Text('Notification push automatique',
-                                style: GoogleFonts.inter(
+                                style: AppTypography.police(
                                     fontSize: 11,
-                                    color: AppColors.textSecondary)),
+                                    color: context.couleurs.texteSecondaire)),
                           ],
                         ),
                       ),
                       Switch.adaptive(
                         value: _notifier,
-                        activeColor: AppColors.primary,
+                        activeColor: context.couleurs.primaire,
                         onChanged: (v) => setState(() => _notifier = v),
                       ),
                     ],
@@ -755,7 +782,7 @@ class _FeuilleActionState extends State<_FeuilleAction> {
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
-                        textStyle: GoogleFonts.poppins(
+                        textStyle: AppTypography.police(
                             fontSize: 15, fontWeight: FontWeight.w600),
                       ),
                       child: _isLoading
@@ -781,9 +808,10 @@ class _FeuilleActionState extends State<_FeuilleAction> {
     final commentaire = _commentaireCtrl.text.trim();
     if (widget.commentaireRequis && commentaire.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Le commentaire doit contenir au moins 10 caractères.'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text(
+              'Le commentaire doit contenir au moins 10 caractères.'),
+          backgroundColor: context.couleurs.erreur,
         ),
       );
       return;

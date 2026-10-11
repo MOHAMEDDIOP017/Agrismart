@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../../../features/alertes/data/models/alerte_model.dart';
 import '../providers/alertes_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran détail d'une alerte avec diagnostic et traitement
 class AlerteDetailScreen extends ConsumerStatefulWidget {
@@ -25,14 +24,17 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
   final _commentCtrl = TextEditingController();
   bool _evalSubmitted = false;
 
-  AlerteModel? get _alerte =>
-      ref.watch(alertesProvider).valueOrNull?.where((a) => a.id == widget.alerteId).firstOrNull;
+  AlerteModel? get _alerte => ref
+      .watch(alertesProvider)
+      .valueOrNull
+      ?.where((a) => a.id == widget.alerteId)
+      .firstOrNull;
 
   Color _niveauColor(String niveau) => switch (niveau) {
-        AppConstants.alerteCritique => AppColors.alerteCritique,
-        AppConstants.alerteEleve => AppColors.alerteEleve,
-        AppConstants.alerteModere => AppColors.alerteModere,
-        _ => AppColors.alerteFaible,
+        AppConstants.alerteCritique => context.couleurs.alerteCritique,
+        AppConstants.alerteEleve => context.couleurs.alerteElevee,
+        AppConstants.alerteModere => context.couleurs.alerteModeree,
+        _ => context.couleurs.alerteFaible,
       };
 
   @override
@@ -89,7 +91,8 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
                       color: color.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.warning_amber_rounded, color: color, size: 28),
+                    child: Icon(Icons.warning_amber_rounded,
+                        color: color, size: 28),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -105,7 +108,7 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(duration: 300.ms),
+            ),
 
             const SizedBox(height: 20),
 
@@ -114,8 +117,8 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
               icon: Icons.terrain_rounded,
               label: 'Champ concerné',
               value: alerte.champNom,
-              color: AppColors.primary,
-            ).animate().fadeIn(delay: 80.ms).slideX(begin: 0.1, end: 0),
+              color: context.couleurs.primaire,
+            ),
 
             const SizedBox(height: 12),
 
@@ -125,7 +128,7 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
               label: 'Maladie détectée',
               value: alerte.maladieDetectee,
               color: color,
-            ).animate().fadeIn(delay: 120.ms).slideX(begin: 0.1, end: 0),
+            ),
 
             const SizedBox(height: 20),
 
@@ -140,7 +143,7 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
                     .bodyMedium
                     ?.copyWith(height: 1.6),
               ),
-            ).animate().fadeIn(delay: 150.ms),
+            ),
 
             const SizedBox(height: 20),
 
@@ -148,14 +151,14 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
             _Section(
               title: 'Traitement conseillé',
               icon: Icons.healing_outlined,
-              color: AppColors.primary,
+              color: context.couleurs.primaire,
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.05),
+                  color: context.couleurs.primaire.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                  border: Border.all(
+                      color: context.couleurs.primaire.withValues(alpha: 0.2)),
                 ),
                 child: Text(
                   alerte.traitementConseille,
@@ -165,27 +168,26 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
                       ?.copyWith(height: 1.6),
                 ),
               ),
-            ).animate().fadeIn(delay: 200.ms),
+            ),
 
             const SizedBox(height: 32),
 
             // Bouton marquer comme lu
             if (!_isLue)
-              AppButton(
-                label: 'Marquer comme lu',
+              AppBouton.secondaire(
+                libelle: 'Marquer comme lu',
                 onPressed: () => setState(() => _isLue = true),
-                isOutlined: true,
-                icon: Icons.check_circle_outline_rounded,
-              ).animate().fadeIn(delay: 250.ms),
+                icone: Icons.check_circle_outline_rounded,
+              ),
 
             if (_isLue && !_showEvaluation && !_evalSubmitted) ...[
               const SizedBox(height: 12),
-              AppButton(
-                label: 'Évaluer ce diagnostic',
+              AppBouton.principal(
+                libelle: 'Évaluer ce diagnostic',
                 onPressed: () => setState(() => _showEvaluation = true),
-                icon: Icons.star_outline_rounded,
-                color: AppColors.amber,
-              ).animate().fadeIn(delay: 300.ms),
+                icone: Icons.star_outline_rounded,
+                ton: TonBouton.accent,
+              ),
             ],
 
             // Section évaluation du diagnostic
@@ -196,15 +198,11 @@ class _AlerteDetailScreenState extends ConsumerState<AlerteDetailScreen> {
                 commentCtrl: _commentCtrl,
                 onEvaluate: (v) => setState(() => _evaluation = v),
                 onSubmit: () => setState(() => _evalSubmitted = true),
-              ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.2, end: 0),
+              ),
             ],
 
             // Remerciement après évaluation
-            if (_evalSubmitted)
-              _ThanksCard()
-                  .animate()
-                  .fadeIn(duration: 400.ms)
-                  .scale(begin: const Offset(0.8, 0.8)),
+            if (_evalSubmitted) _ThanksCard(),
 
             const SizedBox(height: 32),
           ],
@@ -238,8 +236,8 @@ class _NiveauChip extends StatelessWidget {
       ),
       child: Text(
         'Niveau : $_label',
-        style: TextStyle(
-            color: color, fontWeight: FontWeight.bold, fontSize: 12),
+        style:
+            TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
       ),
     );
   }
@@ -262,20 +260,21 @@ class _InfoRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color ?? AppColors.textSecondary),
+          Icon(icon,
+              size: 18, color: color ?? context.couleurs.texteSecondaire),
           const SizedBox(width: 10),
           Text(
             label,
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(color: AppColors.textSecondary),
+                ?.copyWith(color: context.couleurs.texteSecondaire),
           ),
           const Spacer(),
           Text(
@@ -283,7 +282,7 @@ class _InfoRow extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
-                ?.copyWith(color: color ?? AppColors.textPrimary),
+                ?.copyWith(color: color ?? context.couleurs.textePrincipal),
           ),
         ],
       ),
@@ -310,7 +309,8 @@ class _Section extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: color ?? AppColors.textPrimary),
+            Icon(icon,
+                size: 18, color: color ?? context.couleurs.textePrincipal),
             const SizedBox(width: 8),
             Text(title, style: Theme.of(context).textTheme.titleLarge),
           ],
@@ -341,9 +341,9 @@ class _EvaluationSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.05),
@@ -364,7 +364,7 @@ class _EvaluationSection extends StatelessWidget {
               _EvalButton(
                 label: 'Correct',
                 icon: Icons.check_circle_rounded,
-                color: AppColors.primary,
+                color: context.couleurs.primaire,
                 isSelected: evaluation == 0,
                 onTap: () => onEvaluate(0),
               ),
@@ -372,7 +372,7 @@ class _EvaluationSection extends StatelessWidget {
               _EvalButton(
                 label: 'Partiel',
                 icon: Icons.remove_circle_rounded,
-                color: AppColors.amber,
+                color: context.couleurs.secondaire,
                 isSelected: evaluation == 1,
                 onTap: () => onEvaluate(1),
               ),
@@ -380,7 +380,7 @@ class _EvaluationSection extends StatelessWidget {
               _EvalButton(
                 label: 'Incorrect',
                 icon: Icons.cancel_rounded,
-                color: AppColors.danger,
+                color: context.couleurs.erreur,
                 isSelected: evaluation == 2,
                 onTap: () => onEvaluate(2),
               ),
@@ -396,8 +396,8 @@ class _EvaluationSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          AppButton(
-            label: 'Envoyer l\'évaluation',
+          AppBouton.principal(
+            libelle: 'Envoyer l\'évaluation',
             onPressed: evaluation != null ? onSubmit : null,
           ),
         ],
@@ -431,10 +431,10 @@ class _EvalButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? color.withValues(alpha: 0.12)
-                : AppColors.background,
+                : context.couleurs.fond,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? color : AppColors.border,
+              color: isSelected ? color : context.couleurs.bordure,
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -447,8 +447,7 @@ class _EvalButton extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontSize: 11,
-                  fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ],
@@ -465,13 +464,15 @@ class _ThanksCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.07),
+        color: context.couleurs.primaire.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border:
+            Border.all(color: context.couleurs.primaire.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.favorite_rounded, color: AppColors.primary, size: 32),
+          Icon(Icons.favorite_rounded,
+              color: context.couleurs.primaire, size: 32),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -482,7 +483,7 @@ class _ThanksCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(color: AppColors.primary),
+                      ?.copyWith(color: context.couleurs.primaire),
                 ),
                 const SizedBox(height: 4),
                 Text(

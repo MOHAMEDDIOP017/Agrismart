@@ -65,15 +65,17 @@ class ProfilNotifier extends AsyncNotifier<UserEntity?> {
         prenom: prenom,
         email: user.email,
         telephone: telephone,
-        zoneGeographique:
-            (zoneGeographique?.isNotEmpty == true) ? zoneGeographique! : user.zoneGeographique,
+        zoneGeographique: (zoneGeographique?.isNotEmpty == true)
+            ? zoneGeographique!
+            : user.zoneGeographique,
         role: user.role,
         photoUrl: user.photoUrl,
         nombreChamps: user.nombreChamps,
         nombreRecommandations: user.nombreRecommandations,
         adresse: (adresse?.isNotEmpty == true) ? adresse : user.adresse,
-        villageVille:
-            (villageVille?.isNotEmpty == true) ? villageVille : user.villageVille,
+        villageVille: (villageVille?.isNotEmpty == true)
+            ? villageVille
+            : user.villageVille,
         dateInscription: user.dateInscription,
         actif: user.actif,
       ));

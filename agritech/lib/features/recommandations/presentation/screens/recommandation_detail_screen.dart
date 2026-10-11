@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/app_button.dart';
 import '../../data/models/recommandation_model.dart';
-import '../providers/post_recolte_provider.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../widgets/culture_card.dart';
+import '../widgets/mention_sources_donnees.dart';
+import '../../../../shared/widgets/widgets.dart';
+import '../../../../core/theme/app_radius.dart';
 
 /// BottomSheet détail d'une recommandation de culture
-class RecommandationDetailSheet extends ConsumerWidget {
+class RecommandationDetailSheet extends StatelessWidget {
   const RecommandationDetailSheet({super.key, required this.recommandation});
 
   final RecommandationModel recommandation;
 
-  Color get _scoreColor {
+  /// Teinte du taux d'aptitude, selon trois paliers agronomiques : au-dessus
+  /// de 85 la parcelle convient, entre 70 et 85 sous conditions, en dessous
+  /// elle ne convient pas. La couleur ne porte jamais seule l'information, le
+  /// pourcentage est écrit à côté.
+  Color _couleurScore(BuildContext context) {
     final s = recommandation.scoreCompatibilite;
-    if (s >= 85) return AppColors.primary;
-    if (s >= 70) return AppColors.amber;
-    return AppColors.coral;
+    if (s >= 85) return context.couleurs.primaire;
+    if (s >= 70) return context.couleurs.secondaireTexte;
+    return context.couleurs.alerteElevee;
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
       minChildSize: 0.5,
       maxChildSize: 0.95,
       builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.couleurs.surface,
+          borderRadius: AppRayons.brFeuille,
         ),
         child: Column(
           children: [
@@ -38,7 +43,7 @@ class RecommandationDetailSheet extends ConsumerWidget {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.couleurs.bordure,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -49,44 +54,102 @@ class RecommandationDetailSheet extends ConsumerWidget {
                 children: [
                   // En-tête
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // La vignette porte la même étiquette que celle de la
+                      // carte du classement : elle vole de la liste jusqu'ici
+                      // au lieu de disparaître d'un côté et de réapparaître de
+                      // l'autre, ce qui dit quelle carte on vient d'ouvrir.
+                      VignetteCulture(
+                        imageUrl: recommandation.imageUrl,
+                        icone: Icons.eco_rounded,
+                        cote: 72,
+                        heroTag: etiquetteHeroCulture(recommandation.culture),
+                      ),
+                      const SizedBox(width: AppEspaces.sm),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              recommandation.culture,
-                              style: Theme.of(context).textTheme.displaySmall,
+                            Row(
+                              children: [
+                                if (recommandation.rang != null) ...[
+                                  _RangPastille(rang: recommandation.rang!),
+                                  const SizedBox(width: 8),
+                                ],
+                                Flexible(
+                                  child: Text(
+                                    recommandation.culture,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displaySmall,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+                            // Nom wolof : l'agriculteur nomme sa culture ainsi,
+                            // l'agent conversationnel lui répond aussi ainsi.
+                            if (recommandation.nomWolof != null)
+                              Text(
+                                recommandation.nomWolof!,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: context.couleurs.texteSecondaire,
+                                    ),
+                              ),
                             const SizedBox(height: 4),
                             Text(
                               recommandation.periodeIdealePlantation,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
+                                    color: context.couleurs.texteSecondaire,
                                   ),
+                            ),
+                            const SizedBox(height: 8),
+                            BadgeStatut.validation(
+                              recommandation.statutValidation,
+                              detaille: true,
                             ),
                           ],
                         ),
                       ),
                       // Score
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: _scoreColor.withValues(alpha: 0.12),
+                          color: _couleurScore(context).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: _scoreColor.withValues(alpha: 0.4)),
+                          border: Border.all(
+                              color: _couleurScore(context)
+                                  .withValues(alpha: 0.4)),
                         ),
                         child: Text(
                           recommandation.scoreLabel,
                           style: TextStyle(
-                            color: _scoreColor,
+                            color: _couleurScore(context),
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         ),
                       ),
                     ],
-                  ).animate().fadeIn(duration: 300.ms),
+                  ),
+
+                  // Provenance des données ayant produit cette recommandation :
+                  // mesure temps réel, ou repli sur les moyennes de la zone
+                  // agroécologique. Placée sous l'en-tête pour rester visible
+                  // sans avoir à faire défiler, mais en retrait visuel.
+                  MentionSourcesDonnees(
+                    sources: recommandation.sourcesDonnees,
+                    zoneAgroecologique: recommandation.zoneAgroecologique,
+                    padding: const EdgeInsets.only(top: 12),
+                  ),
 
                   const SizedBox(height: 24),
 
@@ -101,7 +164,10 @@ class RecommandationDetailSheet extends ConsumerWidget {
                     icon: Icons.tips_and_updates_rounded,
                     child: Text(
                       recommandation.conseilsAgronomiques,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.6),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(height: 1.6),
                     ),
                   ),
 
@@ -114,12 +180,18 @@ class RecommandationDetailSheet extends ConsumerWidget {
                     child: Column(
                       children: recommandation.engAraisConseillesList
                           .map((e) => Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.fiber_manual_record, size: 8, color: AppColors.primary),
+                                    Icon(Icons.fiber_manual_record,
+                                        size: 8,
+                                        color: context.couleurs.primaire),
                                     const SizedBox(width: 8),
-                                    Text(e, style: Theme.of(context).textTheme.bodyMedium),
+                                    Text(e,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium),
                                   ],
                                 ),
                               ))
@@ -138,9 +210,13 @@ class RecommandationDetailSheet extends ConsumerWidget {
                       runSpacing: 8,
                       children: recommandation.maladiesFrequentes
                           .map((m) => Chip(
-                                label: Text(m, style: const TextStyle(fontSize: 12)),
-                                backgroundColor: AppColors.coral.withValues(alpha: 0.08),
-                                side: BorderSide(color: AppColors.coral.withValues(alpha: 0.3)),
+                                label: Text(m,
+                                    style: const TextStyle(fontSize: 12)),
+                                backgroundColor: context.couleurs.alerteElevee
+                                    .withValues(alpha: 0.08),
+                                side: BorderSide(
+                                    color: context.couleurs.alerteElevee
+                                        .withValues(alpha: 0.3)),
                               ))
                           .toList(),
                     ),
@@ -148,10 +224,10 @@ class RecommandationDetailSheet extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Section post-récolte statique (estimations locales)
+                  // Estimations economiques derivees de la recommandation v2
                   Container(
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.couleurs.bordure),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Padding(
@@ -161,29 +237,26 @@ class RecommandationDetailSheet extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.store_rounded,
-                                  color: AppColors.amber, size: 18),
+                              Icon(Icons.store_rounded,
+                                  color: context.couleurs.secondaire, size: 18),
                               const SizedBox(width: 8),
-                              Text('Estimations post-récolte',
-                                  style: Theme.of(context).textTheme.titleLarge),
+                              Text('Estimations économiques',
+                                  style:
+                                      Theme.of(context).textTheme.titleLarge),
                             ],
                           ),
                           const SizedBox(height: 12),
-                          _PostRecolteRow(
+                          _EstimationRow(
                             label: 'Prix marché estimé',
                             value: recommandation.prixLabel,
                             icon: Icons.sell_outlined,
                           ),
                           const SizedBox(height: 8),
-                          _PostRecolteRow(
+                          _EstimationRow(
                             label: 'Profit potentiel',
                             value: recommandation.profitLabel,
                             icon: Icons.trending_up_rounded,
                           ),
-                          if (recommandation.savedId != null) ...[
-                            const SizedBox(height: 16),
-                            _PostRecolteButton(savedId: recommandation.savedId!),
-                          ],
                         ],
                       ),
                     ),
@@ -219,8 +292,18 @@ class _StatsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = [
-      (Icons.water_drop_outlined, 'Besoin en eau', recommandation.besoinEauLabel, AppColors.info),
-      (Icons.trending_up_rounded, 'Rendement', recommandation.rendementLabel, AppColors.primary),
+      (
+        Icons.water_drop_outlined,
+        'Besoin en eau',
+        recommandation.besoinEauLabel,
+        context.couleurs.info
+      ),
+      (
+        Icons.trending_up_rounded,
+        'Rendement',
+        recommandation.rendementLabel,
+        context.couleurs.primaire
+      ),
     ];
     return Row(
       children: stats
@@ -246,7 +329,8 @@ class _StatsGrid extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
+                              ?.copyWith(
+                                  color: context.couleurs.texteSecondaire),
                           textAlign: TextAlign.center),
                     ],
                   ),
@@ -258,7 +342,8 @@ class _StatsGrid extends StatelessWidget {
 }
 
 class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.icon, required this.child});
+  const _Section(
+      {required this.title, required this.icon, required this.child});
 
   final String title;
   final IconData icon;
@@ -271,7 +356,7 @@ class _Section extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 18, color: AppColors.primary),
+            Icon(icon, size: 18, color: context.couleurs.primaire),
             const SizedBox(width: 8),
             Text(title, style: Theme.of(context).textTheme.titleLarge),
           ],
@@ -283,8 +368,9 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _PostRecolteRow extends StatelessWidget {
-  const _PostRecolteRow({required this.label, required this.value, required this.icon});
+class _EstimationRow extends StatelessWidget {
+  const _EstimationRow(
+      {required this.label, required this.value, required this.icon});
 
   final String label;
   final String value;
@@ -294,165 +380,53 @@ class _PostRecolteRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.amber),
+        Icon(icon, size: 18, color: context.couleurs.secondaire),
         const SizedBox(width: 10),
         Text(label,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(color: AppColors.textSecondary)),
+                ?.copyWith(color: context.couleurs.texteSecondaire)),
         const Spacer(),
         Text(value,
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
-                ?.copyWith(color: AppColors.textPrimary)),
+                ?.copyWith(color: context.couleurs.textePrincipal)),
       ],
     );
   }
 }
 
-/// Bouton + affichage des scénarios post-récolte depuis le backend.
-class _PostRecolteButton extends ConsumerStatefulWidget {
-  const _PostRecolteButton({required this.savedId});
-  final String savedId;
+/// Pastille de rang du détail (« 1 », « 2 », « 3 »).
+///
+/// Reprend `RecommandationCulture.rang` décidé par le moteur : 1 désigne la
+/// culture dont la probabilité d'aptitude est la plus élevée pour cette
+/// parcelle. Les aptitudes étant indépendantes les unes des autres
+/// (classification multi-étiquettes), le rang ordonne sans impliquer que les
+/// suivantes soient inadaptées.
+class _RangPastille extends StatelessWidget {
+  const _RangPastille({required this.rang});
 
-  @override
-  ConsumerState<_PostRecolteButton> createState() => _PostRecolteButtonState();
-}
-
-class _PostRecolteButtonState extends ConsumerState<_PostRecolteButton> {
-  bool _expanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!_expanded) {
-      return AppButton(
-        label: 'Analyse post-récolte détaillée',
-        icon: Icons.agriculture_rounded,
-        isOutlined: true,
-        color: AppColors.amber,
-        onPressed: () => setState(() => _expanded = true),
-      );
-    }
-
-    final scenariosAsync = ref.watch(postRecolteProvider(widget.savedId));
-    return scenariosAsync.when(
-      loading: () => const Padding(
-        padding: EdgeInsets.symmetric(vertical: 12),
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Text(
-        'Impossible de charger les scénarios : $e',
-        style: const TextStyle(color: AppColors.danger, fontSize: 12),
-      ),
-      data: (scenarios) {
-        if (scenarios.isEmpty) {
-          return Text(
-            'Aucun scénario disponible.',
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: AppColors.textSecondary),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: scenarios.map((s) => _ScenarioCard(scenario: s)).toList(),
-        );
-      },
-    );
-  }
-}
-
-class _ScenarioCard extends StatelessWidget {
-  const _ScenarioCard({required this.scenario});
-  final Map<String, dynamic> scenario;
+  final int rang;
 
   @override
   Widget build(BuildContext context) {
-    final type = scenario['typeRec'] as String? ?? '';
-    final isTransfo = type == 'TRANSFORMATION';
-    final profit = (scenario['profitPotentiel'] as num? ?? 0).toInt();
-    final cout = (scenario['coutTransformation'] as num? ?? 0).toInt();
-    final score = ((scenario['score'] as num? ?? 0) * 100).round();
-    final color = isTransfo ? AppColors.primary : AppColors.amber;
-
     return Container(
-      margin: const EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(14),
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: context.couleurs.primaire.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isTransfo ? Icons.precision_manufacturing_outlined : Icons.sell_outlined,
-                color: color,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                isTransfo ? 'Transformation' : 'Vente brute',
-                style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Score $score%',
-                  style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _InfoLigne(label: 'Profit potentiel', value: '$profit FCFA'),
-          if (isTransfo && cout > 0)
-            _InfoLigne(label: 'Coût transformation', value: '$cout FCFA'),
-        ],
-      ),
-    ).animate().fadeIn(duration: 350.ms).slideY(begin: 0.15, end: 0);
-  }
-}
-
-class _InfoLigne extends StatelessWidget {
-  const _InfoLigne({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Row(
-        children: [
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.textSecondary)),
-          const Spacer(),
-          Text(value,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall),
-        ],
+      child: Text(
+        '$rang',
+        style: TextStyle(
+          color: context.couleurs.primaire,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
       ),
     );
   }

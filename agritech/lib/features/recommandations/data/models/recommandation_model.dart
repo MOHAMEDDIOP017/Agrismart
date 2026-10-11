@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/enums/statut_validation.dart';
 
 /// Modèle d'une recommandation de culture par l'IA
 class RecommandationModel extends Equatable {
@@ -19,9 +20,14 @@ class RecommandationModel extends Equatable {
     required this.profitPotentiel,
     this.imageUrl,
     required this.dateGeneree,
+    this.zoneAgroecologique,
+    this.sourcesDonnees = const {},
+    this.rang,
+    this.statutValidation = StatutValidation.enAttente,
   });
 
   final String id;
+
   /// ID Firestore de la recommandation sauvegardée (null si non encore persisté)
   final String? savedId;
   final String champId;
@@ -38,6 +44,36 @@ class RecommandationModel extends Equatable {
   final String? imageUrl;
   final DateTime dateGeneree;
 
+  /// Zone agroécologique de la parcelle (« Bassin arachidier »...), calculée
+  /// côté serveur depuis la position du champ. Elle détermine les moyennes de
+  /// référence appliquées quand une source externe ne répond pas.
+  final String? zoneAgroecologique;
+
+  /// Origine de chaque bloc de variables du modèle : mesure temps réel
+  /// (SoilGrids, NASA POWER) ou moyenne de la zone agroécologique.
+  ///
+  /// Renvoyée au niveau de l'enveloppe de réponse et non par recommandation :
+  /// les trois cultures d'un même top-3 partagent la même AnalyseParcelle,
+  /// donc la même origine de données. Vide pour une recommandation relue
+  /// depuis l'historique, où seule la zone est connue.
+  final Map<String, String> sourcesDonnees;
+
+  /// Place de la culture dans le top-k, telle que le moteur l'a décidée
+  /// (`RecommandationCulture.rang` côté backend, 1 = la mieux adaptée).
+  ///
+  /// Distincte de la position dans la liste affichée : l'interface utilisait
+  /// jusqu'ici l'index de rendu, qui coïncide tant que rien n'est trié ni
+  /// filtré, mais divergerait en silence dès que ce serait le cas.
+  final int? rang;
+
+  /// Statut du cycle de validation par un expert. Une recommandation est
+  /// produite EN_ATTENTE : l'agriculteur doit pouvoir distinguer une sortie
+  /// brute du modèle d'une recommandation qu'un agronome a relue.
+  final StatutValidation statutValidation;
+
+  /// Nom wolof de la culture, ou `null` si elle ne figure pas dans la table.
+  String? get nomWolof => AppConstants.nomsWolofCultures[culture];
+
   String get scoreLabel => '$scoreCompatibilite%';
   String get rendementLabel => '${rendementEstime.toStringAsFixed(1)} t/ha';
   String get besoinEauLabel => '$besoinEau mm/saison';
@@ -52,8 +88,11 @@ class RecommandationModel extends Equatable {
   factory RecommandationModel.fromPredictionV2(
     Map<String, dynamic> json,
     String champId,
-    int index,
-  ) {
+    int index, {
+    // Porté par l'enveloppe `ResultatRecommandationV2`, pas par chaque
+    // recommandation : une seule AnalyseParcelle pour tout le top-3.
+    Map<String, String> sourcesDonnees = const {},
+  }) {
     final cultureNom = json['cultureNom'] as String;
     final probabiliteAptitude = (json['probabiliteAptitude'] as num).toDouble();
     final rendement = (json['rendementEstime'] as num).toDouble();
@@ -85,6 +124,12 @@ class RecommandationModel extends Equatable {
       profitPotentiel: (rendement * 1000 * prix).round(),
       imageUrl: AppConstants.imagesCultures[cultureNom],
       dateGeneree: DateTime.now(),
+      zoneAgroecologique: json['zoneAgroecologique'] as String?,
+      sourcesDonnees: sourcesDonnees,
+      // Repli sur la position de rendu si le backend ne renvoie pas le rang.
+      rang: (json['rang'] as num?)?.toInt() ?? index + 1,
+      statutValidation: StatutValidation.fromString(
+          (json['statutValidation'] as String?) ?? ''),
     );
   }
 

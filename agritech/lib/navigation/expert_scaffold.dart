@@ -1,39 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../core/theme/app_colors.dart';
+
+import '../features/expert/presentation/providers/expert_provider.dart';
+import '../shared/widgets/widgets.dart';
 import 'expert_router.dart';
 
-/// Scaffold principal du module Expert avec BottomNavigationBar 5 onglets
-class ExpertScaffold extends StatelessWidget {
+/// Coquille de navigation de l'expert agronome.
+///
+/// Quatre onglets : À valider, Champs, Conseils, Profil.
+///
+/// **La file de validation passe en premier.** Elle était déclarée hors de la
+/// coquille : elle n'appartenait à aucun onglet, et l'ouvrir faisait
+/// disparaître la barre de navigation. C'est pourtant la tâche première du
+/// rôle, et c'était la fonction la moins accessible de l'application. Elle
+/// occupe maintenant le premier onglet, celui que l'on atteint sans réfléchir.
+///
+/// **Le nombre de recommandations en attente est affiché en permanence.** Il
+/// était enfermé dans une carte du tableau de bord, qu'il fallait ouvrir pour
+/// voir qu'il y avait du travail. En pastille sur l'onglet, il se voit depuis
+/// n'importe quel écran du module.
+///
+/// L'ancien tableau de bord reste accessible en plein écran depuis le profil.
+/// Son contenu se résumait à trois indicateurs et aux trois premières
+/// parcelles supervisées, que l'onglet Champs montre déjà en entier.
+class ExpertScaffold extends ConsumerWidget {
   const ExpertScaffold({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  static const _items = [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.dashboard_outlined),
-      activeIcon: Icon(Icons.dashboard),
-      label: 'Dashboard',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.terrain_outlined),
-      activeIcon: Icon(Icons.terrain),
-      label: 'Champs',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.chat_bubble_outline),
-      activeIcon: Icon(Icons.chat_bubble),
-      label: 'Conseils',
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      activeIcon: Icon(Icons.person),
-      label: 'Profil',
-    ),
-  ];
-
-  void _onTap(int index) {
+  void _ouvrir(int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
@@ -41,44 +37,61 @@ class ExpertScaffold extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Lecture seule d'un provider existant : la pastille suit le même état que
+    // la liste, sans second appel au serveur.
+    final enAttente = ref.watch(recommandationsExpertProvider).maybeWhen(
+          data: (etat) => etat.nombreEnAttente,
+          orElse: () => 0,
+        );
+
+    final destinations = [
+      DestinationNavigation(
+        libelle: 'À valider',
+        icone: Icons.fact_check_outlined,
+        iconeActive: Icons.fact_check_rounded,
+        compteur: enAttente,
+        etiquette: 'Recommandations à valider',
+      ),
+      const DestinationNavigation(
+        libelle: 'Champs',
+        icone: Icons.terrain_outlined,
+        iconeActive: Icons.terrain_rounded,
+        etiquette: 'Champs supervisés',
+      ),
+      const DestinationNavigation(
+        libelle: 'Conseils',
+        icone: Icons.chat_bubble_outline,
+        iconeActive: Icons.chat_bubble_rounded,
+      ),
+      const DestinationNavigation(
+        libelle: 'Profil',
+        icone: Icons.person_outline,
+        iconeActive: Icons.person_rounded,
+      ),
+    ];
+
     return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: _onTap,
-          items: _items,
-          selectedItemColor: AppColors.primaryDark,
-          unselectedItemColor: AppColors.textSecondary,
-          backgroundColor: AppColors.surface,
-          type: BottomNavigationBarType.fixed,
-          elevation: 0,
-          selectedFontSize: 11,
-          unselectedFontSize: 10,
-          selectedLabelStyle:
-              GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600),
-          unselectedLabelStyle:
-              GoogleFonts.inter(fontSize: 10),
-        ),
+      body: Column(
+        children: [
+          const BandeauHorsConnexion(),
+          Expanded(child: navigationShell),
+        ],
+      ),
+      bottomNavigationBar: BarreNavigation(
+        destinations: destinations,
+        indexActif: navigationShell.currentIndex,
+        onChange: _ouvrir,
       ),
     );
   }
 }
 
-/// Extensions de navigation Expert
+/// Raccourcis de navigation du module Expert.
 extension ExpertNavigationExt on BuildContext {
-  void goToExpertDashboard() => go(ExpertRoutes.expertDashboard);
+  void goToExpertValidation() => go(ExpertRoutes.expertRecommandations);
   void goToExpertChamps() => go(ExpertRoutes.expertChamps);
   void goToExpertConseils() => go(ExpertRoutes.expertConseils);
   void goToExpertProfil() => go(ExpertRoutes.expertProfil);
+  void ouvrirTableauDeBordExpert() => push(ExpertRoutes.expertDashboard);
 }

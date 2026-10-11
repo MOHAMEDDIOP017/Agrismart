@@ -3,7 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../domain/entities/statistiques_globales_entity.dart';
 
-/// Carte d'état de santé du système (API météo + Modèle IA)
+/// Carte d'état de santé du système (sources de données externes + Modèle IA)
 class SystemStatusCard extends StatelessWidget {
   const SystemStatusCard({super.key, required this.statut});
 
@@ -14,9 +14,9 @@ class SystemStatusCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -43,11 +43,10 @@ class SystemStatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           _LigneStatut(
-            label: 'API Météo',
-            estOperationnel: statut.apiMeteoOperationnelle,
-            detail:
-                '${statut.tempsReponseApiMs}ms',
-            icone: Icons.cloud_outlined,
+            label: 'Sources de données',
+            estOperationnel: statut.sourcesDonneesOperationnelles,
+            detail: 'SoilGrids · NASA POWER — ${statut.tempsReponseApiMs}ms',
+            icone: Icons.public_outlined,
           ),
           const SizedBox(height: 10),
           _LigneStatut(
@@ -79,9 +78,8 @@ class _LigneStatut extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final couleur =
-        estOperationnel ? AppColors.primary : AppColors.danger;
-    final texteStatut =
-        estOperationnel ? 'OPÉRATIONNEL' : 'HORS SERVICE';
+        estOperationnel ? context.couleurs.primaire : context.couleurs.erreur;
+    final texteStatut = estOperationnel ? 'OPÉRATIONNEL' : 'HORS SERVICE';
 
     return Row(
       children: [
@@ -102,13 +100,13 @@ class _LigneStatut extends StatelessWidget {
                 label,
                 style: AppTypography.textTheme.bodySmall!.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: context.couleurs.textePrincipal,
                 ),
               ),
               Text(
                 detail,
                 style: AppTypography.textTheme.labelSmall!.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.couleurs.texteSecondaire,
                 ),
               ),
             ],

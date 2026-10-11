@@ -12,7 +12,8 @@ final culturesEnChampProvider =
     final data = resp.data as Map<String, dynamic>;
     final list = (data['cultures'] as List? ?? []).cast<Map<String, dynamic>>();
     return list
-        .map((json) => CultureEnChampModel.fromJson({...json, 'id': json['id'] ?? ''}))
+        .map((json) =>
+            CultureEnChampModel.fromJson({...json, 'id': json['id'] ?? ''}))
         .toList();
   },
 );

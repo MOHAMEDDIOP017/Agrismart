@@ -1,11 +1,12 @@
-﻿import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 
-/// Formatage de dates en français pour KoobalaTech
+/// Formatage de dates en français pour AgriSmart
 class DateFormatter {
   DateFormatter._();
 
   static final DateFormat _dateFormat = DateFormat('dd/MM/yyyy', 'fr_FR');
-  static final DateFormat _dateTimeFormat = DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
+  static final DateFormat _dateTimeFormat =
+      DateFormat('dd/MM/yyyy HH:mm', 'fr_FR');
   static final DateFormat _monthYearFormat = DateFormat('MMMM yyyy', 'fr_FR');
   static final DateFormat _dayMonthFormat = DateFormat('d MMM', 'fr_FR');
 
@@ -32,8 +33,18 @@ class DateFormatter {
 
   static String formatMois(DateTime date) {
     const mois = [
-      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-      'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Aoû',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc'
     ];
     return mois[date.month - 1];
   }

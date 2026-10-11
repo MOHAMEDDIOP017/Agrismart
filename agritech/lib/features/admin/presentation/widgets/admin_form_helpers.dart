@@ -3,7 +3,11 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
 /// Décoration partagée pour les champs de formulaire Admin
-InputDecoration adminDecorChamp(String label, IconData icone) {
+InputDecoration adminDecorChamp(
+  BuildContext context,
+  String label,
+  IconData icone,
+) {
   return InputDecoration(
     labelText: label,
     prefixIcon: Icon(icone, size: 20),
@@ -11,11 +15,11 @@ InputDecoration adminDecorChamp(String label, IconData icone) {
     fillColor: Colors.white,
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: BorderSide(color: context.couleurs.bordure),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AppColors.border),
+      borderSide: BorderSide(color: context.couleurs.bordure),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),

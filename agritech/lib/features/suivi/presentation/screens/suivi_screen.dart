@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/empty_state_widget.dart';
 import '../../../champs/domain/entities/champ_entity.dart';
 import '../../../champs/presentation/providers/champ_provider.dart';
-import '../../../champs/presentation/widgets/statut_badge.dart';
 import '../../data/models/culture_en_champ_model.dart';
 import '../providers/suivi_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran suivi état des champs — cultures plantées, cycle, progression
 class SuiviScreen extends ConsumerStatefulWidget {
@@ -32,16 +30,16 @@ class _SuiviScreenState extends ConsumerState<SuiviScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.couleurs.primaire.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: ToggleButtons(
               isSelected: [!_isGridView, _isGridView],
               onPressed: (i) => setState(() => _isGridView = i == 1),
               borderRadius: BorderRadius.circular(8),
-              selectedColor: AppColors.primary,
-              fillColor: AppColors.primary.withValues(alpha: 0.15),
-              color: AppColors.textSecondary,
+              selectedColor: context.couleurs.primaire,
+              fillColor: context.couleurs.primaire.withValues(alpha: 0.15),
+              color: context.couleurs.texteSecondaire,
               constraints: const BoxConstraints(minWidth: 40, minHeight: 36),
               children: const [
                 Icon(Icons.list_rounded, size: 20),
@@ -53,13 +51,16 @@ class _SuiviScreenState extends ConsumerState<SuiviScreen> {
       ),
       body: champsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(champProvider),
+        ),
         data: (champs) {
           if (champs.isEmpty) {
-            return const EmptyStateWidget(
-              title: 'Aucun champ suivi',
+            return const EtatVide(
+              titre: 'Aucun champ suivi',
               message: 'Ajoutez des champs pour suivre leur état.',
-              icon: Icons.terrain_outlined,
+              sujet: SujetIllustration.parcelle,
             );
           }
           return Column(
@@ -96,11 +97,19 @@ class _StatutLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statuts = [
-      (AppConstants.statutPrevu, AppColors.statusPrevu, 'Prévu'),
-      (AppConstants.statutEnCours, AppColors.statusEnCours, 'En cours'),
-      (AppConstants.statutRecolte, AppColors.statusRecolte, 'Récolte'),
-      (AppConstants.statutEnTraitement, AppColors.statusEnTraitement, 'Traitement'),
-      (AppConstants.statutAbandonne, AppColors.statusAbandonne, 'Abandonné'),
+      (AppConstants.statutPrevu, context.couleurs.statutPrevu, 'Prévu'),
+      (AppConstants.statutEnCours, context.couleurs.statutEnCours, 'En cours'),
+      (AppConstants.statutRecolte, context.couleurs.statutRecolte, 'Récolte'),
+      (
+        AppConstants.statutEnTraitement,
+        context.couleurs.statutEnTraitement,
+        'Traitement'
+      ),
+      (
+        AppConstants.statutAbandonne,
+        context.couleurs.statutAbandonne,
+        'Abandonné'
+      ),
     ];
     return SizedBox(
       height: 44,
@@ -122,7 +131,8 @@ class _StatutLegend extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .labelSmall
-                              ?.copyWith(color: AppColors.textSecondary)),
+                              ?.copyWith(
+                                  color: context.couleurs.texteSecondaire)),
                     ],
                   ),
                 ))
@@ -142,8 +152,10 @@ class _ListView extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.only(top: 8, bottom: 24),
       itemCount: champs.length,
-      itemBuilder: (context, i) =>
-          _ChampSuiviListTile(champ: champs[i], index: i),
+      itemBuilder: (context, i) => ApparitionCascade(
+        index: i,
+        child: _ChampSuiviListTile(champ: champs[i], index: i),
+      ),
     );
   }
 }
@@ -164,8 +176,10 @@ class _GridView extends StatelessWidget {
         childAspectRatio: 0.82,
       ),
       itemCount: champs.length,
-      itemBuilder: (context, i) =>
-          _ChampSuiviGridCard(champ: champs[i], index: i),
+      itemBuilder: (context, i) => ApparitionCascade(
+        index: i,
+        child: _ChampSuiviGridCard(champ: champs[i], index: i),
+      ),
     );
   }
 }
@@ -184,9 +198,9 @@ class _ChampSuiviListTile extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -197,11 +211,11 @@ class _ChampSuiviListTile extends ConsumerWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
+                  color: context.couleurs.primaire.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.terrain_rounded,
-                    color: AppColors.primary, size: 24),
+                child: Icon(Icons.terrain_rounded,
+                    color: context.couleurs.primaire, size: 24),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -216,13 +230,13 @@ class _ChampSuiviListTile extends ConsumerWidget {
                     Text(
                       '${champ.superficie} ha · ${champ.typeSol}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: context.couleurs.texteSecondaire,
                           ),
                     ),
                   ],
                 ),
               ),
-              StatutBadge(statut: champ.statut),
+              BadgeStatut.statutChamp(champ.statut),
             ],
           ),
           // ── Cultures depuis le backend ──────────────────────────
@@ -244,10 +258,7 @@ class _ChampSuiviListTile extends ConsumerWidget {
           ),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(delay: (index * 80).ms, duration: 350.ms)
-        .slideX(begin: 0.1, end: 0);
+    );
   }
 }
 
@@ -267,9 +278,9 @@ class _ChampSuiviGridCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -284,11 +295,11 @@ class _ChampSuiviGridCard extends ConsumerWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: context.couleurs.primaire.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.terrain_rounded,
-                color: AppColors.primary, size: 22),
+            child: Icon(Icons.terrain_rounded,
+                color: context.couleurs.primaire, size: 22),
           ),
           const SizedBox(height: 10),
           Text(champ.nom,
@@ -301,36 +312,32 @@ class _ChampSuiviGridCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodySmall
-                ?.copyWith(color: AppColors.textSecondary),
+                ?.copyWith(color: context.couleurs.texteSecondaire),
           ),
           if (activeCulture != null) ...[
             const SizedBox(height: 6),
             Text(
               activeCulture.cultureName,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: context.couleurs.primaire,
+                  fontWeight: FontWeight.w600),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             LinearProgressIndicator(
               value: activeCulture.progression,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              color: AppColors.primary,
+              backgroundColor: context.couleurs.primaire.withValues(alpha: 0.1),
+              color: context.couleurs.primaire,
               minHeight: 4,
               borderRadius: BorderRadius.circular(2),
             ),
           ],
           const Spacer(),
-          StatutBadge(statut: champ.statut, small: true),
+          BadgeStatut.statutChamp(champ.statut),
         ],
       ),
-    )
-        .animate()
-        .fadeIn(delay: (index * 80).ms, duration: 350.ms)
-        .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1));
+    );
   }
 }
 
@@ -339,16 +346,16 @@ class _CultureMiniRow extends StatelessWidget {
   const _CultureMiniRow({required this.culture});
   final CultureEnChampModel culture;
 
-  Color get _couleurStatut {
+  Color _couleurStatut(BuildContext context) {
     switch (culture.statutCycle) {
       case 'EN_COURS':
-        return AppColors.primary;
+        return context.couleurs.primaire;
       case 'RECOLTE':
-        return AppColors.success;
+        return context.couleurs.succes;
       case 'ABANDONNE':
-        return AppColors.danger;
+        return context.couleurs.erreur;
       default:
-        return AppColors.textSecondary;
+        return context.couleurs.texteSecondaire;
     }
   }
 
@@ -361,7 +368,8 @@ class _CultureMiniRow extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.grass_rounded, size: 14, color: _couleurStatut),
+              Icon(Icons.grass_rounded,
+                  size: 14, color: _couleurStatut(context)),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -375,13 +383,13 @@ class _CultureMiniRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _couleurStatut.withValues(alpha: 0.1),
+                  color: _couleurStatut(context).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   culture.statutLabel,
                   style: TextStyle(
-                    color: _couleurStatut,
+                    color: _couleurStatut(context),
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -396,8 +404,9 @@ class _CultureMiniRow extends StatelessWidget {
                 Expanded(
                   child: LinearProgressIndicator(
                     value: culture.progression,
-                    backgroundColor: _couleurStatut.withValues(alpha: 0.1),
-                    color: _couleurStatut,
+                    backgroundColor:
+                        _couleurStatut(context).withValues(alpha: 0.1),
+                    color: _couleurStatut(context),
                     minHeight: 3,
                     borderRadius: BorderRadius.circular(2),
                   ),
@@ -408,7 +417,7 @@ class _CultureMiniRow extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .labelSmall
-                      ?.copyWith(color: AppColors.textSecondary),
+                      ?.copyWith(color: context.couleurs.texteSecondaire),
                 ),
               ],
             ),

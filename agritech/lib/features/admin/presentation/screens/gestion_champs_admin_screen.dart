@@ -18,7 +18,7 @@ class GestionChampsAdminScreen extends ConsumerWidget {
     final notifier = ref.read(champsAdminProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -124,7 +124,7 @@ class GestionChampsAdminScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
@@ -134,7 +134,7 @@ class GestionChampsAdminScreen extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('"$nomChamp" supprimé'),
-                    backgroundColor: AppColors.danger,
+                    backgroundColor: context.couleurs.erreur,
                   ),
                 );
               }
@@ -157,7 +157,8 @@ class _ChampAdminCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = DateFormat('dd/MM/yyyy', 'fr_FR').format(champ.dateCreation);
+    final dateStr =
+        DateFormat('dd/MM/yyyy', 'fr_FR').format(champ.dateCreation);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -173,12 +174,12 @@ class _ChampAdminCard extends StatelessWidget {
               width: 46,
               height: 46,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: context.couleurs.primaire.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.terrain_rounded,
-                color: AppColors.primary,
+                color: context.couleurs.primaire,
                 size: 24,
               ),
             ),
@@ -201,17 +202,23 @@ class _ChampAdminCard extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      _Info(icone: Icons.straighten_rounded, texte: champ.superficieFormatee as String),
-                      _Info(icone: Icons.layers_outlined, texte: champ.typeSol as String),
+                      _Info(
+                          icone: Icons.straighten_rounded,
+                          texte: champ.superficieFormatee as String),
+                      _Info(
+                          icone: Icons.layers_outlined,
+                          texte: champ.typeSol as String),
                       if (champ.culture != null)
-                        _Info(icone: Icons.grass_rounded, texte: champ.culture as String),
+                        _Info(
+                            icone: Icons.grass_rounded,
+                            texte: champ.culture as String),
                     ],
                   ),
                   const SizedBox(height: 4),
                   _Info(
                     icone: Icons.calendar_today_outlined,
                     texte: 'Créé le $dateStr',
-                    couleur: AppColors.textSecondary,
+                    couleur: context.couleurs.texteSecondaire,
                   ),
                 ],
               ),
@@ -219,7 +226,8 @@ class _ChampAdminCard extends StatelessWidget {
 
             // Bouton supprimer
             IconButton(
-              icon: const Icon(Icons.delete_outline, color: AppColors.danger, size: 22),
+              icon: Icon(Icons.delete_outline,
+                  color: context.couleurs.erreur, size: 22),
               tooltip: 'Supprimer',
               onPressed: onSupprimer,
             ),
@@ -228,7 +236,8 @@ class _ChampAdminCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _statutCouleur(champ.statut as String).withValues(alpha: 0.12),
+                color: _statutCouleur(context, champ.statut as String)
+                    .withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -236,7 +245,7 @@ class _ChampAdminCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: _statutCouleur(champ.statut as String),
+                  color: _statutCouleur(context, champ.statut as String),
                 ),
               ),
             ),
@@ -246,11 +255,12 @@ class _ChampAdminCard extends StatelessWidget {
     );
   }
 
-  Color _statutCouleur(String statut) => switch (statut.toUpperCase()) {
-        'EN_COURS' => AppColors.primary,
-        'PREVU' => AppColors.amber,
-        'TERMINE' => AppColors.textSecondary,
-        _ => AppColors.textSecondary,
+  Color _statutCouleur(BuildContext context, String statut) =>
+      switch (statut.toUpperCase()) {
+        'EN_COURS' => context.couleurs.primaire,
+        'PREVU' => context.couleurs.secondaire,
+        'TERMINE' => context.couleurs.texteSecondaire,
+        _ => context.couleurs.texteSecondaire,
       };
 
   String _statutLibelle(String statut) => switch (statut.toUpperCase()) {
@@ -270,7 +280,7 @@ class _Info extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = couleur ?? AppColors.textPrimary;
+    final color = couleur ?? context.couleurs.textePrincipal;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -295,11 +305,15 @@ class _EtatVide extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.terrain_outlined,
-              size: 64, color: AppColors.textSecondary.withValues(alpha: 0.4)),
+              size: 64,
+              color: context.couleurs.texteSecondaire.withValues(alpha: 0.4)),
           const SizedBox(height: 16),
           Text(
-            recherche.isEmpty ? 'Aucun champ enregistré' : 'Aucun résultat pour "$recherche"',
-            style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+            recherche.isEmpty
+                ? 'Aucun champ enregistré'
+                : 'Aucun résultat pour "$recherche"',
+            style: TextStyle(
+                fontSize: 15, color: context.couleurs.texteSecondaire),
           ),
         ],
       ),
@@ -318,7 +332,7 @@ class _EtatErreur extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
+          Icon(Icons.error_outline, color: context.couleurs.erreur, size: 48),
           const SizedBox(height: 12),
           const Text('Erreur de chargement',
               style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),

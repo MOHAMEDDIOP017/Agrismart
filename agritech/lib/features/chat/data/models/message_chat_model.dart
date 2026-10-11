@@ -18,7 +18,8 @@ class ChatReponseModel extends ChatReponseEntity {
 
   /// Construit la réponse depuis le corps de POST /agent/chat
   /// (`ReponseChat` côté backend : { conversationId, reponse, outilsUtilises }).
-  factory ChatReponseModel.fromJson(Map<String, dynamic> json) => ChatReponseModel(
+  factory ChatReponseModel.fromJson(Map<String, dynamic> json) =>
+      ChatReponseModel(
         conversationId: json['conversationId'] as String,
         message: MessageChatModel(
           role: RoleChat.assistant,

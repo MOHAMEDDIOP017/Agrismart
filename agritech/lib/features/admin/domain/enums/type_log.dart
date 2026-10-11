@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Type d'entrée dans le journal système
 enum TypeLog {
@@ -26,15 +27,15 @@ enum TypeLog {
   Color get couleur {
     switch (this) {
       case TypeLog.connexion:
-        return const Color(0xFF378ADD);
+        return AppPalette.info;
       case TypeLog.diagnostic:
-        return const Color(0xFF1D9E75);
+        return AppPalette.succes;
       case TypeLog.intervention:
-        return const Color(0xFFEF9F27);
+        return AppPalette.avertissement;
       case TypeLog.alerte:
-        return const Color(0xFFD85A30);
+        return AppPalette.alerteElevee;
       case TypeLog.erreur:
-        return const Color(0xFFE53935);
+        return AppPalette.erreur;
     }
   }
 

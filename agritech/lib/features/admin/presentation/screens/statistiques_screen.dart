@@ -7,6 +7,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../domain/entities/statistiques_globales_entity.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/kpi_admin_card.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Écran des statistiques globales de la plateforme (vue Admin)
 class StatistiquesScreen extends ConsumerWidget {
@@ -19,7 +20,7 @@ class StatistiquesScreen extends ConsumerWidget {
     final etatAsync = ref.watch(statistiquesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -31,15 +32,17 @@ class StatistiquesScreen extends ConsumerWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () => ref
-                .read(statistiquesProvider.notifier)
-                .rafraichir(),
+            onPressed: () =>
+                ref.read(statistiquesProvider.notifier).rafraichir(),
           ),
         ],
       ),
       body: etatAsync.when(
         loading: () => _ShimmerStats(),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(statistiquesProvider),
+        ),
         data: (etat) => _ContenuStats(etat: etat, ref: ref),
       ),
     );
@@ -81,9 +84,8 @@ class _ContenuStats extends StatelessWidget {
                     labelStyle: TextStyle(
                       color: sel
                           ? const Color(0xFF534AB7)
-                          : AppColors.textSecondary,
-                      fontWeight:
-                          sel ? FontWeight.w600 : FontWeight.normal,
+                          : context.couleurs.texteSecondaire,
+                      fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                 );
@@ -107,25 +109,25 @@ class _ContenuStats extends StatelessWidget {
                 titre: 'Recommandations',
                 valeur: '${stats.totalRecommandations}',
                 icone: Icons.tips_and_updates_outlined,
-                couleur: AppColors.primary,
+                couleur: context.couleurs.primaire,
               ),
               KpiAdminCard(
                 titre: 'Champs enregistrés',
                 valeur: '${stats.totalChamps}',
                 icone: Icons.terrain_outlined,
-                couleur: AppColors.primary,
+                couleur: context.couleurs.primaire,
               ),
               KpiAdminCard(
                 titre: 'Interventions réalisées',
                 valeur: '${stats.totalInterventions}',
                 icone: Icons.engineering_outlined,
-                couleur: AppColors.amber,
+                couleur: context.couleurs.secondaire,
               ),
               KpiAdminCard(
                 titre: 'Conseils envoyés',
                 valeur: '${stats.totalConseils}',
                 icone: Icons.chat_outlined,
-                couleur: AppColors.info,
+                couleur: context.couleurs.info,
               ),
             ],
           ),
@@ -185,10 +187,10 @@ class _BarChartActivite extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: d.recommandations,
-                  color: AppColors.amber,
+                  color: context.couleurs.secondaire,
                   width: 16,
-                  borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(4)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(4)),
                 ),
               ],
             );
@@ -210,15 +212,15 @@ class _BarChartActivite extends StatelessWidget {
                 reservedSize: 32,
                 getTitlesWidget: (v, _) => Text(
                   v.toInt().toString(),
-                  style: AppTypography.textTheme.labelSmall!
-                      .copyWith(fontSize: 9),
+                  style:
+                      AppTypography.textTheme.labelSmall!.copyWith(fontSize: 9),
                 ),
               ),
             ),
-            topTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(
-                sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
           borderData: FlBorderData(show: false),
           gridData: const FlGridData(show: false),
@@ -245,7 +247,7 @@ class _PieChartUtilisateurs extends StatelessWidget {
               sections: [
                 PieChartSectionData(
                   value: stats.totalAgriculteurs.toDouble(),
-                  color: AppColors.primary,
+                  color: context.couleurs.primaire,
                   title:
                       '${((stats.totalAgriculteurs / total) * 100).toInt()}%',
                   titleStyle: const TextStyle(
@@ -257,8 +259,7 @@ class _PieChartUtilisateurs extends StatelessWidget {
                 PieChartSectionData(
                   value: stats.totalExperts.toDouble(),
                   color: const Color(0xFF534AB7),
-                  title:
-                      '${((stats.totalExperts / total) * 100).toInt()}%',
+                  title: '${((stats.totalExperts / total) * 100).toInt()}%',
                   titleStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -268,8 +269,7 @@ class _PieChartUtilisateurs extends StatelessWidget {
                 PieChartSectionData(
                   value: stats.totalAdmins.toDouble(),
                   color: const Color(0xFF888780),
-                  title:
-                      '${((stats.totalAdmins / total) * 100).toInt()}%',
+                  title: '${((stats.totalAdmins / total) * 100).toInt()}%',
                   titleStyle: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -286,13 +286,16 @@ class _PieChartUtilisateurs extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _Legende(couleur: AppColors.primary,
+            _Legende(
+                couleur: context.couleurs.primaire,
                 label: 'Agriculteurs (${stats.totalAgriculteurs})'),
             const SizedBox(width: 16),
-            _Legende(couleur: const Color(0xFF534AB7),
+            _Legende(
+                couleur: const Color(0xFF534AB7),
                 label: 'Experts (${stats.totalExperts})'),
             const SizedBox(width: 16),
-            _Legende(couleur: const Color(0xFF888780),
+            _Legende(
+                couleur: const Color(0xFF888780),
                 label: 'Admins (${stats.totalAdmins})'),
           ],
         ),
@@ -329,9 +332,9 @@ class _CarteGraphique extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -359,13 +362,12 @@ class _Legende extends StatelessWidget {
         Container(
             width: 10,
             height: 10,
-            decoration:
-                BoxDecoration(color: couleur, shape: BoxShape.circle)),
+            decoration: BoxDecoration(color: couleur, shape: BoxShape.circle)),
         const SizedBox(width: 4),
         Text(label,
             style: AppTypography.textTheme.labelSmall!.copyWith(
               fontSize: 10,
-              color: AppColors.textSecondary,
+              color: context.couleurs.texteSecondaire,
             )),
       ],
     );
@@ -411,16 +413,17 @@ class _CultureRecoCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.couleurs.bordure),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.grass_rounded, size: 16, color: AppColors.primary),
+              Icon(Icons.grass_rounded,
+                  size: 16, color: context.couleurs.primaire),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -433,7 +436,7 @@ class _CultureRecoCard extends StatelessWidget {
               Text(
                 '${culture.nombreRecommandations}',
                 style: AppTypography.textTheme.labelSmall!.copyWith(
-                  color: AppColors.primary,
+                  color: context.couleurs.primaire,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -441,7 +444,7 @@ class _CultureRecoCard extends StatelessWidget {
               Text(
                 'reco.',
                 style: AppTypography.textTheme.labelSmall!.copyWith(
-                  color: AppColors.textSecondary,
+                  color: context.couleurs.texteSecondaire,
                   fontSize: 10,
                 ),
               ),
@@ -452,8 +455,9 @@ class _CultureRecoCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: culture.progression,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              backgroundColor: context.couleurs.primaire.withValues(alpha: 0.1),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(context.couleurs.primaire),
               minHeight: 5,
             ),
           ),

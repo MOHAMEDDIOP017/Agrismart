@@ -6,6 +6,7 @@ import '../../domain/entities/assignation_entity.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/expert_selection_card_admin.dart';
 import '../widgets/statut_badge_admin.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// BottomSheet de détail d'une assignation (DraggableScrollableSheet)
 class AssignationDetailSheet extends ConsumerStatefulWidget {
@@ -47,7 +48,7 @@ class _AssignationDetailSheetState
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.border,
+                color: context.couleurs.bordure,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -78,18 +79,13 @@ class _AssignationDetailSheetState
                 children: [
                   // ── Section intervention ──────────────────────
                   const _SectionTitre(
-                      titre: 'Intervention',
-                      icone: Icons.engineering_outlined),
+                      titre: 'Intervention', icone: Icons.engineering_outlined),
                   const SizedBox(height: 10),
                   _InfoRow(
                       label: 'Agriculteur',
                       valeur: widget.assignation.agriculteurNom),
-                  _InfoRow(
-                      label: 'Champ',
-                      valeur: widget.assignation.champNom),
-                  _InfoRow(
-                      label: 'Région',
-                      valeur: widget.assignation.region),
+                  _InfoRow(label: 'Champ', valeur: widget.assignation.champNom),
+                  _InfoRow(label: 'Région', valeur: widget.assignation.region),
                   _InfoRow(
                       label: 'Type',
                       valeur: widget.assignation.typeIntervention),
@@ -121,10 +117,13 @@ class _AssignationDetailSheetState
                         icone: Icons.swap_horiz),
                     const SizedBox(height: 10),
                     expertsAsync.when(
-                      loading: () => const Center(
-                          child: CircularProgressIndicator()),
-                      error: (e, _) =>
-                          Text('Erreur : $e'),
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (e, _) => BandeauErreur(
+                        erreur: e,
+                        onReessayer: () =>
+                            ref.invalidate(expertsDisponiblesProvider),
+                      ),
                       data: (experts) => Column(
                         children: experts.map((e) {
                           return Padding(
@@ -188,7 +187,7 @@ class _AssignationDetailSheetState
                       _BoutonAction(
                         icone: Icons.phone_outlined,
                         label: 'Contacter l\'expert',
-                        couleur: AppColors.primary,
+                        couleur: context.couleurs.primaire,
                         onTap: () {
                           // url_launcher tel: — simulé
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -204,7 +203,7 @@ class _AssignationDetailSheetState
                     _BoutonAction(
                       icone: Icons.cancel_outlined,
                       label: 'Annuler l\'assignation',
-                      couleur: AppColors.danger,
+                      couleur: context.couleurs.erreur,
                       onTap: () => _confirmerAnnulation(context),
                     ),
                   ],
@@ -226,9 +225,9 @@ class _AssignationDetailSheetState
     if (ok && context.mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Expert changé avec succès'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: const Text('Expert changé avec succès'),
+          backgroundColor: context.couleurs.primaire,
         ),
       );
     }
@@ -248,7 +247,7 @@ class _AssignationDetailSheetState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
@@ -312,7 +311,7 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: AppTypography.textTheme.bodySmall!.copyWith(
-                color: AppColors.textSecondary,
+                color: context.couleurs.texteSecondaire,
               ),
             ),
           ),
@@ -342,15 +341,14 @@ class _CarteExpertAssigne extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF534AB7).withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-            color: const Color(0xFF534AB7).withValues(alpha: 0.2)),
+        border:
+            Border.all(color: const Color(0xFF534AB7).withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor:
-                const Color(0xFF534AB7).withValues(alpha: 0.15),
+            backgroundColor: const Color(0xFF534AB7).withValues(alpha: 0.15),
             child: Text(
               _initiales(assignation.expertNom ?? ''),
               style: const TextStyle(
@@ -381,13 +379,13 @@ class _CarteExpertAssigne extends StatelessWidget {
                 if (assignation.expertRegion != null)
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined,
-                          size: 12, color: AppColors.textSecondary),
+                      Icon(Icons.location_on_outlined,
+                          size: 12, color: context.couleurs.texteSecondaire),
                       const SizedBox(width: 3),
                       Text(
                         assignation.expertRegion!,
                         style: AppTypography.textTheme.labelSmall!.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                         ),
                       ),
                     ],
@@ -401,8 +399,8 @@ class _CarteExpertAssigne extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               color: (assignation.expertDisponible ?? false)
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
+                  ? context.couleurs.primaire
+                  : context.couleurs.texteSecondaire,
               shape: BoxShape.circle,
             ),
           ),

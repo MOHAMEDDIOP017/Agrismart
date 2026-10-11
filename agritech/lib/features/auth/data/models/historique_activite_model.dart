@@ -14,11 +14,9 @@ class HistoriqueActiviteModel extends HistoriqueActiviteEntity {
         id: (json['id'] ?? '') as String,
         utilisateurId:
             (json['utilisateur_id'] ?? json['utilisateurId'] ?? '') as String,
-        typeAction:
-            (json['type_action'] ?? json['typeAction'] ?? '') as String,
+        typeAction: (json['type_action'] ?? json['typeAction'] ?? '') as String,
         description: (json['description'] ?? '') as String,
-        dateAction:
-            _parseDate(json['date_action'] ?? json['dateAction']),
+        dateAction: _parseDate(json['date_action'] ?? json['dateAction']),
       );
 
   Map<String, dynamic> toJson() => {

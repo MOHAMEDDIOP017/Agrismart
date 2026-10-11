@@ -1,4 +1,4 @@
-﻿/// Validateurs de formulaire pour KoobalaTech
+﻿/// Validateurs de formulaire pour AgriSmart
 class Validators {
   Validators._();
 

@@ -28,9 +28,11 @@ abstract class AdminRepository {
     int? anneesExperience,
     int? niveauAcces,
   });
-  Future<UtilisateurAdminEntity> modifierUtilisateur(UtilisateurAdminEntity utilisateur);
+  Future<UtilisateurAdminEntity> modifierUtilisateur(
+      UtilisateurAdminEntity utilisateur);
   Future<void> supprimerUtilisateur(String id);
-  Future<UtilisateurAdminEntity> changerStatut(String id, StatutUtilisateur statut);
+  Future<UtilisateurAdminEntity> changerStatut(
+      String id, StatutUtilisateur statut);
   Future<void> changerRole(String id, RoleUtilisateur role);
 
   // ── Assignation experts ───────────────────────────────────────────────────
@@ -50,7 +52,8 @@ abstract class AdminRepository {
   Future<void> annulerAssignation(String assignationId);
 
   // ── Historique système ────────────────────────────────────────────────────
-  Future<List<LogSystemeEntity>> getLogs({TypeLog? filtre, DateTimeRange? periode});
+  Future<List<LogSystemeEntity>> getLogs(
+      {TypeLog? filtre, DateTimeRange? periode});
   Future<void> archiverLog(String logId);
   Future<String> exporterLogsCSV(List<LogSystemeEntity> logs);
 }

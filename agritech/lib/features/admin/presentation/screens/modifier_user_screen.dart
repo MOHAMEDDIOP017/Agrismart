@@ -6,6 +6,7 @@ import '../../domain/entities/utilisateur_admin_entity.dart';
 import '../../domain/enums/statut_utilisateur.dart';
 import '../providers/admin_provider.dart';
 import '../widgets/admin_form_helpers.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Formulaire de modification d'un utilisateur existant
 class ModifierUserScreen extends ConsumerStatefulWidget {
@@ -14,16 +15,26 @@ class ModifierUserScreen extends ConsumerStatefulWidget {
   final String userId;
 
   @override
-  ConsumerState<ModifierUserScreen> createState() =>
-      _ModifierUserScreenState();
+  ConsumerState<ModifierUserScreen> createState() => _ModifierUserScreenState();
 }
 
 class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
   static const Color _adminPrimary = Color(0xFF534AB7);
   static const List<String> _regions = [
-    'Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Ziguinchor',
-    'Tambacounda', 'Diourbel', 'Louga', 'Fatick', 'Kaffrine',
-    'Kédougou', 'Kolda', 'Matam', 'Sédhiou',
+    'Dakar',
+    'Thiès',
+    'Kaolack',
+    'Saint-Louis',
+    'Ziguinchor',
+    'Tambacounda',
+    'Diourbel',
+    'Louga',
+    'Fatick',
+    'Kaffrine',
+    'Kédougou',
+    'Kolda',
+    'Matam',
+    'Sédhiou',
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -44,7 +55,12 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
   @override
   void dispose() {
     for (final c in [
-      _prenomCtrl, _nomCtrl, _emailCtrl, _telCtrl, _villeCtrl, _mdpCtrl,
+      _prenomCtrl,
+      _nomCtrl,
+      _emailCtrl,
+      _telCtrl,
+      _villeCtrl,
+      _mdpCtrl,
     ]) {
       c.dispose();
     }
@@ -110,8 +126,11 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok ? 'Rôle changé avec succès' : 'Erreur lors du changement de rôle'),
-          backgroundColor: ok ? AppColors.primary : AppColors.danger,
+          content: Text(ok
+              ? 'Rôle changé avec succès'
+              : 'Erreur lors du changement de rôle'),
+          backgroundColor:
+              ok ? context.couleurs.primaire : context.couleurs.erreur,
         ),
       );
     }
@@ -128,9 +147,8 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
       telephone: _telCtrl.text.trim(),
       region: _regionSelectionnee ?? _utilisateur!.region,
       ville: _villeCtrl.text.trim(),
-      statut: _compteActif
-          ? StatutUtilisateur.actif
-          : StatutUtilisateur.suspendu,
+      statut:
+          _compteActif ? StatutUtilisateur.actif : StatutUtilisateur.suspendu,
     );
 
     final ok = await ref
@@ -142,9 +160,8 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
     if (ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text('${mis.nomComplet} mis à jour avec succès'),
-          backgroundColor: AppColors.primary,
+          content: Text('${mis.nomComplet} mis à jour avec succès'),
+          backgroundColor: context.couleurs.primaire,
         ),
       );
       Navigator.pop(context);
@@ -166,7 +183,7 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(context, true),
@@ -189,23 +206,25 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
         ref.watch(utilisateurDetailProvider(widget.userId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: Text(
           utilisateurAsync.valueOrNull != null
               ? 'Modifier ${utilisateurAsync.valueOrNull!.prenom}'
               : 'Modifier utilisateur',
-          style: const TextStyle(
-              color: Colors.white, fontWeight: FontWeight.w700),
+          style:
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: utilisateurAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur : $e')),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(utilisateurDetailProvider),
+        ),
         data: (utilisateur) {
           _initialiserDepuis(utilisateur);
           return Form(
@@ -224,20 +243,18 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _prenomCtrl,
-                          decoration:
-                              adminDecorChamp('Prénom', Icons.badge_outlined),
-                          validator: (v) =>
-                              v!.trim().isEmpty ? 'Requis' : null,
+                          decoration: adminDecorChamp(
+                              context, 'Prénom', Icons.badge_outlined),
+                          validator: (v) => v!.trim().isEmpty ? 'Requis' : null,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _nomCtrl,
-                          decoration:
-                              adminDecorChamp('Nom', Icons.badge_outlined),
-                          validator: (v) =>
-                              v!.trim().isEmpty ? 'Requis' : null,
+                          decoration: adminDecorChamp(
+                              context, 'Nom', Icons.badge_outlined),
+                          validator: (v) => v!.trim().isEmpty ? 'Requis' : null,
                         ),
                       ),
                     ],
@@ -247,7 +264,7 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     decoration:
-                        adminDecorChamp('Email', Icons.email_outlined),
+                        adminDecorChamp(context, 'Email', Icons.email_outlined),
                     validator: (v) {
                       if (v!.trim().isEmpty) return 'Requis';
                       if (!v.contains('@')) return 'Email invalide';
@@ -258,8 +275,8 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                   TextFormField(
                     controller: _telCtrl,
                     keyboardType: TextInputType.phone,
-                    decoration:
-                        adminDecorChamp('Téléphone', Icons.phone_outlined),
+                    decoration: adminDecorChamp(
+                        context, 'Téléphone', Icons.phone_outlined),
                   ),
                   const SizedBox(height: 12),
                   // Mot de passe optionnel
@@ -267,6 +284,7 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                     controller: _mdpCtrl,
                     obscureText: true,
                     decoration: adminDecorChamp(
+                      context,
                       'Nouveau mot de passe (laisser vide = inchangé)',
                       Icons.lock_outline,
                     ),
@@ -283,19 +301,17 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                   DropdownButtonFormField<String>(
                     value: _regionSelectionnee,
                     decoration:
-                        adminDecorChamp('Région', Icons.map_outlined),
+                        adminDecorChamp(context, 'Région', Icons.map_outlined),
                     items: _regions
-                        .map((r) => DropdownMenuItem(
-                            value: r, child: Text(r)))
+                        .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                         .toList(),
-                    onChanged: (v) =>
-                        setState(() => _regionSelectionnee = v),
+                    onChanged: (v) => setState(() => _regionSelectionnee = v),
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _villeCtrl,
-                    decoration: adminDecorChamp(
-                        'Ville / Village', Icons.location_city_outlined),
+                    decoration: adminDecorChamp(context, 'Ville / Village',
+                        Icons.location_city_outlined),
                   ),
 
                   const SizedBox(height: 24),
@@ -306,7 +322,8 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                   const SizedBox(height: 8),
                   DropdownButtonFormField<RoleUtilisateur>(
                     value: _roleSelectionne,
-                    decoration: adminDecorChamp('Rôle', Icons.badge_outlined),
+                    decoration:
+                        adminDecorChamp(context, 'Rôle', Icons.badge_outlined),
                     items: RoleUtilisateur.values
                         .map((r) => DropdownMenuItem(
                               value: r,
@@ -332,7 +349,7 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.border),
+                      side: BorderSide(color: context.couleurs.bordure),
                     ),
                     child: Column(
                       children: [
@@ -344,17 +361,16 @@ class _ModifierUserScreenState extends ConsumerState<ModifierUserScreen> {
                                 : 'Compte suspendu',
                           ),
                           value: _compteActif,
-                          activeColor: AppColors.primary,
-                          onChanged: (v) =>
-                              setState(() => _compteActif = v),
+                          activeColor: context.couleurs.primaire,
+                          onChanged: (v) => setState(() => _compteActif = v),
                         ),
                         const Divider(height: 1),
                         ListTile(
-                          leading: const Icon(Icons.delete_forever_outlined,
-                              color: AppColors.danger),
-                          title: const Text(
+                          leading: Icon(Icons.delete_forever_outlined,
+                              color: context.couleurs.erreur),
+                          title: Text(
                             'Supprimer définitivement',
-                            style: TextStyle(color: AppColors.danger),
+                            style: TextStyle(color: context.couleurs.erreur),
                           ),
                           onTap: _confirmerSuppression,
                         ),

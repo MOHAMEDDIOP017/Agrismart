@@ -12,12 +12,14 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<ChatReponseEntity> envoyerMessage({
     required String message,
     String? conversationId,
+    String? champId,
   }) async {
     final response = await _dio.post(
       ApiEndpoints.agentChat,
       data: {
         'message': message,
         if (conversationId != null) 'conversationId': conversationId,
+        if (champId != null) 'champId': champId,
       },
     );
     return ChatReponseModel.fromJson(response.data as Map<String, dynamic>);

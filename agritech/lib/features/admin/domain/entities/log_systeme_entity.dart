@@ -17,12 +17,14 @@ class LogSystemeEntity extends Equatable {
 
   final String id;
   final TypeLog type;
+
   /// Description courte de l'action effectuée
   final String description;
   final String utilisateurNom;
   final RoleUtilisateur utilisateurRole;
   final DateTime horodatage;
   final bool estArchive;
+
   /// Détails supplémentaires (JSON ou texte libre)
   final String? details;
 

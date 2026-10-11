@@ -23,8 +23,7 @@ class NotificationRepositoryImpl implements NotificationRepository {
 
   @override
   Future<NotificationEntity> marquerLue(String id) async {
-    final response =
-        await _dio.put(ApiEndpoints.notificationMarquerLue(id));
+    final response = await _dio.put(ApiEndpoints.notificationMarquerLue(id));
     return _fromJson(response.data as Map<String, dynamic>);
   }
 
@@ -50,10 +49,9 @@ class NotificationRepositoryImpl implements NotificationRepository {
         urgent: json['urgent'] as bool? ?? false,
         dateEnvoi: _parseDate(json['date_envoi'] ?? json['dateEnvoi']),
         lu: (json['lu'] ?? json['estLue'] ?? false) as bool,
-        dateLecture:
-            (json['date_lecture'] ?? json['dateLecture']) != null
-                ? _parseDate(json['date_lecture'] ?? json['dateLecture'])
-                : null,
+        dateLecture: (json['date_lecture'] ?? json['dateLecture']) != null
+            ? _parseDate(json['date_lecture'] ?? json['dateLecture'])
+            : null,
       );
 
   static DateTime _parseDate(dynamic value) {

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/deconnexion_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -54,9 +54,9 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
 
     if (prenom.isEmpty || nom.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Prénom et nom sont requis'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Prénom et nom sont requis'),
+          backgroundColor: context.couleurs.erreur,
         ),
       );
       return;
@@ -85,7 +85,8 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
         content: Text(ok
             ? 'Profil mis à jour avec succès'
             : 'Erreur lors de la sauvegarde'),
-        backgroundColor: ok ? AppColors.primary : AppColors.danger,
+        backgroundColor:
+            ok ? context.couleurs.primaire : context.couleurs.erreur,
       ),
     );
   }
@@ -99,7 +100,7 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
     final statsAsync = ref.watch(statistiquesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       body: CustomScrollView(
         slivers: [
           // ── En-tête avec avatar ──────────────────────────────────
@@ -228,16 +229,15 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
                   statsAsync.when(
                     loading: () => const SizedBox(
                       height: 100,
-                      child:
-                          Center(child: CircularProgressIndicator()),
+                      child: Center(child: CircularProgressIndicator()),
                     ),
-                    error: (_, __) => const SizedBox(
+                    error: (_, __) => SizedBox(
                       height: 60,
                       child: Center(
                         child: Text(
                           'Impossible de charger les statistiques',
-                          style:
-                              TextStyle(color: AppColors.textSecondary),
+                          style: TextStyle(
+                              color: context.couleurs.texteSecondaire),
                         ),
                       ),
                     ),
@@ -261,13 +261,13 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
                             titre: 'Experts actifs',
                             valeur: '${s.totalExperts}',
                             icone: Icons.verified_user_outlined,
-                            couleur: AppColors.amber,
+                            couleur: context.couleurs.secondaire,
                           ),
                           KpiAdminCard(
                             titre: 'Interventions',
                             valeur: '${s.totalInterventions}',
                             icone: Icons.engineering_outlined,
-                            couleur: AppColors.teal,
+                            couleur: context.couleurs.info,
                           ),
                         ],
                       );
@@ -371,7 +371,7 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
                         ),
                         _TileLigne(
                           icone: Icons.info_outline,
-                          label: 'À propos d\'KoobalaTech',
+                          label: 'À propos d\'AgriSmart',
                           onTap: () => _afficherAPropos(context),
                         ),
                       ],
@@ -385,9 +385,8 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
                         _TileLigne(
                           icone: Icons.logout,
                           label: 'Déconnexion',
-                          couleur: AppColors.danger,
-                          onTap: () =>
-                              _confirmerDeconnexion(context, ref),
+                          couleur: context.couleurs.erreur,
+                          onTap: () => _confirmerDeconnexion(context, ref),
                         ),
                       ],
                     ),
@@ -413,14 +412,12 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
           children: [
             TextField(
               obscureText: true,
-              decoration:
-                  InputDecoration(labelText: 'Mot de passe actuel'),
+              decoration: InputDecoration(labelText: 'Mot de passe actuel'),
             ),
             SizedBox(height: 12),
             TextField(
               obscureText: true,
-              decoration:
-                  InputDecoration(labelText: 'Nouveau mot de passe'),
+              decoration: InputDecoration(labelText: 'Nouveau mot de passe'),
             ),
           ],
         ),
@@ -445,20 +442,20 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
   void _afficherAPropos(BuildContext context) {
     showAboutDialog(
       context: context,
-      applicationName: 'KoobalaTech',
+      applicationName: 'AgriSmart',
       applicationVersion: '1.0.0',
       applicationIcon: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.1),
+          color: context.couleurs.primaire.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Icon(Icons.agriculture,
-            color: AppColors.primary, size: 32),
+        child:
+            Icon(Icons.agriculture, color: context.couleurs.primaire, size: 32),
       ),
       children: const [
         Text(
-          'KoobalaTech est une application mobile d\'assistance agricole '
+          'AgriSmart est une application mobile d\'assistance agricole '
           'intelligente dédiée à l\'Afrique subsaharienne.',
         ),
       ],
@@ -478,7 +475,7 @@ class _ProfilAdminScreenState extends ConsumerState<ProfilAdminScreen> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
@@ -549,10 +546,9 @@ class _FormulaireEdition extends StatelessWidget {
             InputDecorator(
               decoration: InputDecoration(
                 labelText: 'Email (lecture seule)',
-                prefixIcon:
-                    const Icon(Icons.email_outlined, size: 20),
+                prefixIcon: const Icon(Icons.email_outlined, size: 20),
                 filled: true,
-                fillColor: AppColors.border.withValues(alpha: 0.5),
+                fillColor: context.couleurs.bordure.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
@@ -561,7 +557,7 @@ class _FormulaireEdition extends StatelessWidget {
               child: Text(
                 email,
                 style: AppTypography.textTheme.bodyMedium!
-                    .copyWith(color: AppColors.textSecondary),
+                    .copyWith(color: context.couleurs.texteSecondaire),
               ),
             ),
             const SizedBox(height: 12),
@@ -626,7 +622,7 @@ class _CarteInfo extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.border),
+        side: BorderSide(color: context.couleurs.bordure),
       ),
       child: Column(
         children: enfants
@@ -660,15 +656,15 @@ class _InfoLigne extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.border,
+          color: context.couleurs.bordure,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icone, size: 18, color: AppColors.textSecondary),
+        child: Icon(icone, size: 18, color: context.couleurs.texteSecondaire),
       ),
       title: Text(
         label,
         style: AppTypography.textTheme.labelSmall!.copyWith(
-          color: AppColors.textSecondary,
+          color: context.couleurs.texteSecondaire,
           fontSize: 11,
         ),
       ),
@@ -676,7 +672,7 @@ class _InfoLigne extends StatelessWidget {
         valeur,
         style: AppTypography.textTheme.bodySmall!.copyWith(
           fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
+          color: context.couleurs.textePrincipal,
         ),
       ),
     );
@@ -698,7 +694,7 @@ class _TileLigne extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = couleur ?? AppColors.textPrimary;
+    final c = couleur ?? context.couleurs.textePrincipal;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(6),
@@ -750,11 +746,11 @@ class _SwitchLigneState extends State<_SwitchLigne> {
       secondary: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.border,
+          color: context.couleurs.bordure,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(widget.icone,
-            size: 18, color: AppColors.textSecondary),
+            size: 18, color: context.couleurs.texteSecondaire),
       ),
       title: Text(
         widget.label,

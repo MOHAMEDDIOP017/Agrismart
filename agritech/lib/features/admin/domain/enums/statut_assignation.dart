@@ -27,15 +27,15 @@ enum StatutAssignation {
   Color get couleur {
     switch (this) {
       case StatutAssignation.nonAssignee:
-        return AppColors.textSecondary;
+        return AppPalette.encreDouce;
       case StatutAssignation.planifiee:
-        return AppColors.amber;
+        return AppPalette.ocre;
       case StatutAssignation.enCours:
-        return AppColors.info;
+        return AppPalette.info;
       case StatutAssignation.realisee:
-        return AppColors.primary;
+        return AppPalette.vert;
       case StatutAssignation.annulee:
-        return AppColors.danger;
+        return AppPalette.erreur;
     }
   }
 

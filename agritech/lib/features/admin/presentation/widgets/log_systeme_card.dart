@@ -20,7 +20,7 @@ class LogSystemeCard extends StatelessWidget {
       key: Key(log.id),
       direction: DismissDirection.startToEnd,
       background: Container(
-        color: AppColors.textSecondary,
+        color: context.couleurs.texteSecondaire,
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.only(left: 20),
         child: const Icon(Icons.archive_outlined, color: Colors.white),
@@ -33,7 +33,7 @@ class LogSystemeCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.couleurs.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: log.type.couleur.withValues(alpha: 0.25),
@@ -65,7 +65,7 @@ class LogSystemeCard extends StatelessWidget {
                       Text(
                         log.horodatageFormate,
                         style: AppTypography.textTheme.labelSmall!.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                           fontSize: 10,
                         ),
                       ),
@@ -77,20 +77,20 @@ class LogSystemeCard extends StatelessWidget {
                     log.description,
                     style: AppTypography.textTheme.bodySmall!.copyWith(
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textPrimary,
+                      color: context.couleurs.textePrincipal,
                     ),
                   ),
                   const SizedBox(height: 4),
                   // Utilisateur concerné
                   Row(
                     children: [
-                      const Icon(Icons.person_outline,
-                          size: 12, color: AppColors.textSecondary),
+                      Icon(Icons.person_outline,
+                          size: 12, color: context.couleurs.texteSecondaire),
                       const SizedBox(width: 4),
                       Text(
                         '${log.utilisateurNom} • ${log.utilisateurRole.libelle}',
                         style: AppTypography.textTheme.labelSmall!.copyWith(
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                           fontSize: 10,
                         ),
                       ),

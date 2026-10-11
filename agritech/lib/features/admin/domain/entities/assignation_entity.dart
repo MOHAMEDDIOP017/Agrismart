@@ -105,6 +105,7 @@ class ExpertDisponibleEntity extends Equatable {
   final String region;
   final bool estEnLigne;
   final int interventionsEnCours;
+
   /// Score moyen sur 5
   final double scoreEvaluation;
   final String? telephone;

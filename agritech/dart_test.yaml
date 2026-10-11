@@ -1,0 +1,14 @@
+# Configuration de la suite de tests.
+#
+# Les planches de relecture produites par `apercu_composants_test.dart`
+# comparent des images pixel par pixel. Le rendu du texte varie d'un systeme a
+# l'autre, si bien que ces images echouent sur une machine autre que celle qui
+# les a generees. Elles sont donc hors de la suite par defaut.
+#
+# Pour les regarder ou les regenerer :
+#
+#     flutter test --run-skipped --tags apercu
+#     flutter test --run-skipped --tags apercu --update-goldens
+tags:
+  apercu:
+    skip: "Planche de relecture : flutter test --run-skipped --tags apercu"

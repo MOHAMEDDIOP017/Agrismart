@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -36,7 +35,7 @@ class OnboardingPage extends StatelessWidget {
     final size = MediaQuery.of(context).size;
 
     return Container(
-      color: AppColors.background,
+      color: context.couleurs.fond,
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -55,15 +54,7 @@ class OnboardingPage extends StatelessWidget {
               size: size.width * 0.3,
               color: data.iconColor,
             ),
-          )
-              .animate(target: isActive ? 1 : 0)
-              .scale(
-                begin: const Offset(0.8, 0.8),
-                end: const Offset(1.0, 1.0),
-                duration: 500.ms,
-                curve: Curves.easeOut,
-              )
-              .fadeIn(duration: 400.ms),
+          ),
 
           const SizedBox(height: 48),
 
@@ -71,14 +62,11 @@ class OnboardingPage extends StatelessWidget {
           Text(
             data.title,
             style: AppTypography.textTheme.displayMedium?.copyWith(
-              color: AppColors.textPrimary,
+              color: context.couleurs.textePrincipal,
               height: 1.2,
             ),
             textAlign: TextAlign.center,
-          )
-              .animate(target: isActive ? 1 : 0)
-              .fadeIn(delay: 150.ms, duration: 400.ms)
-              .slideY(begin: 0.2, end: 0),
+          ),
 
           const SizedBox(height: 16),
 
@@ -86,14 +74,11 @@ class OnboardingPage extends StatelessWidget {
           Text(
             data.subtitle,
             style: AppTypography.textTheme.bodyLarge?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.couleurs.texteSecondaire,
               height: 1.5,
             ),
             textAlign: TextAlign.center,
-          )
-              .animate(target: isActive ? 1 : 0)
-              .fadeIn(delay: 250.ms, duration: 400.ms)
-              .slideY(begin: 0.2, end: 0),
+          ),
         ],
       ),
     );

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
@@ -19,12 +19,14 @@ class AdminDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final admin = ref.watch(adminConnecteProvider);
-    if (admin == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (admin == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final statsAsync = ref.watch(statistiquesProvider);
     final statutAsync = ref.watch(statutSystemeProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         elevation: 0,
@@ -32,7 +34,7 @@ class AdminDashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Administration KoobalaTech',
+              'Administration AgriSmart',
               style: AppTypography.textTheme.titleLarge!.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -59,8 +61,13 @@ class AdminDashboardScreen extends ConsumerWidget {
                 radius: 18,
                 backgroundColor: Colors.white.withValues(alpha: 0.25),
                 child: Text(
-                  (admin.prenom.isNotEmpty ? admin.prenom[0] : admin.email.isNotEmpty ? admin.email[0] : 'A').toUpperCase() +
-                  (admin.nom.isNotEmpty ? admin.nom[0] : '').toUpperCase(),
+                  (admin.prenom.isNotEmpty
+                              ? admin.prenom[0]
+                              : admin.email.isNotEmpty
+                                  ? admin.email[0]
+                                  : 'A')
+                          .toUpperCase() +
+                      (admin.nom.isNotEmpty ? admin.nom[0] : '').toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -138,7 +145,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     titre: 'Statistiques',
                     sousTitre: 'Données globales',
                     icone: Icons.bar_chart_outlined,
-                    couleur: AppColors.teal,
+                    couleur: context.couleurs.info,
                     onTap: () => context.pushNamed('statistiques'),
                     index: 0,
                   ),
@@ -154,7 +161,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     titre: 'Historique',
                     sousTitre: 'Journal système',
                     icone: Icons.history_outlined,
-                    couleur: AppColors.amber,
+                    couleur: context.couleurs.secondaire,
                     onTap: () => context.pushNamed('historiqueSysteme'),
                     index: 2,
                   ),
@@ -162,7 +169,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     titre: 'Utilisateurs',
                     sousTitre: 'Gérer les comptes',
                     icone: Icons.manage_accounts_outlined,
-                    couleur: AppColors.primary,
+                    couleur: context.couleurs.primaire,
                     onTap: () => context.pushNamed('gestionUtilisateurs'),
                     index: 3,
                   ),
@@ -170,7 +177,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     titre: 'Champs',
                     sousTitre: 'Gérer les parcelles',
                     icone: Icons.terrain_outlined,
-                    couleur: AppColors.primary,
+                    couleur: context.couleurs.primaire,
                     onTap: () => context.pushNamed('gestionChamps'),
                     index: 4,
                   ),
@@ -205,13 +212,13 @@ class _GrilleKpi extends StatelessWidget {
           titre: 'Utilisateurs actifs',
           valeur: '${stats.totalUtilisateurs}',
           icone: Icons.group_outlined,
-          couleur: AppColors.info,
+          couleur: context.couleurs.info,
         ),
         KpiAdminCard(
           titre: 'Agriculteurs inscrits',
           valeur: '${stats.totalAgriculteurs}',
           icone: Icons.agriculture_outlined,
-          couleur: AppColors.primary,
+          couleur: context.couleurs.primaire,
         ),
         KpiAdminCard(
           titre: 'Experts actifs',
@@ -223,7 +230,7 @@ class _GrilleKpi extends StatelessWidget {
           titre: 'Interventions en cours',
           valeur: '${stats.interventionsEnCours}',
           icone: Icons.calendar_today_outlined,
-          couleur: AppColors.amber,
+          couleur: context.couleurs.secondaire,
         ),
       ],
     );
@@ -286,7 +293,7 @@ class _ErreurKpi extends StatelessWidget {
     return Center(
       child: Column(
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 36),
+          Icon(Icons.error_outline, color: context.couleurs.erreur, size: 36),
           const SizedBox(height: 8),
           TextButton(
             onPressed: onRetry,

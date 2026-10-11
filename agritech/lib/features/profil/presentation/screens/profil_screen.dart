@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/auth/deconnexion_service.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/date_formatter.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
-import '../../../../core/widgets/shimmer_card.dart';
 import '../../../champs/presentation/providers/champ_provider.dart';
 import '../providers/profil_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
+import '../../../../core/theme/app_radius.dart';
 
 class ProfilScreen extends ConsumerStatefulWidget {
   const ProfilScreen({super.key});
@@ -35,7 +33,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               minimumSize: const Size(100, 40),
             ),
             child: const Text('Déconnexion'),
@@ -65,7 +63,6 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
         villageVille: user.villageVille ?? '',
         zoneGeographique: user.zoneGeographique,
         onSave: (nom, prenom, tel, adresse, ville, zone) async {
-          final messenger = ScaffoldMessenger.of(context);
           final ok = await ref.read(profilProvider.notifier).mettreAJour(
                 nom: nom,
                 prenom: prenom,
@@ -74,12 +71,12 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                 villageVille: ville,
                 zoneGeographique: zone,
               );
-          if (!mounted) return;
-          messenger.showSnackBar(SnackBar(
-            content:
-                Text(ok ? 'Profil mis à jour avec succès.' : 'Erreur lors de la mise à jour.'),
-            backgroundColor: ok ? AppColors.primary : AppColors.danger,
-          ));
+          if (!context.mounted) return;
+          if (ok) {
+            RetourAction.succes(context, 'Profil mis à jour');
+          } else {
+            RetourAction.echec(context, null);
+          }
         },
       ),
     );
@@ -93,8 +90,9 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
 
     return Scaffold(
       body: profilAsync.when(
-        loading: () => const ShimmerList(count: 5, cardHeight: 60),
-        error: (e, _) => _ErrorView(onRetry: ref.read(profilProvider.notifier).rafraichir),
+        loading: () => const SqueletteListe.champs(nombre: 5),
+        error: (e, _) =>
+            _ErrorView(onRetry: ref.read(profilProvider.notifier).rafraichir),
         data: (user) {
           if (user == null) {
             return const _ErrorView();
@@ -108,7 +106,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                 SliverAppBar(
                   expandedHeight: 240,
                   pinned: true,
-                  backgroundColor: AppColors.primaryDark,
+                  backgroundColor: context.couleurs.primaireFonce,
                   actions: [
                     IconButton(
                       icon: const Icon(Icons.edit_rounded, color: Colors.white),
@@ -121,8 +119,8 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                       fit: StackFit.expand,
                       children: [
                         Container(
-                          decoration: const BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                          decoration: BoxDecoration(
+                            gradient: context.couleurs.degradePrimaire,
                           ),
                         ),
                         // Cercles décoratifs
@@ -170,10 +168,10 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                                           color: Colors.white,
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.camera_alt_rounded,
                                           size: 16,
-                                          color: AppColors.primary,
+                                          color: context.couleurs.primaire,
                                         ),
                                       ),
                                     ),
@@ -217,7 +215,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
                         nbRecommandations: user.nombreRecommandations,
                         dateInscription: user.dateInscription,
                       ),
-                    ).animate().fadeIn(duration: 400.ms),
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -261,17 +259,18 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
 
                     // ─── Paramètres ────────────────────────────────────────
                     const _SectionHeader(title: 'Paramètres'),
-                    const _SettingsTile(
+                    _SettingsTile(
                       icon: Icons.language_outlined,
                       label: 'Langue',
                       trailing: Text(
                         'Français',
-                        style: TextStyle(color: AppColors.textSecondary),
+                        style:
+                            TextStyle(color: context.couleurs.texteSecondaire),
                       ),
                     ),
                     _SettingsTile(
                       icon: Icons.info_outline_rounded,
-                      label: 'À propos de KoobalaTech',
+                      label: 'À propos de AgriSmart',
                       onTap: () => _showAbout(context),
                     ),
 
@@ -279,16 +278,18 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
 
                     // ─── Déconnexion ───────────────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: OutlinedButton.icon(
                         onPressed: _logout,
-                        icon: const Icon(Icons.logout_rounded, color: AppColors.danger),
-                        label: const Text(
+                        icon: Icon(Icons.logout_rounded,
+                            color: context.couleurs.erreur),
+                        label: Text(
                           'Se déconnecter',
-                          style: TextStyle(color: AppColors.danger),
+                          style: TextStyle(color: context.couleurs.erreur),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.danger),
+                          side: BorderSide(color: context.couleurs.erreur),
                           minimumSize: const Size(double.infinity, 52),
                         ),
                       ),
@@ -316,13 +317,14 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: context.couleurs.degradePrimaire,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
+              child:
+                  const Icon(Icons.eco_rounded, color: Colors.white, size: 20),
             ),
             const SizedBox(width: 12),
-            const Text('KoobalaTech'),
+            const Text('AgriSmart'),
           ],
         ),
         content: const Column(
@@ -368,14 +370,14 @@ class _StatsRow extends StatelessWidget {
           icon: Icons.terrain_rounded,
           label: 'Champs',
           value: '$nbChamps',
-          color: AppColors.primary,
+          color: context.couleurs.primaire,
         ),
         const SizedBox(width: 12),
         _StatCard(
           icon: Icons.psychology_rounded,
           label: 'Recommandations',
           value: '$nbRecommandations',
-          color: AppColors.amber,
+          color: context.couleurs.secondaire,
         ),
         const SizedBox(width: 12),
         _StatCard(
@@ -384,7 +386,7 @@ class _StatsRow extends StatelessWidget {
           value: dateInscription != null
               ? DateFormatter.formatMonthYear(dateInscription!)
               : '—',
-          color: AppColors.info,
+          color: context.couleurs.info,
         ),
       ],
     );
@@ -431,7 +433,7 @@ class _StatCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .labelSmall
-                  ?.copyWith(color: AppColors.textSecondary),
+                  ?.copyWith(color: context.couleurs.texteSecondaire),
               textAlign: TextAlign.center,
               maxLines: 2,
             ),
@@ -530,9 +532,9 @@ class _EditProfilSheetState extends ConsumerState<_EditProfilSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: context.couleurs.surface,
+          borderRadius: AppRayons.brFeuille,
         ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -548,7 +550,7 @@ class _EditProfilSheetState extends ConsumerState<_EditProfilSheet> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppColors.border,
+                      color: context.couleurs.bordure,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -560,35 +562,40 @@ class _EditProfilSheetState extends ConsumerState<_EditProfilSheet> {
                 ),
                 const SizedBox(height: 20),
 
-                AppTextField(
-                  label: 'Nom',
-                  controller: _nomCtrl,
-                  prefixIcon: Icons.person_outline,
-                  validator: (v) =>
-                      (v == null || v.trim().length < 2) ? 'Nom requis (min. 2 caractères)' : null,
-                  textInputAction: TextInputAction.next,
+                AppChampTexte(
+                  libelle: 'Nom',
+                  controleur: _nomCtrl,
+                  icone: Icons.person_outline,
+                  validateur: (v) => (v == null || v.trim().length < 2)
+                      ? 'Nom requis (min. 2 caractères)'
+                      : null,
+                  actionClavier: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
 
-                AppTextField(
-                  label: 'Prénom',
-                  controller: _prenomCtrl,
-                  prefixIcon: Icons.person_outline,
-                  validator: (v) =>
-                      (v == null || v.trim().length < 2) ? 'Prénom requis' : null,
-                  textInputAction: TextInputAction.next,
+                AppChampTexte(
+                  libelle: 'Prénom',
+                  controleur: _prenomCtrl,
+                  icone: Icons.person_outline,
+                  validateur: (v) => (v == null || v.trim().length < 2)
+                      ? 'Prénom requis'
+                      : null,
+                  actionClavier: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
 
-                AppTextField(
-                  label: 'Téléphone',
-                  controller: _telCtrl,
-                  prefixIcon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d\s+\-()]'))],
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? 'Téléphone requis' : null,
-                  textInputAction: TextInputAction.next,
+                AppChampTexte(
+                  libelle: 'Téléphone',
+                  controleur: _telCtrl,
+                  icone: Icons.phone_outlined,
+                  clavier: TextInputType.phone,
+                  formateurs: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[\d\s+\-()]'))
+                  ],
+                  validateur: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Téléphone requis'
+                      : null,
+                  actionClavier: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
 
@@ -606,27 +613,27 @@ class _EditProfilSheetState extends ConsumerState<_EditProfilSheet> {
                 ),
                 const SizedBox(height: 12),
 
-                AppTextField(
-                  label: 'Ville / Village',
-                  controller: _villeCtrl,
-                  prefixIcon: Icons.home_outlined,
-                  textInputAction: TextInputAction.next,
+                AppChampTexte(
+                  libelle: 'Ville / Village',
+                  controleur: _villeCtrl,
+                  icone: Icons.home_outlined,
+                  actionClavier: TextInputAction.next,
                 ),
                 const SizedBox(height: 12),
 
-                AppTextField(
-                  label: 'Adresse',
-                  controller: _adresseCtrl,
-                  prefixIcon: Icons.map_outlined,
-                  textInputAction: TextInputAction.done,
+                AppChampTexte(
+                  libelle: 'Adresse',
+                  controleur: _adresseCtrl,
+                  icone: Icons.map_outlined,
+                  actionClavier: TextInputAction.done,
                 ),
                 const SizedBox(height: 24),
 
-                AppButton(
-                  label: 'Enregistrer',
+                AppBouton.principal(
+                  libelle: 'Enregistrer',
                   onPressed: _save,
-                  isLoading: _isLoading,
-                  icon: Icons.save_rounded,
+                  icone: Icons.save_rounded,
+                  enChargement: _isLoading,
                 ),
               ],
             ),
@@ -650,7 +657,7 @@ class _SectionHeader extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: context.couleurs.texteSecondaire,
               letterSpacing: 1.2,
             ),
       ),
@@ -671,13 +678,13 @@ class _ProfileTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.primary, size: 22),
+      leading: Icon(icon, color: context.couleurs.primaire, size: 22),
       title: Text(
         label,
         style: Theme.of(context)
             .textTheme
             .bodySmall
-            ?.copyWith(color: AppColors.textSecondary),
+            ?.copyWith(color: context.couleurs.texteSecondaire),
       ),
       subtitle: Text(value, style: Theme.of(context).textTheme.titleSmall),
       dense: true,
@@ -700,10 +707,11 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.textSecondary, size: 22),
+      leading: Icon(icon, color: context.couleurs.texteSecondaire, size: 22),
       title: Text(label, style: Theme.of(context).textTheme.bodyMedium),
       trailing: trailing ??
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+          Icon(Icons.chevron_right_rounded,
+              color: context.couleurs.texteSecondaire),
       onTap: onTap,
       dense: true,
     );
@@ -720,7 +728,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
+          Icon(Icons.error_outline, color: context.couleurs.erreur, size: 48),
           const SizedBox(height: 12),
           const Text('Impossible de charger le profil'),
           if (onRetry != null) ...[

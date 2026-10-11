@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/enums/type_conseil.dart';
 import '../providers/expert_provider.dart';
@@ -11,7 +11,8 @@ class NouveauConseilScreen extends ConsumerStatefulWidget {
   const NouveauConseilScreen({super.key});
 
   @override
-  ConsumerState<NouveauConseilScreen> createState() => _NouveauConseilScreenState();
+  ConsumerState<NouveauConseilScreen> createState() =>
+      _NouveauConseilScreenState();
 }
 
 class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
@@ -36,13 +37,15 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
     final champsAsync = ref.watch(champsSupervisionProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Text('Nouveau conseil',
-            style: GoogleFonts.poppins(
-                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+            style: AppTypography.police(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white)),
       ),
       body: Form(
         key: _formKey,
@@ -63,7 +66,7 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
                           value: c.id,
                           child: Text(
                             '${c.nom} — ${c.agriculteurNom}',
-                            style: GoogleFonts.inter(fontSize: 13),
+                            style: AppTypography.police(fontSize: 13),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ))
@@ -97,10 +100,12 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
                           decoration: BoxDecoration(
                             color: _type == t
                                 ? t.couleur.withValues(alpha: 0.15)
-                                : AppColors.surface,
+                                : context.couleurs.surface,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: _type == t ? t.couleur : AppColors.border,
+                              color: _type == t
+                                  ? t.couleur
+                                  : context.couleurs.bordure,
                               width: _type == t ? 1.5 : 1,
                             ),
                           ),
@@ -110,7 +115,7 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
                               Icon(t.icone, size: 14, color: t.couleur),
                               const SizedBox(width: 6),
                               Text(t.libelle,
-                                  style: GoogleFonts.poppins(
+                                  style: AppTypography.police(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: t.couleur)),
@@ -129,16 +134,18 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
             TextFormField(
               controller: _titreCtrl,
               decoration: _inputDeco('Titre du conseil'),
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Le titre est requis' : null,
+              style: AppTypography.police(
+                  fontSize: 14, fontWeight: FontWeight.w500),
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Le titre est requis'
+                  : null,
             ),
             const SizedBox(height: 12),
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
                 color: _estUrgent
-                    ? AppColors.danger.withValues(alpha: 0.04)
+                    ? context.couleurs.erreur.withValues(alpha: 0.04)
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -161,17 +168,18 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Marquer comme urgent',
-                          style: GoogleFonts.poppins(
+                          style: AppTypography.police(
                               fontSize: 13, fontWeight: FontWeight.w500)),
                       Text('L\'agriculteur recevra une alerte prioritaire',
-                          style: GoogleFonts.inter(
-                              fontSize: 11, color: AppColors.textSecondary)),
+                          style: AppTypography.police(
+                              fontSize: 11,
+                              color: context.couleurs.texteSecondaire)),
                     ],
                   ),
                 ),
                 Switch.adaptive(
                   value: _estUrgent,
-                  activeColor: AppColors.danger,
+                  activeColor: context.couleurs.erreur,
                   onChanged: (v) => setState(() => _estUrgent = v),
                 ),
               ],
@@ -186,14 +194,15 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _envoyer,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.couleurs.primaire,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
-                  textStyle: GoogleFonts.poppins(
+                  textStyle: AppTypography.police(
                       fontSize: 15, fontWeight: FontWeight.w600),
                 ),
-                child: Text(_isLoading ? 'Envoi en cours...' : 'Envoyer le conseil'),
+                child: Text(
+                    _isLoading ? 'Envoi en cours...' : 'Envoyer le conseil'),
               ),
             ),
             const SizedBox(height: 40),
@@ -205,15 +214,15 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
 
   InputDecoration _inputDeco(String hint) => InputDecoration(
         hintText: hint,
-        hintStyle:
-            GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+        hintStyle: AppTypography.police(
+            fontSize: 13, color: context.couleurs.texteSecondaire),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: context.couleurs.bordure),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderSide: BorderSide(color: context.couleurs.bordure),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -221,10 +230,10 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
 
   Widget _sectionTitle(String t) => Text(
         t,
-        style: GoogleFonts.poppins(
+        style: AppTypography.police(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary),
+            color: context.couleurs.textePrincipal),
       );
 
   Future<void> _envoyer() async {
@@ -242,9 +251,9 @@ class _NouveauConseilScreenState extends ConsumerState<NouveauConseilScreen> {
       setState(() => _isLoading = false);
       if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Conseil envoyé avec succès !'),
-            backgroundColor: AppColors.primary,
+          SnackBar(
+            content: const Text('Conseil envoyé avec succès !'),
+            backgroundColor: context.couleurs.primaire,
           ),
         );
         context.pop();

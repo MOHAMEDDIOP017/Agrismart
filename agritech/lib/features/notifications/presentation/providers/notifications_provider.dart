@@ -4,8 +4,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/notification_model.dart';
 
-class NotificationsNotifier
-    extends AsyncNotifier<List<NotificationModel>> {
+class NotificationsNotifier extends AsyncNotifier<List<NotificationModel>> {
   late Dio _dio;
 
   @override

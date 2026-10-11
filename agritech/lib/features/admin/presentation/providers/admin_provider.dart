@@ -133,7 +133,14 @@ final statutSystemeProvider = FutureProvider<StatutSysteme>((ref) async {
 // ── Gestion utilisateurs ──────────────────────────────────────────────────
 
 /// Filtres disponibles pour la liste des utilisateurs
-enum FiltreUtilisateur { tous, agriculteurs, experts, admins, suspendus, actifs }
+enum FiltreUtilisateur {
+  tous,
+  agriculteurs,
+  experts,
+  admins,
+  suspendus,
+  actifs
+}
 
 extension FiltreUtilisateurExt on FiltreUtilisateur {
   String get libelle {
@@ -182,19 +189,18 @@ class GestionUtilisateursState {
     // Appliquer le filtre par rôle/statut
     switch (filtre) {
       case FiltreUtilisateur.agriculteurs:
-        liste = liste.where((u) => u.role == RoleUtilisateur.agriculteur).toList();
+        liste =
+            liste.where((u) => u.role == RoleUtilisateur.agriculteur).toList();
       case FiltreUtilisateur.experts:
         liste = liste.where((u) => u.role == RoleUtilisateur.expert).toList();
       case FiltreUtilisateur.admins:
         liste = liste.where((u) => u.role == RoleUtilisateur.admin).toList();
       case FiltreUtilisateur.suspendus:
-        liste = liste
-            .where((u) => u.statut == StatutUtilisateur.suspendu)
-            .toList();
+        liste =
+            liste.where((u) => u.statut == StatutUtilisateur.suspendu).toList();
       case FiltreUtilisateur.actifs:
-        liste = liste
-            .where((u) => u.statut == StatutUtilisateur.actif)
-            .toList();
+        liste =
+            liste.where((u) => u.statut == StatutUtilisateur.actif).toList();
       case FiltreUtilisateur.tous:
         break;
     }
@@ -281,7 +287,9 @@ class GestionUtilisateursNotifier
       ));
       return null;
     } on DioException catch (e) {
-      return e.error?.toString() ?? e.message ?? 'Erreur réseau. Vérifiez votre connexion.';
+      return e.error?.toString() ??
+          e.message ??
+          'Erreur réseau. Vérifiez votre connexion.';
     } catch (e) {
       return e.toString();
     }
@@ -292,9 +300,8 @@ class GestionUtilisateursNotifier
       final mis = await _repo.modifierUtilisateur(utilisateur);
       final current = state.valueOrNull ?? const GestionUtilisateursState();
       state = AsyncData(current.copyWith(
-        utilisateurs: current.utilisateurs
-            .map((u) => u.id == mis.id ? mis : u)
-            .toList(),
+        utilisateurs:
+            current.utilisateurs.map((u) => u.id == mis.id ? mis : u).toList(),
       ));
       return true;
     } catch (_) {
@@ -320,9 +327,8 @@ class GestionUtilisateursNotifier
       final mis = await _repo.changerStatut(id, statut);
       final current = state.valueOrNull ?? const GestionUtilisateursState();
       state = AsyncData(current.copyWith(
-        utilisateurs: current.utilisateurs
-            .map((u) => u.id == mis.id ? mis : u)
-            .toList(),
+        utilisateurs:
+            current.utilisateurs.map((u) => u.id == mis.id ? mis : u).toList(),
       ));
       return true;
     } catch (_) {
@@ -346,8 +352,8 @@ class GestionUtilisateursNotifier
   }
 }
 
-final gestionUtilisateursProvider =
-    AsyncNotifierProvider<GestionUtilisateursNotifier, GestionUtilisateursState>(
+final gestionUtilisateursProvider = AsyncNotifierProvider<
+    GestionUtilisateursNotifier, GestionUtilisateursState>(
   GestionUtilisateursNotifier.new,
 );
 
@@ -729,7 +735,6 @@ class ChampsAdminNotifier extends AsyncNotifier<ChampsAdminState> {
     final current = state.valueOrNull ?? const ChampsAdminState();
     state = AsyncData(current.copyWith(champs: champs));
   }
-
 }
 
 final champsAdminProvider =

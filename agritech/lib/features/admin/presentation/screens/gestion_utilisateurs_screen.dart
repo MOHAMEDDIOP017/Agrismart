@@ -22,7 +22,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
     final notifier = ref.read(gestionUtilisateursProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
         backgroundColor: _adminPrimary,
         title: const Text(
@@ -52,8 +52,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
               decoration: InputDecoration(
                 hintText: 'Rechercher par nom, email, téléphone...',
                 hintStyle: const TextStyle(color: Colors.white60),
-                prefixIcon:
-                    const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.15),
                 border: OutlineInputBorder(
@@ -72,8 +71,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
             data: (etat) => Container(
               color: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -85,16 +83,14 @@ class GestionUtilisateursScreen extends ConsumerWidget {
                         label: Text(f.libelle),
                         selected: selectionne,
                         onSelected: (_) => notifier.setFiltre(f),
-                        selectedColor:
-                            _adminPrimary.withValues(alpha: 0.15),
+                        selectedColor: _adminPrimary.withValues(alpha: 0.15),
                         checkmarkColor: _adminPrimary,
                         labelStyle: TextStyle(
                           color: selectionne
                               ? _adminPrimary
-                              : AppColors.textSecondary,
-                          fontWeight: selectionne
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                              : context.couleurs.texteSecondaire,
+                          fontWeight:
+                              selectionne ? FontWeight.w600 : FontWeight.normal,
                           fontSize: 12,
                         ),
                       ),
@@ -134,12 +130,10 @@ class GestionUtilisateursScreen extends ConsumerWidget {
                         ),
                         onChangerRole: () =>
                             _changerRole(context, ref, u, notifier),
-                        onSuspendre: () =>
-                            _confirmerSuspension(context, ref, u.id,
-                                u.estSuspendu, notifier),
-                        onSupprimer: () =>
-                            _confirmerSuppression(context, ref, u.id,
-                                u.nomComplet, notifier),
+                        onSuspendre: () => _confirmerSuspension(
+                            context, ref, u.id, u.estSuspendu, notifier),
+                        onSupprimer: () => _confirmerSuppression(
+                            context, ref, u.id, u.nomComplet, notifier),
                       );
                     },
                   ),
@@ -165,7 +159,8 @@ class GestionUtilisateursScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: Text('Changer le rôle de ${utilisateur.prenom} ${utilisateur.nom}'),
+          title: Text(
+              'Changer le rôle de ${utilisateur.prenom} ${utilisateur.nom}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,22 +170,23 @@ class GestionUtilisateursScreen extends ConsumerWidget {
                 style: const TextStyle(color: Colors.black54, fontSize: 13),
               ),
               const SizedBox(height: 16),
-              ...RoleUtilisateur.values.map((r) => RadioListTile<RoleUtilisateur>(
-                title: Text(r.libelle),
-                subtitle: Text(
-                  r == RoleUtilisateur.agriculteur
-                      ? 'Gestion des champs et diagnostics'
-                      : r == RoleUtilisateur.expert
-                          ? 'Validation des diagnostics IA'
-                          : 'Administration de la plateforme',
-                  style: const TextStyle(fontSize: 11),
-                ),
-                value: r,
-                groupValue: roleChoisi,
-                activeColor: const Color(0xFF534AB7),
-                contentPadding: EdgeInsets.zero,
-                onChanged: (v) => setDialogState(() => roleChoisi = v!),
-              )),
+              ...RoleUtilisateur.values
+                  .map((r) => RadioListTile<RoleUtilisateur>(
+                        title: Text(r.libelle),
+                        subtitle: Text(
+                          r == RoleUtilisateur.agriculteur
+                              ? 'Gestion des champs et diagnostics'
+                              : r == RoleUtilisateur.expert
+                                  ? 'Validation des diagnostics IA'
+                                  : 'Administration de la plateforme',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        value: r,
+                        groupValue: roleChoisi,
+                        activeColor: const Color(0xFF534AB7),
+                        contentPadding: EdgeInsets.zero,
+                        onChanged: (v) => setDialogState(() => roleChoisi = v!),
+                      )),
             ],
           ),
           actions: [
@@ -205,13 +201,16 @@ class GestionUtilisateursScreen extends ConsumerWidget {
               ),
               onPressed: () async {
                 Navigator.pop(ctx);
-                final ok = await notifier.changerRole(utilisateur.id, roleChoisi);
+                final ok =
+                    await notifier.changerRole(utilisateur.id, roleChoisi);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: Text(ok
                         ? 'Rôle modifié : ${roleChoisi.libelle}'
                         : 'Erreur lors du changement de rôle'),
-                    backgroundColor: ok ? AppColors.primary : AppColors.danger,
+                    backgroundColor: ok
+                        ? context.couleurs.primaire
+                        : context.couleurs.erreur,
                   ));
                 }
               },
@@ -249,8 +248,9 @@ class GestionUtilisateursScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  estSuspendu ? AppColors.primary : AppColors.amber,
+              backgroundColor: estSuspendu
+                  ? context.couleurs.primaire
+                  : context.couleurs.secondaire,
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
@@ -291,7 +291,7 @@ class GestionUtilisateursScreen extends ConsumerWidget {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.danger,
+              backgroundColor: context.couleurs.erreur,
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
@@ -305,8 +305,9 @@ class GestionUtilisateursScreen extends ConsumerWidget {
                           ? '$nomComplet a été supprimé avec succès'
                           : 'Erreur lors de la suppression de $nomComplet',
                     ),
-                    backgroundColor:
-                        ok ? AppColors.danger : AppColors.amber,
+                    backgroundColor: ok
+                        ? context.couleurs.erreur
+                        : context.couleurs.secondaire,
                   ),
                 );
               }
@@ -355,7 +356,7 @@ class _Erreur extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: AppColors.danger, size: 48),
+          Icon(Icons.error_outline, color: context.couleurs.erreur, size: 48),
           const SizedBox(height: 12),
           Text(
             'Erreur de chargement',
@@ -385,7 +386,7 @@ class _EtatVide extends StatelessWidget {
         children: [
           Icon(Icons.people_outline,
               size: 64,
-              color: AppColors.textSecondary.withValues(alpha: 0.5)),
+              color: context.couleurs.texteSecondaire.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
           Text(
             'Aucun utilisateur',
@@ -395,7 +396,7 @@ class _EtatVide extends StatelessWidget {
           Text(
             'Aucun résultat pour "$filtre"',
             style: AppTypography.textTheme.bodySmall!.copyWith(
-              color: AppColors.textSecondary,
+              color: context.couleurs.texteSecondaire,
             ),
           ),
         ],

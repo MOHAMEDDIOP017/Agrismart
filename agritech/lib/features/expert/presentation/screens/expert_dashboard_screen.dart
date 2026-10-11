@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/expert_router.dart';
 import '../providers/expert_provider.dart';
@@ -19,18 +19,18 @@ class ExpertDashboardScreen extends ConsumerWidget {
     final champsAsync = ref.watch(champsSupervisionProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       body: CustomScrollView(
         slivers: [
           // ── AppBar ──────────────────────────────────────────────
           SliverAppBar(
             floating: true,
-            backgroundColor: AppColors.primaryDark,
+            backgroundColor: context.couleurs.primaireFonce,
             foregroundColor: Colors.white,
             expandedHeight: 100,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                color: AppColors.primaryDark,
+                color: context.couleurs.primaireFonce,
                 padding: const EdgeInsets.fromLTRB(16, 48, 16, 12),
                 child: profilAsync.when(
                   data: (expert) => Row(
@@ -42,7 +42,7 @@ class ExpertDashboardScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'Tableau de bord Expert',
-                              style: GoogleFonts.poppins(
+                              style: AppTypography.police(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
@@ -50,7 +50,7 @@ class ExpertDashboardScreen extends ConsumerWidget {
                             ),
                             Text(
                               '${expert.nomComplet} · ${expert.regionCouverture}',
-                              style: GoogleFonts.inter(
+                              style: AppTypography.police(
                                 fontSize: 12,
                                 color: Colors.white70,
                               ),
@@ -61,7 +61,8 @@ class ExpertDashboardScreen extends ConsumerWidget {
                       // Icône notification avec badge
                       _NotificationBadge(
                         count: kpi['recommandationsEnAttente'] ?? 0,
-                        onTap: () => context.goNamed(ExpertRoutes.recommandationsNom),
+                        onTap: () =>
+                            context.goNamed(ExpertRoutes.recommandationsNom),
                       ),
                       const SizedBox(width: 8),
                       // Profil
@@ -72,7 +73,7 @@ class ExpertDashboardScreen extends ConsumerWidget {
                           backgroundColor: Colors.white24,
                           child: Text(
                             expert.prenom[0] + expert.nom[0],
-                            style: GoogleFonts.poppins(
+                            style: AppTypography.police(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                               color: Colors.white,
@@ -108,20 +109,20 @@ class ExpertDashboardScreen extends ConsumerWidget {
                       valeur: kpi['recommandationsEnAttente'] ?? 0,
                       libelle: 'Recommandations\nen attente',
                       icone: Icons.tips_and_updates_outlined,
-                      couleur: AppColors.primary,
+                      couleur: context.couleurs.primaire,
                       estAlerte: true,
                     ),
                     KpiCard(
                       valeur: kpi['champsSupervises'] ?? 0,
                       libelle: 'Champs\nsupervisés',
                       icone: Icons.terrain_outlined,
-                      couleur: AppColors.info,
+                      couleur: context.couleurs.info,
                     ),
                     KpiCard(
                       valeur: kpi['interventionsPlanifiees'] ?? 0,
                       libelle: 'Interventions\nplanifiées',
                       icone: Icons.event_note_outlined,
-                      couleur: AppColors.amber,
+                      couleur: context.couleurs.secondaire,
                     ),
                   ],
                 ),
@@ -131,10 +132,10 @@ class ExpertDashboardScreen extends ConsumerWidget {
                 // ── Champs supervisés ─────────────────────────────
                 Text(
                   'Champs supervisés',
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                    color: context.couleurs.textePrincipal,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -151,7 +152,8 @@ class ExpertDashboardScreen extends ConsumerWidget {
                             ))
                         .toList(),
                   ),
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (_, __) => const SizedBox(),
                 ),
 
@@ -163,7 +165,6 @@ class ExpertDashboardScreen extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 /// Badge de notification avec compteur animé pulsant si > 0
@@ -176,18 +177,7 @@ class _NotificationBadge extends StatefulWidget {
   State<_NotificationBadge> createState() => _NotificationBadgeState();
 }
 
-class _NotificationBadgeState extends State<_NotificationBadge>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 700))
-        ..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
-
+class _NotificationBadgeState extends State<_NotificationBadge> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -195,26 +185,27 @@ class _NotificationBadgeState extends State<_NotificationBadge>
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          const Icon(Icons.notifications_outlined, color: Colors.white, size: 26),
+          const Icon(Icons.notifications_outlined,
+              color: Colors.white, size: 26),
           if (widget.count > 0)
             Positioned(
               right: -4,
               top: -4,
-              child: FadeTransition(
-                opacity: Tween(begin: 0.5, end: 1.0).animate(_c),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Text(
-                    '${widget.count}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
+              // La pastille ne clignote plus : elle battait sans fin sur un
+              // écran qui reste ouvert, sans rien annoncer de nouveau. Le
+              // chiffre suffit à dire qu'il y a du travail.
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${widget.count}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -224,4 +215,3 @@ class _NotificationBadgeState extends State<_NotificationBadge>
     );
   }
 }
-

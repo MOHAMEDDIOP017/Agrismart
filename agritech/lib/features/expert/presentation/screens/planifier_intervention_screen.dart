@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/enums/type_intervention.dart';
@@ -50,13 +50,13 @@ class _PlanifierInterventionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Text(
           'Planifier une intervention',
-          style: GoogleFonts.poppins(
+          style: AppTypography.police(
               fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
         ),
       ),
@@ -64,12 +64,12 @@ class _PlanifierInterventionScreenState
         currentStep: _etape,
         onStepContinue: _etape < 2 ? () => setState(() => _etape++) : null,
         onStepCancel: _etape > 0 ? () => setState(() => _etape--) : null,
-        connectorColor: WidgetStateProperty.all(AppColors.primary),
+        connectorColor: WidgetStateProperty.all(context.couleurs.primaire),
         steps: [
           // ── Étape 1 : Champ ──────────────────────────────────
           Step(
             title: Text('Sélectionner le champ',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                style: AppTypography.police(fontWeight: FontWeight.w600)),
             isActive: _etape >= 0,
             state: _etape > 0 ? StepState.complete : StepState.indexed,
             content: Consumer(
@@ -84,13 +84,14 @@ class _PlanifierInterventionScreenState
                               value: c.id,
                               groupValue: _champId,
                               title: Text(c.nom,
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 13, fontWeight: FontWeight.w600)),
+                                  style: AppTypography.police(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600)),
                               subtitle: Text(
                                 '${c.agriculteurNom} · ${c.superficieFormatee}',
-                                style: GoogleFonts.inter(fontSize: 11),
+                                style: AppTypography.police(fontSize: 11),
                               ),
-                              activeColor: AppColors.primary,
+                              activeColor: context.couleurs.primaire,
                               onChanged: (v) => setState(() {
                                 _champId = v;
                                 _champNom = c.nom;
@@ -106,7 +107,7 @@ class _PlanifierInterventionScreenState
           // ── Étape 2 : Détails ────────────────────────────────
           Step(
             title: Text('Détails de l\'intervention',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                style: AppTypography.police(fontWeight: FontWeight.w600)),
             isActive: _etape >= 1,
             state: _etape > 1 ? StepState.complete : StepState.indexed,
             content: Column(
@@ -114,7 +115,7 @@ class _PlanifierInterventionScreenState
               children: [
                 // Type
                 Text('Type d\'intervention',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 8),
                 Wrap(
@@ -122,7 +123,7 @@ class _PlanifierInterventionScreenState
                   children: TypeIntervention.values
                       .map((t) => ChoiceChip(
                             label: Text(t.libelle,
-                                style: GoogleFonts.poppins(fontSize: 11)),
+                                style: AppTypography.police(fontSize: 11)),
                             selected: _type == t,
                             selectedColor: t.couleur.withValues(alpha: 0.2),
                             onSelected: (_) => setState(() => _type = t),
@@ -134,7 +135,7 @@ class _PlanifierInterventionScreenState
 
                 // Date
                 Text('Date',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 InkWell(
@@ -150,17 +151,17 @@ class _PlanifierInterventionScreenState
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: context.couleurs.bordure),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today_outlined,
-                            size: 18, color: AppColors.primary),
+                        Icon(Icons.calendar_today_outlined,
+                            size: 18, color: context.couleurs.primaire),
                         const SizedBox(width: 10),
                         Text(
                           DateFormat('EEEE d MMMM yyyy', 'fr_FR').format(_date),
-                          style: GoogleFonts.inter(fontSize: 13),
+                          style: AppTypography.police(fontSize: 13),
                         ),
                       ],
                     ),
@@ -186,12 +187,12 @@ class _PlanifierInterventionScreenState
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Durée estimée',
-                        style: GoogleFonts.inter(fontSize: 12)),
+                        style: AppTypography.police(fontSize: 12)),
                     Text('${_duree.toStringAsFixed(1)} h',
-                        style: GoogleFonts.poppins(
+                        style: AppTypography.police(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.primary)),
+                            color: context.couleurs.primaire)),
                   ],
                 ),
                 Slider(
@@ -199,13 +200,13 @@ class _PlanifierInterventionScreenState
                   min: 0.5,
                   max: 8,
                   divisions: 15,
-                  activeColor: AppColors.primary,
+                  activeColor: context.couleurs.primaire,
                   onChanged: (v) => setState(() => _duree = v),
                 ),
 
                 // Matériel
                 Text('Matériel nécessaire',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 Row(
@@ -217,8 +218,8 @@ class _PlanifierInterventionScreenState
                           hintText: 'Ajouter du matériel...',
                           border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10)),
-                          contentPadding:
-                              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                         ),
                         onSubmitted: _ajouterMateriel,
                       ),
@@ -226,8 +227,8 @@ class _PlanifierInterventionScreenState
                     const SizedBox(width: 8),
                     IconButton(
                       onPressed: () => _ajouterMateriel(_materielCtrl.text),
-                      icon: const Icon(Icons.add_circle_outline,
-                          color: AppColors.primary),
+                      icon: Icon(Icons.add_circle_outline,
+                          color: context.couleurs.primaire),
                     ),
                   ],
                 ),
@@ -238,7 +239,7 @@ class _PlanifierInterventionScreenState
                     children: _materiel
                         .map((m) => Chip(
                               label: Text(m,
-                                  style: GoogleFonts.inter(fontSize: 11)),
+                                  style: AppTypography.police(fontSize: 11)),
                               deleteIcon: const Icon(Icons.close, size: 14),
                               onDeleted: () =>
                                   setState(() => _materiel.remove(m)),
@@ -253,7 +254,7 @@ class _PlanifierInterventionScreenState
           // ── Étape 3 : Confirmation ───────────────────────────
           Step(
             title: Text('Confirmation',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                style: AppTypography.police(fontWeight: FontWeight.w600)),
             isActive: _etape >= 2,
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,12 +274,12 @@ class _PlanifierInterventionScreenState
                     Expanded(
                       child: Text(
                         'Notifier l\'agriculteur',
-                        style: GoogleFonts.poppins(fontSize: 13),
+                        style: AppTypography.police(fontSize: 13),
                       ),
                     ),
                     Switch.adaptive(
                       value: _notifier,
-                      activeColor: AppColors.primary,
+                      activeColor: context.couleurs.primaire,
                       onChanged: (v) => setState(() => _notifier = v),
                     ),
                   ],
@@ -290,11 +291,11 @@ class _PlanifierInterventionScreenState
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _planifier,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: context.couleurs.primaire,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      textStyle: GoogleFonts.poppins(
+                      textStyle: AppTypography.police(
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                     child: _isLoading
@@ -317,11 +318,11 @@ class _PlanifierInterventionScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('$label : ',
-                style: GoogleFonts.inter(
-                    fontSize: 13, color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    fontSize: 13, color: context.couleurs.texteSecondaire)),
             Expanded(
               child: Text(valeur,
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                       fontSize: 13, fontWeight: FontWeight.w600)),
             ),
           ],
@@ -358,9 +359,9 @@ class _PlanifierInterventionScreenState
       setState(() => _isLoading = false);
       if (ok) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Intervention planifiée avec succès !'),
-            backgroundColor: AppColors.primary,
+          SnackBar(
+            content: const Text('Intervention planifiée avec succès !'),
+            backgroundColor: context.couleurs.primaire,
           ),
         );
         context.pop();

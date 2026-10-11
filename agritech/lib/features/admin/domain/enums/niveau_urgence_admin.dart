@@ -24,13 +24,13 @@ enum NiveauUrgenceAdmin {
   Color get couleur {
     switch (this) {
       case NiveauUrgenceAdmin.critique:
-        return AppColors.danger;
+        return AppPalette.erreur;
       case NiveauUrgenceAdmin.eleve:
-        return AppColors.coral;
+        return AppPalette.alerteElevee;
       case NiveauUrgenceAdmin.modere:
-        return AppColors.amber;
+        return AppPalette.ocre;
       case NiveauUrgenceAdmin.faible:
-        return AppColors.info;
+        return AppPalette.info;
     }
   }
 

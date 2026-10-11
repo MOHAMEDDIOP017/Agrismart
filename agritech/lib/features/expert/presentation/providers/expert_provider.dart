@@ -40,13 +40,15 @@ class ProfilExpertNotifier extends AsyncNotifier<ExpertEntity> {
   }
 }
 
-final profilExpertProvider = AsyncNotifierProvider<ProfilExpertNotifier, ExpertEntity>(
+final profilExpertProvider =
+    AsyncNotifierProvider<ProfilExpertNotifier, ExpertEntity>(
   ProfilExpertNotifier.new,
 );
 
 // ── Supervision champs ───────────────────────────────────────────────────────
 
-class ChampsSupervisionNotifier extends AsyncNotifier<List<ChampSuperviseEntity>> {
+class ChampsSupervisionNotifier
+    extends AsyncNotifier<List<ChampSuperviseEntity>> {
   ExpertRepository get _repo => ref.read(expertRepositoryProvider);
 
   @override
@@ -64,12 +66,13 @@ class ChampsSupervisionNotifier extends AsyncNotifier<List<ChampSuperviseEntity>
   }
 }
 
-final champsSupervisionProvider =
-    AsyncNotifierProvider<ChampsSupervisionNotifier, List<ChampSuperviseEntity>>(
+final champsSupervisionProvider = AsyncNotifierProvider<
+    ChampsSupervisionNotifier, List<ChampSuperviseEntity>>(
   ChampsSupervisionNotifier.new,
 );
 
-final champSuperviseDetailProvider = FutureProvider.family<ChampSuperviseEntity, String>(
+final champSuperviseDetailProvider =
+    FutureProvider.family<ChampSuperviseEntity, String>(
   (ref, champId) async {
     final repo = ref.read(expertRepositoryProvider);
     return repo.getChampDetail(champId);
@@ -165,7 +168,8 @@ class ConseilsNotifier extends AsyncNotifier<List<ConseilEntity>> {
   }
 }
 
-final conseilsProvider = AsyncNotifierProvider<ConseilsNotifier, List<ConseilEntity>>(
+final conseilsProvider =
+    AsyncNotifierProvider<ConseilsNotifier, List<ConseilEntity>>(
   ConseilsNotifier.new,
 );
 
@@ -177,8 +181,9 @@ final expertKpiProvider = Provider((ref) {
 
   return {
     'champsSupervises': champs.length,
-    'interventionsPlanifiees':
-        interventions.where((i) => i.statut == StatutIntervention.planifiee).length,
+    'interventionsPlanifiees': interventions
+        .where((i) => i.statut == StatutIntervention.planifiee)
+        .length,
     'recommandationsEnAttente': recommandations?.nombreEnAttente ?? 0,
   };
 });
@@ -284,9 +289,8 @@ class RecommandationsExpertNotifier
   void _remplacerLocal(RecommandationExpertEntity mis) {
     final current = state.valueOrNull;
     if (current == null) return;
-    final updated = current.recommandations
-        .map((r) => r.id == mis.id ? mis : r)
-        .toList();
+    final updated =
+        current.recommandations.map((r) => r.id == mis.id ? mis : r).toList();
     state = AsyncData(current.copyWith(recommandations: updated));
   }
 }

@@ -1,10 +1,10 @@
-﻿# KoobalaTech 
+﻿# AgriSmart 
 
 Application mobile d'assistance agricole intelligente pour les agriculteurs d'Afrique subsaharienne.
 
 ## Description
 
-KoobalaTech aide les agriculteurs à :
+AgriSmart aide les agriculteurs à :
 - **Gérer leurs champs** : suivi des parcelles, cultures, données agronomiques
 - **Recevoir des recommandations IA** : cultures adaptées au sol et au climat
 - **Détecter les maladies** : diagnostic par photo des plants
@@ -28,7 +28,7 @@ flutter run
 
 | Champ | Valeur |
 |-------|--------|
-| Email | mamadou.diallo@koobalatec.sn |
+| Email | mamadou.diallo@agrismart.sn |
 | Mot de passe | demo123 |
 
 ## Structure du projet

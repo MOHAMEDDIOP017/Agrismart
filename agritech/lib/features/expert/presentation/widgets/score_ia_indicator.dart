@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_motion.dart';
 
 /// Indicateur linéaire du score de confiance IA coloré selon le seuil
 class ScoreIaIndicator extends StatelessWidget {
@@ -14,10 +15,10 @@ class ScoreIaIndicator extends StatelessWidget {
   final double score;
   final bool showLabel;
 
-  Color get _couleur {
-    if (score >= 0.80) return AppColors.primary;
-    if (score >= 0.50) return AppColors.amber;
-    return AppColors.danger;
+  Color _couleur(BuildContext context) {
+    if (score >= 0.80) return context.couleurs.primaire;
+    if (score >= 0.50) return context.couleurs.secondaire;
+    return context.couleurs.erreur;
   }
 
   String get _libelle {
@@ -38,15 +39,16 @@ class ScoreIaIndicator extends StatelessWidget {
             children: [
               Text(
                 'Score IA : $pourcent%',
-                style: GoogleFonts.poppins(
+                style: AppTypography.police(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _couleur,
+                  color: _couleur(context),
                 ),
               ),
               Text(
                 _libelle,
-                style: GoogleFonts.inter(fontSize: 11, color: _couleur),
+                style: AppTypography.police(
+                    fontSize: 11, color: _couleur(context)),
               ),
             ],
           ),
@@ -55,11 +57,11 @@ class ScoreIaIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: score),
-            duration: const Duration(milliseconds: 900),
+            duration: AppDurees.moyenne,
             builder: (_, v, __) => LinearProgressIndicator(
               value: v,
-              backgroundColor: _couleur.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation(_couleur),
+              backgroundColor: _couleur(context).withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation(_couleur(context)),
               minHeight: 6,
             ),
           ),

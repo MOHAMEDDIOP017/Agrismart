@@ -1,11 +1,9 @@
-﻿import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
@@ -29,20 +27,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _villageCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
-  final PageController _bgCtrl = PageController();
 
   String? _zoneSelectionnee;
   bool _isLoading = false;
   bool _mdpVisible = false;
   bool _confirmVisible = false;
-  int _bgIndex = 0;
-  Timer? _bgTimer;
-
-  static const _bgImages = [
-    'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=900&q=80',
-    'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=900&q=80',
-    'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&q=80',
-  ];
 
   @override
   void initState() {
@@ -51,16 +40,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
-    _bgTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      final next = (_bgIndex + 1) % _bgImages.length;
-      _bgCtrl.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 900),
-        curve: Curves.easeInOutCubic,
-      );
-      setState(() => _bgIndex = next);
-    });
   }
 
   @override
@@ -73,8 +52,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _villageCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
-    _bgCtrl.dispose();
-    _bgTimer?.cancel();
     super.dispose();
   }
 
@@ -85,9 +62,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         SnackBar(
           content: Text(
             'Veuillez sélectionner votre zone géographique',
-            style: GoogleFonts.inter(color: Colors.white),
+            style: AppTypography.police(color: Colors.white),
           ),
-          backgroundColor: AppColors.danger,
+          backgroundColor: context.couleurs.erreur,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -129,12 +106,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           SnackBar(
             content: Text(
               message,
-              style: GoogleFonts.inter(color: Colors.white),
+              style: AppTypography.police(color: Colors.white),
             ),
-            backgroundColor: AppColors.danger,
+            backgroundColor: context.couleurs.erreur,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 5),
             action: emailDejaUtilise
                 ? SnackBarAction(
@@ -156,21 +133,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // ── Background carousel ────────────────────────────
-          Positioned.fill(
-            child: PageView.builder(
-              controller: _bgCtrl,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _bgImages.length,
-              itemBuilder: (_, i) => CachedNetworkImage(
-                imageUrl: _bgImages[i],
-                fit: BoxFit.cover,
-                placeholder: (_, __) =>
-                    Container(color: const Color(0xFF0D2B1A)),
-                errorWidget: (_, __, ___) =>
-                    Container(color: const Color(0xFF0D2B1A)),
-              ),
-            ),
+          // Fond uni plutôt qu'un carrousel d'images.
+          //
+          // Trois photos de 900 à 1 280 pixels, tirées de trois services
+          // distants différents, défilaient en boucle par un minuteur de cinq
+          // secondes avec une animation de 900 ms. Sur l'écran de connexion,
+          // c'est-à-dire avant tout accès au compte, cela demandait le réseau
+          // pour afficher un décor, maintenait le processeur graphique actif
+          // en permanence, et laissait un aplat vert hors couverture, c'est-
+          // à-dire le cas le plus fréquent du terrain visé.
+          const Positioned.fill(
+            child: ColoredBox(color: Color(0xFF0D2B1A)),
           ),
 
           // ── Gradient sombre ────────────────────────────────
@@ -218,7 +191,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: context.couleurs.primaire,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(Icons.eco_rounded,
@@ -226,8 +199,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'KoobalaTech',
-                      style: GoogleFonts.poppins(
+                      'AgriSmart',
+                      style: AppTypography.police(
                         color: Colors.white,
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
@@ -236,7 +209,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ],
                 ),
               ],
-            ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2),
+            ),
           ),
 
           // ── Formulaire (bas) ───────────────────────────────
@@ -246,8 +219,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Container(
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius:
-                      BorderRadius.vertical(top: Radius.circular(32)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
                 ),
                 padding: EdgeInsets.fromLTRB(
                   24,
@@ -270,7 +242,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           height: 4,
                           margin: const EdgeInsets.only(bottom: 18),
                           decoration: BoxDecoration(
-                            color: AppColors.border,
+                            color: context.couleurs.bordure,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -278,20 +250,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                       Text(
                         'Inscription Agriculteur',
-                        style: GoogleFonts.poppins(
+                        style: AppTypography.police(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
+                          color: context.couleurs.textePrincipal,
                         ),
-                      ).animate().fadeIn(delay: 200.ms),
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         'Rejoignez des milliers d\'agriculteurs connectés',
-                        style: GoogleFonts.inter(
+                        style: AppTypography.police(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: context.couleurs.texteSecondaire,
                         ),
-                      ).animate().fadeIn(delay: 250.ms),
+                      ),
                       const SizedBox(height: 20),
 
                       // Prénom & Nom
@@ -317,15 +289,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             ),
                           ),
                         ],
-                      ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Zone géographique
                       _ZoneDropdown(
                         value: _zoneSelectionnee,
-                        onChanged: (v) =>
-                            setState(() => _zoneSelectionnee = v),
-                      ).animate(delay: 360.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                        onChanged: (v) => setState(() => _zoneSelectionnee = v),
+                      ),
                       const SizedBox(height: 12),
 
                       // Téléphone
@@ -336,7 +307,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         icone: Icons.phone_outlined,
                         type: TextInputType.phone,
                         validator: Validators.phone,
-                      ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Adresse
@@ -345,7 +316,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         hint: 'Ex : Route de Thiès, Km 3',
                         controller: _adresseCtrl,
                         icone: Icons.home_outlined,
-                      ).animate(delay: 420.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Village / Ville
@@ -354,18 +325,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         hint: 'Ex : Mbour',
                         controller: _villageCtrl,
                         icone: Icons.location_city_outlined,
-                      ).animate(delay: 435.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Email
                       _ChampTexte(
                         label: 'Email',
-                        hint: 'exemple@koobalatec.sn',
+                        hint: 'exemple@agrismart.sn',
                         controller: _emailCtrl,
                         icone: Icons.alternate_email_rounded,
                         type: TextInputType.emailAddress,
                         validator: Validators.email,
-                      ).animate(delay: 440.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Mot de passe
@@ -381,13 +352,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             _mdpVisible
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: AppColors.textSecondary,
+                            color: context.couleurs.texteSecondaire,
                             size: 20,
                           ),
                           onPressed: () =>
                               setState(() => _mdpVisible = !_mdpVisible),
                         ),
-                      ).animate(delay: 480.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 12),
 
                       // Confirmer mot de passe
@@ -398,20 +369,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         icone: Icons.lock_outline_rounded,
                         obscure: !_confirmVisible,
                         action: TextInputAction.done,
-                        validator: Validators.confirmPassword(
-                            _passwordCtrl.text),
+                        validator:
+                            Validators.confirmPassword(_passwordCtrl.text),
                         suffixIcon: IconButton(
                           icon: Icon(
                             _confirmVisible
                                 ? Icons.visibility_off_outlined
                                 : Icons.visibility_outlined,
-                            color: AppColors.textSecondary,
+                            color: context.couleurs.texteSecondaire,
                             size: 20,
                           ),
-                          onPressed: () =>
-                              setState(() => _confirmVisible = !_confirmVisible),
+                          onPressed: () => setState(
+                              () => _confirmVisible = !_confirmVisible),
                         ),
-                      ).animate(delay: 520.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
                       const SizedBox(height: 22),
 
                       // Bouton S'inscrire
@@ -421,7 +392,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _register,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
+                            backgroundColor: context.couleurs.primaire,
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16)),
                             elevation: 0,
@@ -431,48 +402,52 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   width: 22,
                                   height: 22,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white),
+                                      strokeWidth: 2.5, color: Colors.white),
                                 )
                               : Text(
                                   "S'inscrire en tant qu'agriculteur",
-                                  style: GoogleFonts.poppins(
+                                  style: AppTypography.police(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
                                 ),
                         ),
-                      ).animate(delay: 560.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      ),
 
                       const SizedBox(height: 16),
 
                       // Note expert / admin
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.07),
+                          color:
+                              context.couleurs.primaire.withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                          border: Border.all(
+                              color: context.couleurs.primaire
+                                  .withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.primary),
+                            Icon(Icons.info_outline_rounded,
+                                size: 16, color: context.couleurs.primaire),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Vous êtes agronome ou administrateur ? Contactez l\'administrateur de la plateforme pour obtenir un compte adapté à votre rôle.',
-                                style: GoogleFonts.inter(
+                                style: AppTypography.police(
                                   fontSize: 11,
-                                  color: AppColors.textSecondary,
+                                  color: context.couleurs.texteSecondaire,
                                   height: 1.4,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ).animate(delay: 580.ms).fadeIn(),
+                      ),
 
                       const SizedBox(height: 12),
 
@@ -483,24 +458,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           children: [
                             Text(
                               'Déjà inscrit ? ',
-                              style: GoogleFonts.inter(
-                                  color: AppColors.textSecondary,
+                              style: AppTypography.police(
+                                  color: context.couleurs.texteSecondaire,
                                   fontSize: 13),
                             ),
                             GestureDetector(
                               onTap: () => context.pop(),
                               child: Text(
                                 'Se connecter',
-                                style: GoogleFonts.poppins(
+                                style: AppTypography.police(
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                                  color: context.couleurs.primaire,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      ).animate(delay: 600.ms).fadeIn(),
+                      ),
                     ],
                   ),
                 ),
@@ -543,10 +518,10 @@ class _ChampTexte extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: AppTypography.police(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.couleurs.textePrincipal,
           ),
         ),
         const SizedBox(height: 6),
@@ -556,12 +531,13 @@ class _ChampTexte extends StatelessWidget {
           keyboardType: type,
           textInputAction: action,
           validator: validator,
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+          style: AppTypography.police(
+              fontSize: 14, color: context.couleurs.textePrincipal),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14),
-            prefixIcon: Icon(icone, color: AppColors.primary, size: 19),
+            hintStyle: AppTypography.police(
+                color: context.couleurs.texteSecondaire, fontSize: 14),
+            prefixIcon: Icon(icone, color: context.couleurs.primaire, size: 19),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: const Color(0xFFF5F7F6),
@@ -573,15 +549,16 @@ class _ChampTexte extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.couleurs.bordure),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  BorderSide(color: context.couleurs.primaire, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.danger),
+              borderSide: BorderSide(color: context.couleurs.erreur),
             ),
           ),
         ),
@@ -603,10 +580,10 @@ class _ZoneDropdown extends StatelessWidget {
       children: [
         Text(
           'Zone géographique',
-          style: GoogleFonts.inter(
+          style: AppTypography.police(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.couleurs.textePrincipal,
           ),
         ),
         const SizedBox(height: 6),
@@ -614,17 +591,18 @@ class _ZoneDropdown extends StatelessWidget {
           value: value,
           hint: Text(
             'Sélectionner votre région',
-            style:
-                GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14),
+            style: AppTypography.police(
+                color: context.couleurs.texteSecondaire, fontSize: 14),
           ),
           onChanged: onChanged,
           validator: (v) => v == null ? 'Zone requise' : null,
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded,
-              color: AppColors.primary),
+          style: AppTypography.police(
+              fontSize: 14, color: context.couleurs.textePrincipal),
+          icon: Icon(Icons.keyboard_arrow_down_rounded,
+              color: context.couleurs.primaire),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.location_on_outlined,
-                color: AppColors.primary, size: 19),
+            prefixIcon: Icon(Icons.location_on_outlined,
+                color: context.couleurs.primaire, size: 19),
             filled: true,
             fillColor: const Color(0xFFF5F7F6),
             contentPadding:
@@ -635,23 +613,25 @@ class _ZoneDropdown extends StatelessWidget {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.couleurs.bordure),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  BorderSide(color: context.couleurs.primaire, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.danger),
+              borderSide: BorderSide(color: context.couleurs.erreur),
             ),
           ),
           items: AppConstants.villesSenegal
               .map((v) => DropdownMenuItem(
                     value: v,
                     child: Text(v,
-                        style: GoogleFonts.inter(
-                            fontSize: 14, color: AppColors.textPrimary)),
+                        style: AppTypography.police(
+                            fontSize: 14,
+                            color: context.couleurs.textePrincipal)),
                   ))
               .toList(),
         ),

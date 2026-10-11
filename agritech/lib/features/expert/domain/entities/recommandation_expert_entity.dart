@@ -19,8 +19,9 @@ class CultureScoreEntity extends Equatable {
   final String? periodeIdealePlantation;
 
   String get scoreLabel => '${(score * 100).round()}%';
-  String get rendementLabel =>
-      rendementEstime != null ? '${rendementEstime!.toStringAsFixed(1)} t/ha' : '—';
+  String get rendementLabel => rendementEstime != null
+      ? '${rendementEstime!.toStringAsFixed(1)} t/ha'
+      : '—';
 
   @override
   List<Object?> get props => [nom, rang];

@@ -20,8 +20,7 @@ class ExpertSelectionCardAdmin extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final couleurBord =
-        estSelectionne ? _violet : AppColors.border;
+    final couleurBord = estSelectionne ? _violet : context.couleurs.bordure;
     return GestureDetector(
       onTap: onSelectionner,
       child: AnimatedContainer(
@@ -30,7 +29,7 @@ class ExpertSelectionCardAdmin extends StatelessWidget {
         decoration: BoxDecoration(
           color: estSelectionne
               ? _violet.withValues(alpha: 0.05)
-              : AppColors.surface,
+              : context.couleurs.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: couleurBord,
@@ -62,8 +61,8 @@ class ExpertSelectionCardAdmin extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       color: expert.estEnLigne
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
+                          ? context.couleurs.primaire
+                          : context.couleurs.texteSecondaire,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
                     ),
@@ -120,16 +119,15 @@ class ExpertSelectionCardAdmin extends StatelessWidget {
                   expert.estEnLigne ? 'En ligne' : 'Hors ligne',
                   style: AppTypography.textTheme.labelSmall!.copyWith(
                     color: expert.estEnLigne
-                        ? AppColors.primary
-                        : AppColors.textSecondary,
+                        ? context.couleurs.primaire
+                        : context.couleurs.texteSecondaire,
                     fontWeight: FontWeight.w600,
                     fontSize: 10,
                   ),
                 ),
                 if (estSelectionne) ...[
                   const SizedBox(height: 4),
-                  const Icon(Icons.check_circle,
-                      color: _violet, size: 18),
+                  const Icon(Icons.check_circle, color: _violet, size: 18),
                 ],
               ],
             ),
@@ -157,12 +155,12 @@ class _Info extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icone, size: 12, color: AppColors.textSecondary),
+        Icon(icone, size: 12, color: context.couleurs.texteSecondaire),
         const SizedBox(width: 3),
         Text(
           texte,
           style: AppTypography.textTheme.labelSmall!.copyWith(
-            color: AppColors.textSecondary,
+            color: context.couleurs.texteSecondaire,
             fontSize: 10,
           ),
         ),
@@ -187,7 +185,7 @@ class _EtoilesScore extends StatelessWidget {
           score.toStringAsFixed(1),
           style: AppTypography.textTheme.labelSmall!.copyWith(
             fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            color: context.couleurs.textePrincipal,
             fontSize: 11,
           ),
         ),

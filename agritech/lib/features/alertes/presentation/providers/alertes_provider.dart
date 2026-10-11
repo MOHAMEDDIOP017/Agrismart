@@ -17,8 +17,7 @@ class AlertesNotifier extends AsyncNotifier<List<AlerteModel>> {
   }
 
   Future<List<AlerteModel>> _charger(String userId) async {
-    final resp =
-        await _dio.get('/notifications/utilisateur/$userId?limite=50');
+    final resp = await _dio.get('/notifications/utilisateur/$userId?limite=50');
     final data = resp.data as Map<String, dynamic>;
     final list = (data['notifications'] as List? ?? [])
         .cast<Map<String, dynamic>>()
@@ -48,8 +47,7 @@ class AlertesNotifier extends AsyncNotifier<List<AlerteModel>> {
   }
 
   Future<void> marquerToutesLues() async {
-    final nonLues =
-        (state.valueOrNull ?? []).where((a) => !a.isLue).toList();
+    final nonLues = (state.valueOrNull ?? []).where((a) => !a.isLue).toList();
     for (final a in nonLues) {
       await marquerLue(a.id);
     }
@@ -62,6 +60,10 @@ final alertesProvider =
 );
 
 final alertesNonLuesCountProvider = Provider<int>((ref) {
-  return ref.watch(alertesProvider).valueOrNull?.where((a) => !a.isLue).length ??
+  return ref
+          .watch(alertesProvider)
+          .valueOrNull
+          ?.where((a) => !a.isLue)
+          .length ??
       0;
 });

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_colors.dart';
 
 enum StatutCulture {
   prevu,
@@ -19,16 +20,32 @@ enum StatutCulture {
     }
   }
 
+  /// Couleur du statut, en mode clair. Voir [couleurDe] pour la version qui
+  /// suit le mode d'affichage.
   Color get couleur {
     switch (this) {
       case StatutCulture.prevu:
-        return const Color(0xFF1976D2);
+        return AppPalette.info;
       case StatutCulture.enCours:
-        return const Color(0xFF1D9E75);
+        return AppPalette.vert;
       case StatutCulture.recolte:
-        return const Color(0xFFEF9F27);
+        return AppPalette.ocreEncre;
       case StatutCulture.abandonne:
-        return const Color(0xFF9E9E9E);
+        return AppPalette.encreDouce;
+    }
+  }
+
+  /// Couleur du statut résolue pour le mode d'affichage en cours.
+  Color couleurDe(CouleursAgriSmart couleurs) {
+    switch (this) {
+      case StatutCulture.prevu:
+        return couleurs.statutPrevu;
+      case StatutCulture.enCours:
+        return couleurs.statutEnCours;
+      case StatutCulture.recolte:
+        return couleurs.statutRecolte;
+      case StatutCulture.abandonne:
+        return couleurs.statutAbandonne;
     }
   }
 

@@ -1,19 +1,18 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
 import '../../data/models/champ_model.dart';
 import '../../domain/entities/champ_entity.dart';
 import '../providers/champ_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Formulaire création/modification d'un champ
 class ChampFormScreen extends ConsumerStatefulWidget {
@@ -29,6 +28,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomCtrl = TextEditingController();
   final _superficieCtrl = TextEditingController();
+  final _adresseCtrl = TextEditingController();
   String? _typeSolSelectionne;
   String? _statutSelectionne = AppConstants.statutPrevu;
   String? _cultureSelectionnee;
@@ -54,6 +54,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
       _champOriginal = champ;
       _nomCtrl.text = champ.nom;
       _superficieCtrl.text = champ.superficie.toString();
+      _adresseCtrl.text = champ.adresse;
       setState(() {
         _typeSolSelectionne = champ.typeSol;
         _statutSelectionne = champ.statut;
@@ -85,6 +86,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
         _latitude = pos.latitude;
         _longitude = pos.longitude;
       });
+      await _proposerAdresse(pos.latitude, pos.longitude);
     } catch (e) {
       // Coordonnées mock pour la démo
       setState(() {
@@ -93,6 +95,31 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
       });
     } finally {
       setState(() => _isGpsLoading = false);
+    }
+  }
+
+  /// Propose une adresse déduite des coordonnées GPS (géocodage inverse).
+  ///
+  /// Confort de saisie uniquement : le champ reste modifiable, et une adresse
+  /// déjà saisie n'est jamais écrasée. Le géocodeur natif échoue hors ligne ou
+  /// en zone rurale peu cartographiée — cas fréquent ici, d'où l'échec
+  /// silencieux : l'agriculteur saisit alors l'adresse lui-même.
+  Future<void> _proposerAdresse(double latitude, double longitude) async {
+    if (_adresseCtrl.text.trim().isNotEmpty) return;
+    try {
+      final lieux = await placemarkFromCoordinates(latitude, longitude);
+      if (lieux.isEmpty || !mounted) return;
+      final l = lieux.first;
+      final parties = [
+        l.subLocality,
+        l.locality,
+        l.subAdministrativeArea,
+        l.administrativeArea,
+      ].where((p) => p != null && p.trim().isNotEmpty).cast<String>().toSet();
+      if (parties.isEmpty) return;
+      setState(() => _adresseCtrl.text = parties.join(', '));
+    } catch (_) {
+      // Géocodeur indisponible : on laisse la saisie manuelle.
     }
   }
 
@@ -127,9 +154,10 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
             ChampModel(
               id: original.id,
               nom: _nomCtrl.text.trim(),
-              superficie: double.parse(
-                  _superficieCtrl.text.replaceAll(',', '.')),
+              superficie:
+                  double.parse(_superficieCtrl.text.replaceAll(',', '.')),
               typeSol: _typeSolSelectionne!,
+              adresse: _adresseCtrl.text.trim(),
               statut: _statutSelectionne!,
               culture: _cultureSelectionnee,
               latitude: _latitude,
@@ -142,9 +170,9 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
     } else {
       success = await ref.read(champProvider.notifier).createChamp(
             nom: _nomCtrl.text.trim(),
-            superficie: double.parse(
-                _superficieCtrl.text.replaceAll(',', '.')),
+            superficie: double.parse(_superficieCtrl.text.replaceAll(',', '.')),
             typeSol: _typeSolSelectionne!,
+            adresse: _adresseCtrl.text.trim(),
             statut: _statutSelectionne!,
             culture: _cultureSelectionnee,
             latitude: _latitude,
@@ -159,12 +187,9 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
     if (success) {
       _showSuccess();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erreur lors de la sauvegarde'),
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      // Le dépôt renvoie un booléen sans porter la cause : le message reste
+      // le plus général de ceux que traduit MessageErreur.
+      RetourAction.echec(context, null);
     }
   }
 
@@ -177,21 +202,13 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 44),
-            )
-                .animate()
-                .scale(begin: const Offset(0, 0), duration: 400.ms, curve: Curves.elasticOut),
-            const SizedBox(height: 16),
-            Text(
-              _isEditing ? 'Champ mis à jour !' : 'Champ enregistré !',
-              style: Theme.of(context).textTheme.headlineSmall,
+            // Le rebond de la marque dit que quelque chose vient d'aboutir.
+            // L'ancienne version animait cette coche sur une courbe élastique
+            // écrite ici même ; elle est maintenant dans un composant partagé,
+            // qui la supprime quand l'utilisateur a demandé moins
+            // d'animations.
+            MarqueSucces(
+              texte: _isEditing ? 'Champ mis à jour' : 'Champ enregistré',
             ),
             const SizedBox(height: 8),
             Text(
@@ -199,7 +216,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
                   ? 'Les modifications ont été enregistrées.'
                   : 'Votre champ a été ajouté avec succès.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.couleurs.texteSecondaire,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -222,6 +239,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
   void dispose() {
     _nomCtrl.dispose();
     _superficieCtrl.dispose();
+    _adresseCtrl.dispose();
     super.dispose();
   }
 
@@ -246,35 +264,49 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
               _PhotoPicker(
                 photoPath: _photoPath,
                 onPick: _pickImage,
-              ).animate().fadeIn(duration: 400.ms),
+              ),
 
               const SizedBox(height: 24),
 
               // Nom du champ
-              AppTextField(
-                label: 'Nom du champ',
-                hint: 'Ex: Champ Nord Thiès',
-                controller: _nomCtrl,
-                prefixIcon: Icons.terrain_rounded,
-                validator: Validators.nom,
-                textInputAction: TextInputAction.next,
-              ).animate().fadeIn(delay: 50.ms).slideY(begin: 0.2, end: 0),
+              AppChampTexte(
+                libelle: 'Nom du champ',
+                exemple: 'Ex: Champ Nord Thiès',
+                controleur: _nomCtrl,
+                icone: Icons.terrain_rounded,
+                validateur: Validators.nom,
+                actionClavier: TextInputAction.next,
+              ),
               const SizedBox(height: 16),
 
               // Superficie
-              AppTextField(
-                label: 'Superficie',
-                hint: '2.5',
-                controller: _superficieCtrl,
-                prefixIcon: Icons.straighten_rounded,
-                suffixText: 'ha',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+[\.,]?\d{0,2}')),
+              AppChampTexte(
+                libelle: 'Superficie',
+                exemple: '2.5',
+                controleur: _superficieCtrl,
+                icone: Icons.straighten_rounded,
+                suffixe: 'ha',
+                clavier: const TextInputType.numberWithOptions(decimal: true),
+                formateurs: [
+                  FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+[\.,]?\d{0,2}')),
                 ],
-                validator: Validators.superficie,
-                textInputAction: TextInputAction.next,
-              ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.2, end: 0),
+                validateur: Validators.superficie,
+                actionClavier: TextInputAction.next,
+              ),
+              const SizedBox(height: 16),
+
+              // Adresse — obligatoire, comme côté serveur. Pré-remplie par
+              // géocodage inverse après « Localiser », modifiable ensuite.
+              AppChampTexte(
+                libelle: 'Adresse',
+                exemple: 'Ex: Ngoundiane, Thiès',
+                controleur: _adresseCtrl,
+                icone: Icons.place_outlined,
+                validateur: (v) =>
+                    Validators.required(v, fieldName: "L'adresse"),
+                actionClavier: TextInputAction.next,
+              ),
               const SizedBox(height: 16),
 
               // Type de sol
@@ -290,7 +322,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
                     .toList(),
                 onChanged: (v) => setState(() => _typeSolSelectionne = v),
                 validator: (v) => v == null ? 'Type de sol requis' : null,
-              ).animate().fadeIn(delay: 150.ms).slideY(begin: 0.2, end: 0),
+              ),
               const SizedBox(height: 16),
 
               // Culture
@@ -305,7 +337,7 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (v) => setState(() => _cultureSelectionnee = v),
-              ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
+              ),
               const SizedBox(height: 24),
 
               // Section GPS
@@ -314,17 +346,17 @@ class _ChampFormScreenState extends ConsumerState<ChampFormScreen> {
                 longitude: _longitude,
                 isLoading: _isGpsLoading,
                 onGetLocation: _getLocation,
-              ).animate().fadeIn(delay: 250.ms),
+              ),
 
               const SizedBox(height: 32),
 
               // Bouton enregistrer
-              AppButton(
-                label: _isEditing ? 'Mettre à jour' : 'Enregistrer le champ',
+              AppBouton.principal(
+                libelle: _isEditing ? 'Mettre à jour' : 'Enregistrer le champ',
                 onPressed: _save,
-                isLoading: _isLoading,
-                icon: Icons.save_rounded,
-              ).animate().fadeIn(delay: 300.ms),
+                icone: Icons.save_rounded,
+                enChargement: _isLoading,
+              ),
 
               const SizedBox(height: 24),
             ],
@@ -348,10 +380,10 @@ class _PhotoPicker extends StatelessWidget {
       child: Container(
         height: 160,
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.05),
+          color: context.couleurs.primaire.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.3),
+            color: context.couleurs.primaire.withValues(alpha: 0.3),
             style: BorderStyle.solid,
           ),
         ),
@@ -367,16 +399,16 @@ class _PhotoPicker extends StatelessWidget {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.add_a_photo_rounded,
-                    color: AppColors.primary,
+                    color: context.couleurs.primaire,
                     size: 40,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Ajouter une photo du champ',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.primary,
+                          color: context.couleurs.primaire,
                         ),
                   ),
                 ],
@@ -410,30 +442,31 @@ class _GpsSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: context.couleurs.primaire.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              border: Border.all(
+                  color: context.couleurs.primaire.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
+                Icon(Icons.location_on_rounded,
+                    color: context.couleurs.primaire, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Lat: ${latitude!.toStringAsFixed(4)}, Lng: ${longitude!.toStringAsFixed(4)}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.primary,
+                        color: context.couleurs.primaire,
                       ),
                 ),
               ],
             ),
-          ).animate().fadeIn().scale(begin: const Offset(0.9, 0.9)),
+          ),
         const SizedBox(height: 8),
-        AppButton(
-          label: isLoading ? 'Localisation...' : 'Obtenir ma position GPS',
+        AppBouton.secondaire(
+          libelle: isLoading ? 'Localisation...' : 'Obtenir ma position GPS',
           onPressed: isLoading ? null : onGetLocation,
-          isLoading: isLoading,
-          isOutlined: true,
-          icon: Icons.my_location_rounded,
+          icone: Icons.my_location_rounded,
+          enChargement: isLoading,
         ),
       ],
     );

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/expert_router.dart';
 import '../providers/expert_provider.dart';
 import '../widgets/champ_supervision_card.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Vue de supervision de tous les champs de la région de l'Expert
 class SupervisionChampsScreen extends ConsumerStatefulWidget {
@@ -17,7 +18,8 @@ class SupervisionChampsScreen extends ConsumerStatefulWidget {
       _SupervisionChampsScreenState();
 }
 
-class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScreen> {
+class _SupervisionChampsScreenState
+    extends ConsumerState<SupervisionChampsScreen> {
   String _filtre = 'Tous';
   bool _modeMap = false;
 
@@ -29,16 +31,16 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
     final profilAsync = ref.watch(profilExpertProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Mes champs supervisés',
-              style: GoogleFonts.poppins(
+              style: AppTypography.police(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -47,7 +49,8 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
             profilAsync.when(
               data: (e) => Text(
                 '${e.regionCouverture} · ${champsAsync.valueOrNull?.length ?? 0} champs',
-                style: GoogleFonts.inter(fontSize: 11, color: Colors.white70),
+                style:
+                    AppTypography.police(fontSize: 11, color: Colors.white70),
               ),
               loading: () => const SizedBox(),
               error: (_, __) => const SizedBox(),
@@ -70,7 +73,7 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
         children: [
           // ── FilterChips ──────────────────────────────────────
           Container(
-            color: AppColors.surface,
+            color: context.couleurs.surface,
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -82,18 +85,22 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
                           child: FilterChip(
                             label: Text(
                               f,
-                              style: GoogleFonts.poppins(
+                              style: AppTypography.police(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color: _filtre == f ? Colors.white : AppColors.textPrimary,
+                                color: _filtre == f
+                                    ? Colors.white
+                                    : context.couleurs.textePrincipal,
                               ),
                             ),
                             selected: _filtre == f,
                             onSelected: (_) => setState(() => _filtre = f),
-                            selectedColor: AppColors.primaryDark,
-                            backgroundColor: AppColors.surface,
+                            selectedColor: context.couleurs.primaireFonce,
+                            backgroundColor: context.couleurs.surface,
                             side: BorderSide(
-                              color: _filtre == f ? AppColors.primaryDark : AppColors.border,
+                              color: _filtre == f
+                                  ? context.couleurs.primaireFonce
+                                  : context.couleurs.bordure,
                             ),
                             showCheckmark: false,
                           ),
@@ -107,9 +114,7 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
           Expanded(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              child: _modeMap
-                  ? _buildMapView()
-                  : _buildListView(champsAsync),
+              child: _modeMap ? _buildMapView() : _buildListView(champsAsync),
             ),
           ),
         ],
@@ -120,14 +125,18 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
   Widget _buildListView(AsyncValue champsAsync) {
     return champsAsync.when(
       loading: () => _shimmerList(),
-      error: (e, _) => Center(child: Text('Erreur: $e')),
+      error: (e, _) => EtatErreur(
+        erreur: e,
+        onReessayer: () => ref.invalidate(champsSupervisionProvider),
+      ),
       data: (champs) {
         var filtered = List.of(champs);
         switch (_filtre) {
           case 'Alertes actives':
             filtered = filtered.where((c) => c.derniereAlerte != null).toList();
           case 'En traitement':
-            filtered = filtered.where((c) => c.statut == 'EN_TRAITEMENT').toList();
+            filtered =
+                filtered.where((c) => c.statut == 'EN_TRAITEMENT').toList();
           case 'Sains':
             filtered = filtered.where((c) => c.scoresSante >= 70).toList();
         }
@@ -135,13 +144,15 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
           return Center(
             child: Text(
               'Aucun champ pour ce filtre',
-              style: GoogleFonts.inter(color: AppColors.textSecondary),
+              style:
+                  AppTypography.police(color: context.couleurs.texteSecondaire),
             ),
           );
         }
         return RefreshIndicator(
-          color: AppColors.primary,
-          onRefresh: () => ref.read(champsSupervisionProvider.notifier).refresh(),
+          color: context.couleurs.primaire,
+          onRefresh: () =>
+              ref.read(champsSupervisionProvider.notifier).refresh(),
           child: ListView.builder(
             padding: const EdgeInsets.only(top: 8, bottom: 80),
             itemCount: filtered.length,
@@ -163,22 +174,23 @@ class _SupervisionChampsScreenState extends ConsumerState<SupervisionChampsScree
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.map_outlined, size: 64, color: AppColors.textSecondary),
+          Icon(Icons.map_outlined,
+              size: 64, color: context.couleurs.texteSecondaire),
           const SizedBox(height: 16),
           Text(
             'Carte interactive',
-            style: GoogleFonts.poppins(
+            style: AppTypography.police(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: context.couleurs.textePrincipal,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Activez flutter_map dans le projet\npour afficher les marqueurs GPS.',
-            style: GoogleFonts.inter(
+            style: AppTypography.police(
               fontSize: 13,
-              color: AppColors.textSecondary,
+              color: context.couleurs.texteSecondaire,
             ),
             textAlign: TextAlign.center,
           ),

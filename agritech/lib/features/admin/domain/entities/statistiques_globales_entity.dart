@@ -76,22 +76,28 @@ class DonneeBarChart extends Equatable {
   List<Object?> get props => [semaine];
 }
 
-/// Statut des services système
+/// Statut des services système.
+///
+/// `sourcesDonneesOperationnelles` a remplacé `sourcesDonneesOperationnelles` :
+/// le module météo temps réel a été retiré, les sources externes réellement
+/// consommées par le moteur de recommandation sont SoilGrids (sol) et
+/// NASA POWER (normales climatiques).
 class StatutSysteme extends Equatable {
   const StatutSysteme({
-    required this.apiMeteoOperationnelle,
+    required this.sourcesDonneesOperationnelles,
     required this.tempsReponseApiMs,
     required this.versionModeleIA,
     required this.precisionModeleIA,
     required this.modeleIAOperationnel,
   });
 
-  final bool apiMeteoOperationnelle;
+  final bool sourcesDonneesOperationnelles;
   final int tempsReponseApiMs;
   final String versionModeleIA;
   final double precisionModeleIA;
   final bool modeleIAOperationnel;
 
   @override
-  List<Object?> get props => [apiMeteoOperationnelle, modeleIAOperationnel];
+  List<Object?> get props =>
+      [sourcesDonneesOperationnelles, modeleIAOperationnel];
 }

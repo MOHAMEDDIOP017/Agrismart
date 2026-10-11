@@ -1,11 +1,9 @@
-﻿import 'dart:async';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../navigation/app_router.dart';
@@ -23,21 +21,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final PageController _bgCtrl = PageController();
   bool _isLoading = false;
   bool _mdpVisible = false;
-  int _bgIndex = 0;
-  Timer? _bgTimer;
 
   // ─── Verrouillage de sécurité ─────────────────────────────────────────────
   int _secondesRestantes = 0;
   Timer? _countdownTimer;
-
-  static const _bgImages = [
-    'https://c8.alamy.com/comp/2HR0R1M/an-africa-woman-harvests-produce-on-her-farm-in-the-senegal-river-valley-northern-senegal-west-africa-2HR0R1M.jpg',
-    'https://cdn.pixabay.com/photo/2022/09/15/18/40/farmers-7457046_1280.jpg',
-    'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900&q=80',
-  ];
 
   @override
   void initState() {
@@ -46,24 +35,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
-    _bgTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      final next = (_bgIndex + 1) % _bgImages.length;
-      _bgCtrl.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 900),
-        curve: Curves.easeInOutCubic,
-      );
-      setState(() => _bgIndex = next);
-    });
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _bgCtrl.dispose();
-    _bgTimer?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -99,10 +76,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: const Icon(Icons.gpp_bad_rounded, color: AppColors.danger, size: 44),
+        icon: Icon(Icons.gpp_bad_rounded,
+            color: context.couleurs.erreur, size: 44),
         title: Text(
           'Alerte de sécurité',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 18),
+          style:
+              AppTypography.police(fontWeight: FontWeight.bold, fontSize: 18),
           textAlign: TextAlign.center,
         ),
         content: Column(
@@ -112,8 +91,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               'Trop de tentatives de connexion échouées.\n'
               'Votre accès est temporairement bloqué pendant '
               '${AuthState.dureeVerrouillage.inSeconds} secondes.',
-              style: GoogleFonts.inter(
-                color: AppColors.textSecondary,
+              style: AppTypography.police(
+                color: context.couleurs.texteSecondaire,
                 fontSize: 14,
                 height: 1.55,
               ),
@@ -123,8 +102,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text(
               'Si vous avez oublié votre mot de passe, '
               'utilisez l\'option « Mot de passe oublié ».',
-              style: GoogleFonts.inter(
-                color: AppColors.textSecondary,
+              style: AppTypography.police(
+                color: context.couleurs.texteSecondaire,
                 fontSize: 13,
               ),
               textAlign: TextAlign.center,
@@ -137,8 +116,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(
               'Compris',
-              style: GoogleFonts.poppins(
-                color: AppColors.primary,
+              style: AppTypography.police(
+                color: context.couleurs.primaire,
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),
@@ -167,23 +146,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (success) {
-      final route =
-          ref.read(authProvider).valueOrNull?.routeInitiale ?? AppRoutes.dashboard;
+      final route = ref.read(authProvider).valueOrNull?.routeInitiale ??
+          AppRoutes.dashboard;
       context.go(route);
     } else {
       // Pas de SnackBar si le compte vient d'être verrouillé
       // (le dialog de sécurité affiché via ref.listen gère ce cas)
       final newState = ref.read(authProvider).valueOrNull;
       if (newState?.isLocked != true && mounted) {
-        final erreur = newState?.error ?? 'Connexion impossible. Vérifiez vos identifiants.';
+        final erreur = newState?.error ??
+            'Connexion impossible. Vérifiez vos identifiants.';
         final message = erreur.replaceFirst(RegExp(r'^Exception:\s*'), '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
-            backgroundColor: AppColors.danger,
+            content:
+                Text(message, style: AppTypography.police(color: Colors.white)),
+            backgroundColor: context.couleurs.erreur,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 5),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -217,19 +199,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          // ── Background carousel ──────────────────────────────────
-          Positioned.fill(
-            child: PageView.builder(
-              controller: _bgCtrl,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _bgImages.length,
-              itemBuilder: (_, i) => CachedNetworkImage(
-                imageUrl: _bgImages[i],
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(color: const Color(0xFF0D2B1A)),
-                errorWidget: (_, __, ___) => Container(color: const Color(0xFF0D2B1A)),
-              ),
-            ),
+          // Fond uni plutôt qu'un carrousel d'images.
+          //
+          // Trois photos de 900 à 1 280 pixels, tirées de trois services
+          // distants différents, défilaient en boucle par un minuteur de cinq
+          // secondes avec une animation de 900 ms. Sur l'écran de connexion,
+          // c'est-à-dire avant tout accès au compte, cela demandait le réseau
+          // pour afficher un décor, maintenait le processeur graphique actif
+          // en permanence, et laissait un aplat vert hors couverture, c'est-
+          // à-dire le cas le plus fréquent du terrain visé.
+          const Positioned.fill(
+            child: ColoredBox(color: Color(0xFF0D2B1A)),
           ),
 
           // ── Gradient sombre ──────────────────────────────────────
@@ -263,41 +243,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary,
+                        color: context.couleurs.primaire,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.eco_rounded, color: Colors.white, size: 22),
+                      child: const Icon(Icons.eco_rounded,
+                          color: Colors.white, size: 22),
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      'KoobalaTech',
-                      style: GoogleFonts.poppins(
+                      'AgriSmart',
+                      style: AppTypography.police(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
-                ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Agriculture\nintelligente',
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                     color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
                     height: 1.15,
-                    shadows: [const Shadow(color: Colors.black45, blurRadius: 10)],
+                    shadows: [
+                      const Shadow(color: Colors.black45, blurRadius: 10)
+                    ],
                   ),
-                ).animate(delay: 150.ms).fadeIn().slideX(begin: -0.15, end: 0),
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Connectez-vous pour gérer vos champs',
-                  style: GoogleFonts.inter(
+                  style: AppTypography.police(
                     color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 14,
                   ),
-                ).animate(delay: 250.ms).fadeIn(),
+                ),
               ],
             ),
           ),
@@ -333,7 +316,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             height: 4,
                             margin: const EdgeInsets.only(bottom: 20),
                             decoration: BoxDecoration(
-                              color: AppColors.border,
+                              color: context.couleurs.bordure,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -341,20 +324,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                         Text(
                           'Connexion',
-                          style: GoogleFonts.poppins(
+                          style: AppTypography.police(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
+                            color: context.couleurs.textePrincipal,
                           ),
-                        ).animate().fadeIn(delay: 300.ms),
+                        ),
                         const SizedBox(height: 4),
                         Text(
                           'Entrez vos identifiants pour continuer',
-                          style: GoogleFonts.inter(
+                          style: AppTypography.police(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: context.couleurs.texteSecondaire,
                           ),
-                        ).animate().fadeIn(delay: 350.ms),
+                        ),
                         const SizedBox(height: 22),
 
                         // Champ email
@@ -366,7 +349,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           type: TextInputType.emailAddress,
                           action: TextInputAction.next,
                           validator: Validators.email,
-                        ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                        ),
                         const SizedBox(height: 14),
 
                         // Champ mot de passe
@@ -383,22 +366,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               _mdpVisible
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: AppColors.textSecondary,
+                              color: context.couleurs.texteSecondaire,
                               size: 20,
                             ),
-                            onPressed: () => setState(() => _mdpVisible = !_mdpVisible),
+                            onPressed: () =>
+                                setState(() => _mdpVisible = !_mdpVisible),
                           ),
-                        ).animate(delay: 480.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                        ),
 
                         // ─── Compteur de tentatives restantes ──────────────
-                        if (!isLocked && (authState?.tentativesEchouees ?? 0) > 0)
+                        if (!isLocked &&
+                            (authState?.tentativesEchouees ?? 0) > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               '⚠ ${authState!.tentativesRestantes} tentative${authState.tentativesRestantes > 1 ? 's' : ''} '
                               'restante${authState.tentativesRestantes > 1 ? 's' : ''} avant blocage.',
-                              style: GoogleFonts.inter(
-                                color: AppColors.amber,
+                              style: AppTypography.police(
+                                color: context.couleurs.secondaire,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -409,8 +394,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Fonctionnalité à venir')),
+                            onPressed: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text('Fonctionnalité à venir')),
                             ),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
@@ -418,20 +405,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             child: Text(
                               'Mot de passe oublié ?',
-                              style: GoogleFonts.inter(
+                              style: AppTypography.police(
                                 fontSize: 13,
-                                color: AppColors.primary,
-                                fontWeight:
-                                    isLocked ? FontWeight.bold : FontWeight.w500,
+                                color: context.couleurs.primaire,
+                                fontWeight: isLocked
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
                               ),
                             ),
                           ),
-                        ).animate(delay: 520.ms).fadeIn(),
+                        ),
 
                         // ─── Bannière de verrouillage ───────────────────────
                         if (isLocked) ...[
                           const SizedBox(height: 8),
-                          _BanniereVerrouillage(secondesRestantes: _secondesRestantes),
+                          _BanniereVerrouillage(
+                              secondesRestantes: _secondesRestantes),
                         ],
 
                         const SizedBox(height: 12),
@@ -443,8 +432,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: ElevatedButton(
                             onPressed: (_isLoading || isLocked) ? null : _login,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  isLocked ? AppColors.textSecondary : AppColors.primary,
+                              backgroundColor: isLocked
+                                  ? context.couleurs.texteSecondaire
+                                  : context.couleurs.primaire,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
@@ -461,14 +451,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   )
                                 : Text(
                                     isLocked ? 'Accès bloqué' : 'Se connecter',
-                                    style: GoogleFonts.poppins(
+                                    style: AppTypography.police(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
                                     ),
                                   ),
                           ),
-                        ).animate(delay: 560.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                        ),
 
                         const SizedBox(height: 16),
 
@@ -479,8 +469,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             children: [
                               Text(
                                 'Pas encore de compte ? ',
-                                style: GoogleFonts.inter(
-                                  color: AppColors.textSecondary,
+                                style: AppTypography.police(
+                                  color: context.couleurs.texteSecondaire,
                                   fontSize: 13,
                                 ),
                               ),
@@ -488,16 +478,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 onTap: () => context.push(AppRoutes.register),
                                 child: Text(
                                   "S'inscrire",
-                                  style: GoogleFonts.poppins(
+                                  style: AppTypography.police(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: context.couleurs.primaire,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ).animate(delay: 680.ms).fadeIn(),
+                        ),
                       ],
                     ),
                   ),
@@ -521,16 +511,18 @@ class _BanniereVerrouillage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.08),
+        color: context.couleurs.erreur.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
+        border:
+            Border.all(color: context.couleurs.erreur.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 1),
-            child: Icon(Icons.lock_rounded, color: AppColors.danger, size: 18),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(Icons.lock_rounded,
+                color: context.couleurs.erreur, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -539,9 +531,9 @@ class _BanniereVerrouillage extends StatelessWidget {
               children: [
                 Text(
                   'Accès temporairement bloqué',
-                  style: GoogleFonts.inter(
+                  style: AppTypography.police(
                     fontWeight: FontWeight.w700,
-                    color: AppColors.danger,
+                    color: context.couleurs.erreur,
                     fontSize: 13,
                   ),
                 ),
@@ -550,7 +542,8 @@ class _BanniereVerrouillage extends StatelessWidget {
                   secondesRestantes > 0
                       ? 'Réessayez dans $secondesRestantes seconde${secondesRestantes > 1 ? 's' : ''}.'
                       : 'Vous pouvez maintenant réessayer.',
-                  style: GoogleFonts.inter(color: AppColors.danger, fontSize: 12),
+                  style: AppTypography.police(
+                      color: context.couleurs.erreur, fontSize: 12),
                 ),
               ],
             ),
@@ -561,7 +554,7 @@ class _BanniereVerrouillage extends StatelessWidget {
   }
 }
 
-/// Champ de texte personnalisé avec style KoobalaTech
+/// Champ de texte personnalisé avec style AgriSmart
 class _ChampTexte extends StatelessWidget {
   const _ChampTexte({
     required this.label,
@@ -592,10 +585,10 @@ class _ChampTexte extends StatelessWidget {
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: AppTypography.police(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+            color: context.couleurs.textePrincipal,
           ),
         ),
         const SizedBox(height: 7),
@@ -605,30 +598,34 @@ class _ChampTexte extends StatelessWidget {
           keyboardType: type,
           textInputAction: action,
           validator: validator,
-          style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+          style: AppTypography.police(
+              fontSize: 14, color: context.couleurs.textePrincipal),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14),
-            prefixIcon: Icon(icone, color: AppColors.primary, size: 20),
+            hintStyle: AppTypography.police(
+                color: context.couleurs.texteSecondaire, fontSize: 14),
+            prefixIcon: Icon(icone, color: context.couleurs.primaire, size: 20),
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: const Color(0xFFF5F7F6),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: context.couleurs.bordure),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              borderSide:
+                  BorderSide(color: context.couleurs.primaire, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.danger),
+              borderSide: BorderSide(color: context.couleurs.erreur),
             ),
           ),
         ),

@@ -22,7 +22,7 @@ class InterventionNonAssigneeCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.couleurs.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: urgence.couleur.withValues(alpha: 0.3)),
         boxShadow: [
@@ -52,14 +52,13 @@ class InterventionNonAssigneeCard extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.grass_outlined,
-                            size: 12, color: AppColors.textSecondary),
+                        Icon(Icons.grass_outlined,
+                            size: 12, color: context.couleurs.texteSecondaire),
                         const SizedBox(width: 4),
                         Text(
                           '${assignation.champNom} • ${assignation.region}',
-                          style:
-                              AppTypography.textTheme.bodySmall!.copyWith(
-                            color: AppColors.textSecondary,
+                          style: AppTypography.textTheme.bodySmall!.copyWith(
+                            color: context.couleurs.texteSecondaire,
                           ),
                         ),
                       ],
@@ -69,13 +68,12 @@ class InterventionNonAssigneeCard extends StatelessWidget {
               ),
               // Badge urgence
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: urgence.couleurFond,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: urgence.couleur.withValues(alpha: 0.4)),
+                  border:
+                      Border.all(color: urgence.couleur.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -102,13 +100,13 @@ class InterventionNonAssigneeCard extends StatelessWidget {
               _Chip(
                 icone: Icons.engineering_outlined,
                 texte: assignation.typeIntervention,
-                couleur: AppColors.info,
+                couleur: context.couleurs.info,
               ),
               const SizedBox(width: 8),
               _Chip(
                 icone: Icons.calendar_today_outlined,
                 texte: _dateFormatee(assignation.dateSouhaitee),
-                couleur: AppColors.textSecondary,
+                couleur: context.couleurs.texteSecondaire,
               ),
             ],
           ),
@@ -125,8 +123,8 @@ class InterventionNonAssigneeCard extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                textStyle: const TextStyle(
-                    fontWeight: FontWeight.w600, fontSize: 13),
+                textStyle:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
               ),
               child: const Text('Assigner un expert'),
             ),
@@ -159,9 +157,9 @@ class InterventionAssigneeCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.couleurs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.couleurs.bordure),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,8 +187,7 @@ class InterventionAssigneeCard extends StatelessWidget {
                     children: [
                       Text(
                         assignation.expertNom ?? 'Expert',
-                        style:
-                            AppTypography.textTheme.titleSmall!.copyWith(
+                        style: AppTypography.textTheme.titleSmall!.copyWith(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
@@ -198,9 +195,8 @@ class InterventionAssigneeCard extends StatelessWidget {
                       if (assignation.expertSpecialite != null)
                         Text(
                           assignation.expertSpecialite!,
-                          style:
-                              AppTypography.textTheme.labelSmall!.copyWith(
-                            color: AppColors.textSecondary,
+                          style: AppTypography.textTheme.labelSmall!.copyWith(
+                            color: context.couleurs.texteSecondaire,
                           ),
                         ),
                     ],
@@ -213,26 +209,26 @@ class InterventionAssigneeCard extends StatelessWidget {
             // Agriculteur + champ
             Row(
               children: [
-                const Icon(Icons.person_outline,
-                    size: 13, color: AppColors.textSecondary),
+                Icon(Icons.person_outline,
+                    size: 13, color: context.couleurs.texteSecondaire),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     '${assignation.agriculteurNom} • ${assignation.champNom}',
                     style: AppTypography.textTheme.bodySmall!.copyWith(
-                      color: AppColors.textSecondary,
+                      color: context.couleurs.texteSecondaire,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.calendar_today_outlined,
-                    size: 13, color: AppColors.textSecondary),
+                Icon(Icons.calendar_today_outlined,
+                    size: 13, color: context.couleurs.texteSecondaire),
                 const SizedBox(width: 4),
                 Text(
                   _dateFormatee(assignation.dateSouhaitee),
                   style: AppTypography.textTheme.labelSmall!.copyWith(
-                    color: AppColors.textSecondary,
+                    color: context.couleurs.texteSecondaire,
                   ),
                 ),
               ],

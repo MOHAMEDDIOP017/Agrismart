@@ -1,461 +1,513 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart';
+
+import '../../../../core/enums/statut_validation.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_motion.dart';
+import '../../../../core/theme/app_radius.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/date_formatter.dart';
 import '../../../../navigation/expert_router.dart';
+import '../../../../shared/widgets/widgets.dart';
 import '../../domain/entities/recommandation_expert_entity.dart';
 import '../providers/expert_provider.dart';
 
-/// Liste des recommandations cultures soumises à la validation de l'Expert
-class RecommandationsExpertScreen extends ConsumerStatefulWidget {
+/// File de validation de l'expert agronome.
+///
+/// C'est la tâche première du rôle, et elle occupe maintenant le premier
+/// onglet. Trois changements portent sur l'écran lui-même.
+///
+/// **Les trois décisions sont sur la carte.** Il fallait auparavant ouvrir le
+/// détail pour agir, c'est-à-dire deux écrans et un retour pour chaque
+/// recommandation, alors qu'un agronome en traite plusieurs d'affilée.
+/// Valider se fait d'un geste depuis la liste. Corriger et rejeter ouvrent le
+/// détail, parce que le serveur exige un commentaire : une décision qui change
+/// le conseil reçu par un agriculteur doit être motivée.
+///
+/// **Les filtres passent des onglets aux puces.** Quatre onglets défilants, un
+/// `TabController`, et des compteurs recalculés à chaque reconstruction, pour
+/// un simple choix parmi cinq.
+///
+/// **Le classement se lit entier.** Les trois cultures et leurs taux restent
+/// visibles sur la carte : c'est sur l'écart entre elles que l'agronome décide
+/// s'il valide ou s'il corrige.
+class RecommandationsExpertScreen extends ConsumerWidget {
   const RecommandationsExpertScreen({super.key});
 
   @override
-  ConsumerState<RecommandationsExpertScreen> createState() =>
-      _RecommandationsExpertScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(recommandationsExpertProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('À valider'),
+        actions: [
+          IconButton(
+            tooltip: 'Actualiser',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () =>
+                ref.read(recommandationsExpertProvider.notifier).refresh(),
+          ),
+        ],
+      ),
+      body: async.when(
+        loading: () => const SqueletteListe.cultures(nombre: 4),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () =>
+              ref.read(recommandationsExpertProvider.notifier).refresh(),
+        ),
+        data: (etat) => Column(
+          children: [
+            _Filtres(
+              actif: etat.filtre,
+              compteurs: _compteurs(etat),
+              onChoisir: (filtre) => ref
+                  .read(recommandationsExpertProvider.notifier)
+                  .setFiltre(filtre),
+            ),
+            Expanded(child: _Liste(etat: etat)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Map<String, int> _compteurs(RecommandationsExpertState etat) {
+    final compte = <String, int>{'TOUTES': etat.recommandations.length};
+    for (final reco in etat.recommandations) {
+      compte[reco.statutValidation] = (compte[reco.statutValidation] ?? 0) + 1;
+    }
+    return compte;
+  }
 }
 
-class _RecommandationsExpertScreenState
-    extends ConsumerState<RecommandationsExpertScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs = TabController(length: 4, vsync: this);
+// ── Filtres ──────────────────────────────────────────────────────────────────
+
+class _Filtres extends StatelessWidget {
+  const _Filtres({
+    required this.actif,
+    required this.compteurs,
+    required this.onChoisir,
+  });
+
+  final String actif;
+  final Map<String, int> compteurs;
+  final void Function(String) onChoisir;
+
   static const _filtres = [
     ('EN_ATTENTE', 'En attente'),
     ('VALIDEE', 'Validées'),
     ('CORRIGEE', 'Corrigées'),
     ('REJETEE', 'Rejetées'),
+    ('TOUTES', 'Toutes'),
   ];
 
   @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final async = ref.watch(recommandationsExpertProvider);
+    final couleurs = context.couleurs;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
-        foregroundColor: Colors.white,
-        title: Row(
-          children: [
-            Text(
-              'Recommandations cultures',
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 8),
-            async.when(
-              data: (s) => s.nombreEnAttente > 0
-                  ? _Badge(count: s.nombreEnAttente)
-                  : const SizedBox(),
-              loading: () => const SizedBox(),
-              error: (_, __) => const SizedBox(),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: () =>
-                ref.read(recommandationsExpertProvider.notifier).refresh(),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          labelStyle:
-              GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600),
-          unselectedLabelStyle:
-              GoogleFonts.poppins(fontSize: 12),
-          onTap: (i) => ref
-              .read(recommandationsExpertProvider.notifier)
-              .setFiltre(_filtres[i].$1),
-          tabs: _filtres
-              .map((f) => async.when(
-                    data: (s) {
-                      final nb = s.recommandations
-                          .where((r) => r.statutValidation == f.$1)
-                          .length;
-                      return Tab(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(f.$2),
-                            if (nb > 0) ...[
-                              const SizedBox(width: 6),
-                              _Badge(count: nb, small: true),
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                    loading: () => Tab(text: f.$2),
-                    error: (_, __) => Tab(text: f.$2),
-                  ))
-              .toList(),
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: couleurs.surface,
+        border: Border(bottom: BorderSide(color: couleurs.separateur)),
       ),
-      body: async.when(
-        loading: () => _Shimmer(),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline,
-                  color: AppColors.danger, size: 48),
-              const SizedBox(height: 12),
-              Text('Erreur : $e',
-                  style: GoogleFonts.inter(color: AppColors.textSecondary)),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () =>
-                    ref.read(recommandationsExpertProvider.notifier).refresh(),
-                child: const Text('Réessayer'),
+      padding: const EdgeInsets.symmetric(vertical: AppEspaces.xs),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppEspaces.md),
+        child: Row(
+          children: [
+            for (final (cle, libelle) in _filtres) ...[
+              if (cle != _filtres.first.$1)
+                const SizedBox(width: AppEspaces.xs),
+              _PuceFiltre(
+                libelle: libelle,
+                nombre: compteurs[cle] ?? 0,
+                choisi: cle == actif,
+                onTap: () => onChoisir(cle),
               ),
             ],
-          ),
+          ],
         ),
-        data: (state) {
-          final liste = state.filtrees;
-          if (liste.isEmpty) return _Vide(filtre: state.filtre);
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () =>
-                ref.read(recommandationsExpertProvider.notifier).refresh(),
-            child: ListView.builder(
-              padding: const EdgeInsets.only(top: 8, bottom: 80),
-              itemCount: liste.length,
-              itemBuilder: (_, i) => _RecoCard(
-                reco: liste[i],
-                onTap: () => context.goNamed(
-                  ExpertRoutes.recommandationDetailNom,
-                  pathParameters: {'id': liste[i].id},
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
 }
 
-// ── Carte de recommandation ──────────────────────────────────────────────────
+class _PuceFiltre extends StatelessWidget {
+  const _PuceFiltre({
+    required this.libelle,
+    required this.nombre,
+    required this.choisi,
+    required this.onTap,
+  });
 
-class _RecoCard extends StatelessWidget {
-  const _RecoCard({required this.reco, required this.onTap});
-  final RecommandationExpertEntity reco;
+  final String libelle;
+  final int nombre;
+  final bool choisi;
   final VoidCallback onTap;
-
-  static const _statutColors = {
-    'EN_ATTENTE': AppColors.amber,
-    'VALIDEE': AppColors.primary,
-    'CORRIGEE': AppColors.info,
-    'REJETEE': AppColors.danger,
-  };
 
   @override
   Widget build(BuildContext context) {
-    final couleurStatut =
-        _statutColors[reco.statutValidation] ?? AppColors.textSecondary;
-    final premiere = reco.premiereCulture;
+    final couleurs = context.couleurs;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: reco.estEnAttente
-              ? AppColors.amber.withValues(alpha: 0.4)
-              : AppColors.border,
+    return Semantics(
+      selected: choisi,
+      button: true,
+      label: '$libelle, $nombre',
+      child: ZoneTactile(
+        onTap: onTap,
+        rayon: AppRayons.brPastille,
+        tailleMinimale: null,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppEspaces.sm,
+            vertical: AppEspaces.xs,
+          ),
+          decoration: BoxDecoration(
+            color: choisi ? couleurs.primaire : couleurs.surface,
+            borderRadius: AppRayons.brPastille,
+            border: Border.all(
+              color: choisi ? couleurs.primaire : couleurs.bordure,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                libelle,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: choisi
+                          ? couleurs.surPrimaire
+                          : couleurs.textePrincipal,
+                    ),
+              ),
+              const SizedBox(width: AppEspaces.xxs),
+              Text(
+                '$nombre',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: choisi
+                          ? couleurs.surPrimaire
+                          : couleurs.texteSecondaire,
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── En-tête ────────────────────────────────────────
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          reco.champNom,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          '${reco.agriculteurNom} · ${reco.champRegion}',
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: couleurStatut.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      reco.statutLibelle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: couleurStatut,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+    );
+  }
+}
 
-              const SizedBox(height: 12),
+// ── Liste ────────────────────────────────────────────────────────────────────
 
-              // ── Top culture n°1 ────────────────────────────────
-              if (premiere != null)
-                Row(
-                  children: [
-                    const Icon(Icons.eco_outlined,
-                        size: 16, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        premiere.nom,
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      premiere.scoreLabel,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+class _Liste extends ConsumerWidget {
+  const _Liste({required this.etat});
 
-              const SizedBox(height: 8),
+  final RecommandationsExpertState etat;
 
-              // ── Top 3 barres de score ──────────────────────────
-              ...reco.top3Cultures.map(
-                (c) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final liste = etat.filtrees;
+
+    if (liste.isEmpty) {
+      return EtatVide(
+        titre: etat.filtre == 'EN_ATTENTE'
+            ? 'Rien à valider'
+            : 'Aucune recommandation',
+        message: etat.filtre == 'EN_ATTENTE'
+            ? 'Toutes les recommandations de vos parcelles ont été traitées.'
+            : 'Changez de filtre pour voir les autres recommandations.',
+        sujet: SujetIllustration.recherche,
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () =>
+          ref.read(recommandationsExpertProvider.notifier).refresh(),
+      child: ListView.separated(
+        padding: AppEspaces.liste,
+        itemCount: liste.length,
+        separatorBuilder: (_, __) =>
+            const SizedBox(height: AppEspaces.entreCartes),
+        itemBuilder: (context, index) => ApparitionCascade(
+          index: index,
+          child: _CarteReco(reco: liste[index]),
+        ),
+      ),
+    );
+  }
+}
+
+class _CarteReco extends ConsumerWidget {
+  const _CarteReco({required this.reco});
+
+  final RecommandationExpertEntity reco;
+
+  void _ouvrirDetail(BuildContext context) {
+    context.goNamed(
+      ExpertRoutes.recommandationDetailNom,
+      pathParameters: {'id': reco.id},
+    );
+  }
+
+  Future<void> _valider(BuildContext context, WidgetRef ref) async {
+    final ok = await ref
+        .read(recommandationsExpertProvider.notifier)
+        .valider(recoId: reco.id);
+
+    if (!context.mounted) return;
+    if (ok) {
+      RetourAction.succes(
+        context,
+        'Recommandation validée pour ${reco.champNom}',
+      );
+    } else {
+      // Le dépôt renvoie un booléen sans porter la cause de l'échec : le
+      // message reste donc le plus général de ceux que traduit MessageErreur.
+      RetourAction.echec(context, null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
+    final statut = StatutValidation.fromString(reco.statutValidation);
+
+    return ZoneTactile(
+      onTap: () => _ouvrirDetail(context),
+      rayon: AppRayons.brCarte,
+      tailleMinimale: null,
+      etiquette: 'Recommandation pour ${reco.champNom}',
+      child: Container(
+        padding: AppEspaces.carte,
+        decoration: BoxDecoration(
+          color: couleurs.surface,
+          borderRadius: AppRayons.brCarte,
+          border: Border.all(
+            // Une recommandation en attente se distingue au premier coup
+            // d'œil : c'est elle qui demande une décision.
+            color: reco.estEnAttente
+                ? couleurs.avertissement
+                : couleurs.separateur,
+            width: reco.estEnAttente ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        width: 90,
-                        child: Text(
-                          c.nom,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: c.score),
-                          duration: const Duration(milliseconds: 600),
-                          builder: (_, v, __) => LinearProgressIndicator(
-                            value: v,
-                            backgroundColor: AppColors.border,
-                            valueColor: AlwaysStoppedAnimation(
-                              c.rang == 1 ? AppColors.primary : AppColors.info,
-                            ),
-                            minHeight: 5,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
+                      Text(reco.champNom, style: textes.titleSmall),
                       Text(
-                        c.scoreLabel,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textSecondary,
-                        ),
+                        '${reco.agriculteurNom} · ${reco.champRegion}',
+                        style: textes.bodySmall
+                            ?.copyWith(color: couleurs.texteSecondaire),
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // ── Pied : snapshot + horodatage ───────────────────
-              Row(
-                children: [
-                  if (reco.snapshot.ph != null)
-                    _Chip('pH ${reco.snapshot.ph!.toStringAsFixed(1)}'),
-                  if (reco.snapshot.azote != null)
-                    _Chip('N ${reco.snapshot.azote!.toStringAsFixed(0)}'),
-                  if (reco.snapshot.humidite != null)
-                    _Chip('H ${reco.snapshot.humidite!.toStringAsFixed(0)}%'),
-                  const Spacer(),
-                  Text(
-                    reco.tempsEcoule,
-                    style: GoogleFonts.inter(
-                        fontSize: 11, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-
-              // Motif de correction/rejet si rempli
-              if (reco.commentaireExpert != null) ...[
-                const SizedBox(height: 6),
+                const SizedBox(width: AppEspaces.xs),
+                BadgeStatut.validation(statut),
+              ],
+            ),
+            const SizedBox(height: AppEspaces.sm),
+            // Le classement complet : c'est sur l'écart entre les trois
+            // cultures que se prend la décision.
+            for (final culture in reco.top3Cultures)
+              _LigneCulture(culture: culture),
+            const SizedBox(height: AppEspaces.xs),
+            Row(
+              children: [
+                Icon(Icons.schedule_rounded,
+                    size: 16, color: couleurs.texteSecondaire),
+                const SizedBox(width: AppEspaces.xxs),
                 Text(
-                  'Note expert : ${reco.commentaireExpert}',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  DateFormatter.formatDate(reco.dateGeneree),
+                  style: textes.bodySmall
+                      ?.copyWith(color: couleurs.texteSecondaire),
                 ),
               ],
+            ),
+            if (reco.estEnAttente) ...[
+              const SizedBox(height: AppEspaces.sm),
+              _Decisions(
+                onValider: () => _valider(context, ref),
+                onCorriger: () => _ouvrirDetail(context),
+                onRejeter: () => _ouvrirDetail(context),
+              ),
+            ] else if (reco.commentaireExpert != null &&
+                reco.commentaireExpert!.isNotEmpty) ...[
+              const SizedBox(height: AppEspaces.xs),
+              _Commentaire(texte: reco.commentaireExpert!),
             ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip(this.label);
-  final String label;
+/// Les trois décisions, côte à côte sous la carte.
+class _Decisions extends StatelessWidget {
+  const _Decisions({
+    required this.onValider,
+    required this.onCorriger,
+    required this.onRejeter,
+  });
+
+  final Future<void> Function() onValider;
+  final VoidCallback onCorriger;
+  final VoidCallback onRejeter;
 
   @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(right: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: AppColors.border,
-          borderRadius: BorderRadius.circular(6),
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Valider est plein et seul sur sa ligne : c'est le cas courant, et la
+        // décision la moins coûteuse à prendre puisqu'elle confirme ce que le
+        // moteur propose déjà.
+        AppBouton.principal(
+          libelle: 'Valider',
+          icone: Icons.verified_rounded,
+          onPressed: onValider,
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(fontSize: 10, color: AppColors.textSecondary),
-        ),
-      );
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.count, this.small = false});
-  final int count;
-  final bool small;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.symmetric(
-            horizontal: small ? 5 : 7, vertical: small ? 1 : 3),
-        decoration: const BoxDecoration(
-          color: AppColors.danger,
-          shape: BoxShape.circle,
-        ),
-        child: Text(
-          '$count',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: small ? 9 : 11,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      );
-}
-
-class _Vide extends StatelessWidget {
-  const _Vide({required this.filtre});
-  final String filtre;
-
-  static const _msgs = {
-    'EN_ATTENTE': 'Aucune recommandation en attente',
-    'VALIDEE': 'Aucune recommandation validée',
-    'CORRIGEE': 'Aucune recommandation corrigée',
-    'REJETEE': 'Aucune recommandation rejetée',
-  };
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        const SizedBox(height: AppEspaces.xs),
+        Row(
           children: [
-            Icon(Icons.check_circle_outline,
-                size: 56,
-                color: AppColors.textSecondary.withValues(alpha: 0.4)),
-            const SizedBox(height: 12),
-            Text(
-              _msgs[filtre] ?? 'Aucune recommandation',
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            Expanded(
+              child: AppBouton.secondaire(
+                libelle: 'Corriger',
+                icone: Icons.edit_note_rounded,
+                onPressed: onCorriger,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Revenez plus tard.',
-              style:
-                  GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
+            const SizedBox(width: AppEspaces.xs),
+            Expanded(
+              child: AppBouton.secondaire(
+                libelle: 'Rejeter',
+                icone: Icons.block_rounded,
+                ton: TonBouton.destructif,
+                onPressed: onRejeter,
+              ),
             ),
           ],
         ),
-      );
+      ],
+    );
+  }
 }
 
-class _Shimmer extends StatelessWidget {
+class _LigneCulture extends StatelessWidget {
+  const _LigneCulture({required this.culture});
+
+  final CultureScoreEntity culture;
+
   @override
-  Widget build(BuildContext context) => Shimmer.fromColors(
-        baseColor: Colors.grey[300]!,
-        highlightColor: Colors.grey[100]!,
-        child: ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: 4,
-          itemBuilder: (_, __) => Container(
-            height: 180,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+  Widget build(BuildContext context) {
+    final couleurs = context.couleurs;
+    final textes = Theme.of(context).textTheme;
+    final premiere = culture.rang == 1;
+
+    // Le texte et la barre ne prennent pas la même teinte pour les rangs
+    // suivants. Le chiffre a besoin d'un contraste de lecture, la barre non :
+    // remplie de la même encre sombre, elle pesait autant que celle du
+    // premier rang et brouillait le classement.
+    final teinte = premiere ? couleurs.primaire : couleurs.texteSecondaire;
+    final teinteBarre = premiere ? couleurs.primaire : couleurs.bordure;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppEspaces.xs),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text(
+              '${culture.rang}.',
+              style: textes.labelMedium?.copyWith(color: teinte),
             ),
           ),
-        ),
-      );
+          Expanded(
+            flex: 3,
+            child: Text(
+              culture.nom,
+              style: premiere ? textes.titleSmall : textes.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: AppEspaces.xs),
+          Expanded(
+            flex: 4,
+            child: ClipRRect(
+              borderRadius: AppRayons.brPastille,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: culture.score),
+                duration: AppMouvement.duree(context, AppDurees.moyenne),
+                curve: AppCourbes.sortie,
+                builder: (context, valeur, _) => LinearProgressIndicator(
+                  value: valeur,
+                  minHeight: 8,
+                  backgroundColor: couleurs.separateur,
+                  valueColor: AlwaysStoppedAnimation<Color>(teinteBarre),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: AppEspaces.xs),
+          SizedBox(
+            width: 44,
+            child: Text(
+              culture.scoreLabel,
+              textAlign: TextAlign.end,
+              style: textes.labelMedium?.copyWith(color: teinte),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Commentaire extends StatelessWidget {
+  const _Commentaire({required this.texte});
+
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) {
+    final couleurs = context.couleurs;
+
+    return Container(
+      padding: const EdgeInsets.all(AppEspaces.xs),
+      decoration: BoxDecoration(
+        color: couleurs.fond,
+        borderRadius: AppRayons.brChamp,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.format_quote_rounded,
+              size: 18, color: couleurs.texteSecondaire),
+          const SizedBox(width: AppEspaces.xxs),
+          Expanded(
+            child: Text(
+              texte,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

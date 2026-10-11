@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../navigation/expert_router.dart';
 import '../../domain/entities/conseil_entity.dart';
 import '../../domain/entities/recommandation_expert_entity.dart';
 import '../providers/expert_provider.dart';
+import '../../../../shared/widgets/widgets.dart';
 
 /// Gestion des conseils et recommandations
 class ConseilsScreen extends ConsumerStatefulWidget {
@@ -31,19 +32,22 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
     final conseilsAsync = ref.watch(conseilsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Text('Mes conseils',
-            style: GoogleFonts.poppins(
-                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+            style: AppTypography.police(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white)),
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white60,
-          labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+          labelStyle:
+              AppTypography.police(fontSize: 13, fontWeight: FontWeight.w600),
           tabs: const [
             Tab(text: 'À envoyer'),
             Tab(text: 'Envoyés'),
@@ -53,12 +57,17 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
       ),
       body: conseilsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erreur: $e')),
+        error: (e, _) => EtatErreur(
+          erreur: e,
+          onReessayer: () => ref.invalidate(conseilsProvider),
+        ),
         data: (conseils) {
-          final brouillons =
-              conseils.where((c) => c.statut == StatutConseil.brouillon).toList();
-          final envoyes =
-              conseils.where((c) => c.statut != StatutConseil.brouillon).toList();
+          final brouillons = conseils
+              .where((c) => c.statut == StatutConseil.brouillon)
+              .toList();
+          final envoyes = conseils
+              .where((c) => c.statut != StatutConseil.brouillon)
+              .toList();
 
           return TabBarView(
             controller: _tabs,
@@ -74,11 +83,11 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.goNamed(ExpertRoutes.nouveauConseilNom),
-        backgroundColor: AppColors.primary,
+        onPressed: () => context.pushNamed(ExpertRoutes.nouveauConseilNom),
+        backgroundColor: context.couleurs.primaire,
         icon: const Icon(Icons.add, color: Colors.white),
         label: Text('Nouveau conseil',
-            style: GoogleFonts.poppins(
+            style: AppTypography.police(
                 fontWeight: FontWeight.w600, color: Colors.white)),
       ),
     );
@@ -90,11 +99,12 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.chat_bubble_outline,
-                size: 48, color: AppColors.textSecondary),
+            Icon(Icons.chat_bubble_outline,
+                size: 48, color: context.couleurs.texteSecondaire),
             const SizedBox(height: 12),
             Text(emptyMsg,
-                style: GoogleFonts.inter(color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    color: context.couleurs.texteSecondaire)),
           ],
         ),
       );
@@ -110,9 +120,9 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
     final async = ref.watch(recommandationsExpertProvider);
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(
-        child: Text('Erreur : $e',
-            style: GoogleFonts.inter(color: AppColors.textSecondary)),
+      error: (e, _) => EtatErreur(
+        erreur: e,
+        onReessayer: () => ref.invalidate(recommandationsExpertProvider),
       ),
       data: (state) {
         final validees = state.recommandations
@@ -123,18 +133,19 @@ class _ConseilsScreenState extends ConsumerState<ConseilsScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.eco_outlined,
-                    size: 48, color: AppColors.textSecondary),
+                Icon(Icons.eco_outlined,
+                    size: 48, color: context.couleurs.texteSecondaire),
                 const SizedBox(height: 12),
                 Text('Aucune recommandation validée',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary)),
+                        color: context.couleurs.textePrincipal)),
                 const SizedBox(height: 6),
-                Text('Les recommandations validées ou corrigées apparaîtront ici.',
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: AppColors.textSecondary),
+                Text(
+                    'Les recommandations validées ou corrigées apparaîtront ici.',
+                    style: AppTypography.police(
+                        fontSize: 12, color: context.couleurs.texteSecondaire),
                     textAlign: TextAlign.center),
               ],
             ),
@@ -173,7 +184,7 @@ class _ConseilCard extends StatelessWidget {
           children: [
             Expanded(
               child: Text(conseil.titre,
-                  style: GoogleFonts.poppins(
+                  style: AppTypography.police(
                       fontSize: 13, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
@@ -183,14 +194,14 @@ class _ConseilCard extends StatelessWidget {
                 margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.12),
+                  color: context.couleurs.erreur.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text('URGENT',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.danger)),
+                        color: context.couleurs.erreur)),
               ),
           ],
         ),
@@ -198,9 +209,11 @@ class _ConseilCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(conseil.agriculteurNom,
-                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary)),
+                style: AppTypography.police(
+                    fontSize: 11, color: context.couleurs.texteSecondaire)),
             Text(conseil.corps,
-                style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary),
+                style: AppTypography.police(
+                    fontSize: 11, color: context.couleurs.texteSecondaire),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
           ],
@@ -209,7 +222,9 @@ class _ConseilCard extends StatelessWidget {
           width: 10,
           height: 10,
           decoration: BoxDecoration(
-            color: conseil.estLu ? AppColors.primary : AppColors.textSecondary,
+            color: conseil.estLu
+                ? context.couleurs.primaire
+                : context.couleurs.texteSecondaire,
             shape: BoxShape.circle,
           ),
         ),
@@ -225,7 +240,7 @@ class _RecoValideeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final couleur =
-        reco.estCorrigee ? AppColors.info : AppColors.primary;
+        reco.estCorrigee ? context.couleurs.info : context.couleurs.primaire;
     final premiere = reco.premiereCulture;
 
     return Card(
@@ -247,22 +262,22 @@ class _RecoValideeCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     premiere?.nom ?? 'Culture non définie',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: couleur),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: couleur.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
                     reco.statutLibelle,
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: couleur),
@@ -273,16 +288,16 @@ class _RecoValideeCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               '${reco.champNom} · ${reco.agriculteurNom}',
-              style: GoogleFonts.inter(
-                  fontSize: 11, color: AppColors.textSecondary),
+              style: AppTypography.police(
+                  fontSize: 11, color: context.couleurs.texteSecondaire),
             ),
             if (reco.commentaireExpert != null) ...[
               const SizedBox(height: 4),
               Text(
                 reco.commentaireExpert!,
-                style: GoogleFonts.inter(
+                style: AppTypography.police(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: context.couleurs.texteSecondaire,
                     fontStyle: FontStyle.italic),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -291,8 +306,8 @@ class _RecoValideeCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               reco.tempsEcoule,
-              style: GoogleFonts.inter(
-                  fontSize: 10, color: AppColors.textSecondary),
+              style: AppTypography.police(
+                  fontSize: 10, color: context.couleurs.texteSecondaire),
             ),
           ],
         ),

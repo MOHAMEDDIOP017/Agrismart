@@ -58,7 +58,8 @@ class DeconnexionService {
     // authProvider.isAuthenticated → false → _AuthListenable → go_router → /login
     await ref.read(authProvider.notifier).logout();
 
-    debugPrint('[Deconnexion] Terminee. Router redirige vers /login automatiquement.');
+    debugPrint(
+        '[Deconnexion] Terminee. Router redirige vers /login automatiquement.');
     // ⚠️ NE PAS appeler context.go('/login') — double navigation = crash en cascade.
   }
 }

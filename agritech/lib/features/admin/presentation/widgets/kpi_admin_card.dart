@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
+import '../../../../core/theme/app_motion.dart';
 
 /// Carte KPI animée pour le tableau de bord Admin
 class KpiAdminCard extends StatelessWidget {
@@ -29,9 +29,9 @@ class KpiAdminCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.couleurs.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: context.couleurs.bordure),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -61,16 +61,13 @@ class KpiAdminCard extends StatelessWidget {
                 fontWeight: FontWeight.w800,
                 fontSize: 26,
               ),
-            )
-                .animate()
-                .fadeIn(duration: 400.ms)
-                .slideY(begin: 0.2, end: 0, duration: 400.ms),
+            ),
             const SizedBox(height: 4),
             // Titre
             Text(
               titre,
               style: AppTypography.textTheme.bodySmall!.copyWith(
-                color: AppColors.textSecondary,
+                color: context.couleurs.texteSecondaire,
                 fontWeight: FontWeight.w500,
               ),
               maxLines: 2,
@@ -99,7 +96,7 @@ class AnimatedCounterAdmin extends StatefulWidget {
     super.key,
     required this.valeur,
     required this.style,
-    this.duree = const Duration(milliseconds: 1200),
+    this.duree = AppDurees.moyenne,
     this.suffixe = '',
   });
 

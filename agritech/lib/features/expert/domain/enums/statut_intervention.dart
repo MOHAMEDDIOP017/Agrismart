@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Statut d'une intervention terrain planifiée
 enum StatutIntervention {
@@ -21,22 +21,22 @@ enum StatutIntervention {
   Color get couleur {
     switch (this) {
       case StatutIntervention.planifiee:
-        return AppColors.amber;
+        return AppPalette.ocre;
       case StatutIntervention.realisee:
-        return AppColors.primary;
+        return AppPalette.vert;
       case StatutIntervention.annulee:
-        return AppColors.textSecondary;
+        return AppPalette.encreDouce;
     }
   }
 
   Color get couleurFond {
     switch (this) {
       case StatutIntervention.planifiee:
-        return AppColors.amber.withValues(alpha: 0.12);
+        return AppPalette.ocre.withValues(alpha: 0.12);
       case StatutIntervention.realisee:
-        return AppColors.primary.withValues(alpha: 0.12);
+        return AppPalette.vert.withValues(alpha: 0.12);
       case StatutIntervention.annulee:
-        return AppColors.textSecondary.withValues(alpha: 0.12);
+        return AppPalette.encreDouce.withValues(alpha: 0.12);
     }
   }
 

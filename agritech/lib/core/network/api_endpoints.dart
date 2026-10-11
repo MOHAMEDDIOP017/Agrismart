@@ -18,11 +18,6 @@ abstract class ApiEndpoints {
   // Agent conversationnel IA (chat bilingue FR/Wolof)
   static const agentChat = '/agent/chat';
 
-  // Météo
-  static String meteoActuelle(String champId) => '/meteo/actuelle/$champId';
-  static String meteoPrevisions(String champId) =>
-      '/meteo/previsions/$champId';
-
   // Notifications
   static String notificationsUtilisateur(String id) =>
       '/notifications/utilisateur/$id';
@@ -34,12 +29,6 @@ abstract class ApiEndpoints {
   static String statutCultureEnChamp(String cultureId) =>
       '/cultures-en-champ/$cultureId/statut';
 
-  // Post-récolte
-  static String postRecolte(String recommandationId) =>
-      '/recommandations/$recommandationId/post-recolte';
-  static String postRecolteParCulture(String cultureId) =>
-      '/recommandations/post-recolte/culture/$cultureId';
-
   // Cultures (référentiel)
   static const cultures = '/cultures';
   static String cultureById(String id) => '/cultures/$id';
@@ -49,8 +38,7 @@ abstract class ApiEndpoints {
 
   // Notifications — actions
   static String notificationById(String id) => '/notifications/$id';
-  static String notificationMarquerLue(String id) =>
-      '/notifications/$id/lue';
+  static String notificationMarquerLue(String id) => '/notifications/$id/lue';
   static String notificationsToutesLues(String userId) =>
       '/notifications/utilisateur/$userId/tout-lire';
 

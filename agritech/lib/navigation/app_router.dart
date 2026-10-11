@@ -13,7 +13,6 @@ import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/champs/presentation/screens/champs_list_screen.dart';
 import '../features/champs/presentation/screens/champ_detail_screen.dart';
 import '../features/champs/presentation/screens/champ_form_screen.dart';
-import '../features/meteo/presentation/screens/meteo_screen.dart';
 import '../features/recommandations/presentation/screens/recommandations_screen.dart';
 import '../features/chat/presentation/screens/chat_screen.dart';
 import '../features/alertes/presentation/screens/alertes_screen.dart';
@@ -55,6 +54,7 @@ import 'expert_scaffold.dart';
 import 'expert_router.dart';
 import 'admin_scaffold.dart';
 import 'admin_router.dart';
+import 'transitions.dart';
 
 /// Routes nommées de l'application
 class AppRoutes {
@@ -72,14 +72,23 @@ class AppRoutes {
   static const champDetail = '/home/champs/:id';
   static const champForm = '/home/champs/form';
   static const recommandations = '/home/dashboard/recommandations';
-  static const assistant = '/home/dashboard/assistant';
+
+  /// L'assistant a son propre onglet. Il vivait sous l'accueil, à deux
+  /// niveaux de profondeur, et n'était atteignable que par une carte placée
+  /// en bas du tableau de bord.
+  static const assistant = '/home/assistant';
+
+  /// Les alertes ne sont plus un onglet : elles s'ouvrent en plein écran
+  /// depuis la cloche de l'accueil, et le bouton retour y ramène.
   static const alertes = '/home/alertes';
   static const alerteDetail = '/home/alertes/:id';
-  static const suivi = '/home/suivi';
-  static const profil = '/home/profil';
 
-  // Onglet Météo — dans le shell
-  static const meteo = '/home/meteo';
+  /// Sous-page de l'accueil, et non une racine : la constante annonçait
+  /// `/home/suivi` alors que la route déclarée est `/home/dashboard/suivi`.
+  /// Personne ne s'en servait, le tableau de bord écrivant le chemin à la
+  /// main ; la constante aurait mené à une page introuvable au premier usage.
+  static const suivi = '/home/dashboard/suivi';
+  static const profil = '/home/profil';
 
   // Notifications
   static const notifications = '/notifications';
@@ -174,41 +183,46 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.splash,
         name: 'splash',
-        pageBuilder: (c, s) => _fadePage(s, const SplashScreen()),
+        pageBuilder: (c, s) => pageFondu(s, const SplashScreen()),
       ),
 
       // ── Onboarding ────────────────────────────────────────
       GoRoute(
         path: AppRoutes.onboarding,
         name: 'onboarding',
-        pageBuilder: (c, s) => _fadePage(s, const OnboardingScreen()),
+        pageBuilder: (c, s) => pageFondu(s, const OnboardingScreen()),
       ),
 
       // ── Auth ──────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        pageBuilder: (c, s) => _fadePage(s, const LoginScreen()),
+        pageBuilder: (c, s) => pageFondu(s, const LoginScreen()),
       ),
       GoRoute(
         path: AppRoutes.register,
         name: 'register',
-        pageBuilder: (c, s) => _fadePage(s, const RegisterScreen()),
+        pageBuilder: (c, s) => pageFondu(s, const RegisterScreen()),
       ),
 
       // ── Accès non autorisé ────────────────────────────────
       GoRoute(
         path: AppRoutes.nonAutorise,
         name: 'non-autorise',
-        pageBuilder: (c, s) => _fadePage(s, const NonAutoriseScreen()),
+        pageBuilder: (c, s) => pageFondu(s, const NonAutoriseScreen()),
       ),
 
       // ════════════════════════════════════════════════════════════
-      // SHELL AGRICULTEUR — BottomNavBar 5 onglets
+      // SHELL AGRICULTEUR — Accueil, Champs, Assistant, Profil
       // ════════════════════════════════════════════════════════════
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) =>
             MainScaffold(navigationShell: navigationShell),
+        navigatorContainerBuilder: (context, navigationShell, onglets) =>
+            ConteneurOnglets(
+          navigationShell: navigationShell,
+          onglets: onglets,
+        ),
         branches: [
           // Onglet 0 — Accueil / Dashboard
           StatefulShellBranch(routes: [
@@ -225,12 +239,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                 GoRoute(
                   path: 'recommandations',
                   name: 'recommandations',
-                  builder: (c, s) => const RecommandationsScreen(),
-                ),
-                GoRoute(
-                  path: 'assistant',
-                  name: 'assistant',
-                  builder: (c, s) => const ChatScreen(),
+                  // ?champId=... : la parcelle est déjà choisie, parce que
+                  // l'écran de détail d'un champ emmène ici avec elle. Sans
+                  // ce paramètre, il fallait la resélectionner alors qu'on
+                  // venait justement de la consulter.
+                  builder: (c, s) => RecommandationsScreen(
+                    champId: s.uri.queryParameters['champId'],
+                  ),
                 ),
               ],
             ),
@@ -263,35 +278,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
 
-          // Onglet 2 — Météo locale
+          // Onglet 2 — Assistant conversationnel
           StatefulShellBranch(routes: [
             GoRoute(
-              path: AppRoutes.meteo,
-              name: 'meteo',
-              builder: (c, s) => const MeteoScreen(),
+              path: AppRoutes.assistant,
+              name: 'assistant',
+              // ?champId=... : ouvre l'assistant sur une parcelle précise,
+              // l'agent recommande alors à l'échelle de cette parcelle.
+              builder: (c, s) => ChatScreen(
+                champId: s.uri.queryParameters['champId'],
+              ),
             ),
           ]),
 
-          // Onglet 3 — Alertes
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: AppRoutes.alertes,
-              name: 'alertes',
-              builder: (c, s) => const AlertesScreen(),
-              routes: [
-                GoRoute(
-                  path: ':id',
-                  name: 'alerte-detail',
-                  builder: (c, s) {
-                    final id = s.pathParameters['id']!;
-                    return AlerteDetailScreen(alerteId: id);
-                  },
-                ),
-              ],
-            ),
-          ]),
-
-          // Onglet 4 — Profil Agriculteur
+          // Onglet 3 — Profil Agriculteur
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.profil,
@@ -302,18 +302,60 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
 
+      // ── Alertes de l'agriculteur, en plein écran ─────────────────
+      //
+      // Ouvertes depuis la cloche de l'accueil plutôt que depuis un onglet :
+      // la liste des alertes et celle des notifications interrogeaient le même
+      // point d'entrée du serveur, et occupaient deux entrées de navigation
+      // pour les mêmes données.
+      GoRoute(
+        path: AppRoutes.alertes,
+        name: 'alertes',
+        pageBuilder: (c, s) => pageGlissement(s, const AlertesScreen()),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: 'alerte-detail',
+            pageBuilder: (c, s) {
+              final id = s.pathParameters['id']!;
+              return pageGlissement(s, AlerteDetailScreen(alerteId: id));
+            },
+          ),
+        ],
+      ),
+
       // ════════════════════════════════════════════════════════════
-      // SHELL EXPERT — BottomNavBar 5 onglets Expert
+      // SHELL EXPERT — À valider, Champs, Conseils, Profil
       // ════════════════════════════════════════════════════════════
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) =>
             ExpertScaffold(navigationShell: navigationShell),
+        navigatorContainerBuilder: (context, navigationShell, onglets) =>
+            ConteneurOnglets(
+          navigationShell: navigationShell,
+          onglets: onglets,
+        ),
         branches: [
+          // Onglet 0 — File de validation.
+          //
+          // Elle était déclarée hors de la coquille : elle n'appartenait à
+          // aucun onglet, et l'ouvrir faisait disparaître la barre de
+          // navigation. C'est pourtant la tâche première de l'expert.
           StatefulShellBranch(routes: [
             GoRoute(
-              path: ExpertRoutes.expertDashboard,
-              name: ExpertRoutes.dashboardNom,
-              builder: (c, s) => const ExpertDashboardScreen(),
+              path: ExpertRoutes.expertRecommandations,
+              name: ExpertRoutes.recommandationsNom,
+              builder: (c, s) => const RecommandationsExpertScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  name: ExpertRoutes.recommandationDetailNom,
+                  builder: (c, s) {
+                    final id = s.pathParameters['id']!;
+                    return RecommandationDetailExpertScreen(recoId: id);
+                  },
+                ),
+              ],
             ),
           ]),
           StatefulShellBranch(routes: [
@@ -364,48 +406,46 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ExpertRoutes.expertNouveauConseil,
         name: ExpertRoutes.nouveauConseilNom,
-        pageBuilder: (c, s) => _fadePage(s, const NouveauConseilScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const NouveauConseilScreen()),
       ),
       GoRoute(
         path: ExpertRoutes.expertRapport,
         name: ExpertRoutes.rapportNom,
-        pageBuilder: (c, s) => _fadePage(s, const RapportScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const RapportScreen()),
       ),
       GoRoute(
         path: ExpertRoutes.expertPlanifierIntervention,
         name: ExpertRoutes.planifierInterventionNom,
         pageBuilder: (c, s) {
           final champId = s.uri.queryParameters['champId'];
-          return _fadePage(
+          return pageGlissement(
             s,
             PlanifierInterventionScreen(preselectedChampId: champId),
           );
         },
       ),
+      // Ancien tableau de bord de l'expert, conservé en plein écran et
+      // atteignable depuis le profil. Son contenu se résumait à trois
+      // indicateurs et aux trois premières parcelles supervisées, que l'onglet
+      // Champs montre déjà en entier ; le seul chiffre qui manquait, le nombre
+      // de recommandations en attente, est désormais en pastille sur l'onglet.
       GoRoute(
-        path: ExpertRoutes.expertRecommandations,
-        name: ExpertRoutes.recommandationsNom,
-        pageBuilder: (c, s) =>
-            _fadePage(s, const RecommandationsExpertScreen()),
-        routes: [
-          GoRoute(
-            path: ':id',
-            name: ExpertRoutes.recommandationDetailNom,
-            pageBuilder: (c, s) {
-              final id = s.pathParameters['id']!;
-              return _fadePage(
-                  s, RecommandationDetailExpertScreen(recoId: id));
-            },
-          ),
-        ],
+        path: ExpertRoutes.expertDashboard,
+        name: ExpertRoutes.dashboardNom,
+        pageBuilder: (c, s) => pageGlissement(s, const ExpertDashboardScreen()),
       ),
 
       // ════════════════════════════════════════════════════════════
       // SHELL ADMIN — BottomNavBar 4 onglets Administrateur
       // ════════════════════════════════════════════════════════════
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) =>
             AdminScaffold(navigationShell: navigationShell),
+        navigatorContainerBuilder: (context, navigationShell, onglets) =>
+            ConteneurOnglets(
+          navigationShell: navigationShell,
+          onglets: onglets,
+        ),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(
@@ -442,47 +482,50 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AdminRoutes.adminHistorique,
         name: AdminRoutes.historiqueNom,
-        pageBuilder: (c, s) => _fadePage(s, const HistoriqueSystemeScreen()),
+        pageBuilder: (c, s) =>
+            pageGlissement(s, const HistoriqueSystemeScreen()),
       ),
       GoRoute(
         path: AdminRoutes.adminProfil,
         name: AdminRoutes.profilNom,
-        pageBuilder: (c, s) => _fadePage(s, const ProfilAdminScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const ProfilAdminScreen()),
       ),
       GoRoute(
         path: AdminRoutes.adminCreerUser,
         name: AdminRoutes.creerUserNom,
-        pageBuilder: (c, s) => _fadePage(s, const CreerUserScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const CreerUserScreen()),
       ),
       GoRoute(
         path: AdminRoutes.adminModifierUser,
         name: AdminRoutes.modifierUserNom,
         pageBuilder: (c, s) {
           final userId = s.pathParameters['userId']!;
-          return _fadePage(s, ModifierUserScreen(userId: userId));
+          return pageGlissement(s, ModifierUserScreen(userId: userId));
         },
       ),
       GoRoute(
         path: AdminRoutes.adminNouvelleAssignation,
         name: AdminRoutes.nouvelleAssignationNom,
-        pageBuilder: (c, s) => _fadePage(s, const NouvelleAssignationScreen()),
+        pageBuilder: (c, s) =>
+            pageGlissement(s, const NouvelleAssignationScreen()),
       ),
       GoRoute(
         path: AdminRoutes.adminChamps,
         name: AdminRoutes.champsNom,
-        pageBuilder: (c, s) => _fadePage(s, const GestionChampsAdminScreen()),
+        pageBuilder: (c, s) =>
+            pageGlissement(s, const GestionChampsAdminScreen()),
       ),
       GoRoute(
         path: AdminRoutes.adminCreerChamp,
         name: AdminRoutes.creerChampNom,
-        pageBuilder: (c, s) => _fadePage(s, const CreerChampAdminScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const CreerChampAdminScreen()),
       ),
 
       // ── Notifications ─────────────────────────────────────────────
       GoRoute(
         path: AppRoutes.notifications,
         name: 'notifications',
-        pageBuilder: (c, s) => _fadePage(s, const NotificationsScreen()),
+        pageBuilder: (c, s) => pageGlissement(s, const NotificationsScreen()),
       ),
 
       // ── Redirections ──────────────────────────────────────────────
@@ -492,7 +535,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: ExpertRoutes.expertHome,
-        redirect: (_, __) => ExpertRoutes.expertDashboard,
+        redirect: (_, __) => ExpertRoutes.expertRecommandations,
       ),
       GoRoute(
         path: AdminRoutes.adminHome,
@@ -501,13 +544,3 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
-
-CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
-  return CustomTransitionPage<void>(
-    key: state.pageKey,
-    child: child,
-    transitionsBuilder: (_, animation, __, child) =>
-        FadeTransition(opacity: animation, child: child),
-    transitionDuration: const Duration(milliseconds: 300),
-  );
-}

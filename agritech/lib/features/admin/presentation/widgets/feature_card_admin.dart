@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 
@@ -21,6 +20,7 @@ class FeatureCardAdmin extends StatefulWidget {
   final IconData icone;
   final Color couleur;
   final VoidCallback onTap;
+
   /// Nombre affiché en badge (ex: assignations en attente)
   final int? badgeCount;
   final int index;
@@ -48,7 +48,7 @@ class _FeatureCardAdminState extends State<FeatureCardAdmin> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.couleurs.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: widget.couleur.withValues(alpha: 0.2)),
           boxShadow: [
@@ -75,8 +75,8 @@ class _FeatureCardAdminState extends State<FeatureCardAdmin> {
                 const Spacer(),
                 if (widget.badgeCount != null && widget.badgeCount! > 0)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 3),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: widget.couleur,
                       borderRadius: BorderRadius.circular(12),
@@ -97,7 +97,7 @@ class _FeatureCardAdminState extends State<FeatureCardAdmin> {
               widget.titre,
               style: AppTypography.textTheme.titleSmall!.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: context.couleurs.textePrincipal,
                 fontSize: 13,
               ),
             ),
@@ -105,17 +105,14 @@ class _FeatureCardAdminState extends State<FeatureCardAdmin> {
             Text(
               widget.sousTitre,
               style: AppTypography.textTheme.labelSmall!.copyWith(
-                color: AppColors.textSecondary,
+                color: context.couleurs.texteSecondaire,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
-      )
-          .animate(delay: (widget.index * 80).ms)
-          .fadeIn(duration: 300.ms)
-          .slideY(begin: 0.15, end: 0, duration: 300.ms),
+      ),
     );
   }
 }

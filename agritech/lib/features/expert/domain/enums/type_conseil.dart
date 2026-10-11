@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Type de conseil envoyé par l'expert à un agriculteur
 enum TypeConseil {
@@ -27,15 +27,15 @@ enum TypeConseil {
   Color get couleur {
     switch (this) {
       case TypeConseil.culture:
-        return AppColors.primary;
+        return AppPalette.vert;
       case TypeConseil.traitement:
-        return AppColors.coral;
+        return AppPalette.alerteElevee;
       case TypeConseil.irrigation:
-        return AppColors.info;
+        return AppPalette.info;
       case TypeConseil.recolte:
-        return AppColors.amber;
+        return AppPalette.ocre;
       case TypeConseil.autre:
-        return AppColors.textSecondary;
+        return AppPalette.encreDouce;
     }
   }
 

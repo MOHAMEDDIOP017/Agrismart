@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/theme/app_typography.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../providers/expert_provider.dart';
@@ -30,13 +30,15 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
     final totalConseils = conseils.length;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.couleurs.fond,
       appBar: AppBar(
-        backgroundColor: AppColors.primaryDark,
+        backgroundColor: context.couleurs.primaireFonce,
         foregroundColor: Colors.white,
         title: Text('Rapports d\'activité',
-            style: GoogleFonts.poppins(
-                fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+            style: AppTypography.police(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -53,8 +55,8 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                 initialDateRange: _periode,
                 builder: (ctx, child) => Theme(
                   data: Theme.of(ctx).copyWith(
-                    colorScheme: const ColorScheme.light(
-                      primary: AppColors.primary,
+                    colorScheme: ColorScheme.light(
+                      primary: context.couleurs.primaire,
                     ),
                   ),
                   child: child!,
@@ -65,19 +67,19 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: context.couleurs.surface,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.couleurs.bordure),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.date_range_outlined,
-                      color: AppColors.primary, size: 20),
+                  Icon(Icons.date_range_outlined,
+                      color: context.couleurs.primaire, size: 20),
                   const SizedBox(width: 10),
                   Text(
                     '${DateFormat('d MMM yyyy', 'fr_FR').format(_periode.start)} '
                     '→ ${DateFormat('d MMM yyyy', 'fr_FR').format(_periode.end)}',
-                    style: GoogleFonts.poppins(
+                    style: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -98,13 +100,17 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
             mainAxisSpacing: 10,
             childAspectRatio: 1.8,
             children: [
-              _kpiRecap('Interventions', '$totalIntvs', AppColors.amber),
-              _kpiRecap('Conseils envoyés', '$totalConseils', AppColors.primary),
+              _kpiRecap(
+                  'Interventions', '$totalIntvs', context.couleurs.secondaire),
+              _kpiRecap('Conseils envoyés', '$totalConseils',
+                  context.couleurs.primaire),
               profilAsync.when(
                 data: (e) => _kpiRecap('Taux précision IA',
-                    e.tauxPrecisionFormate, AppColors.coral),
-                loading: () => _kpiRecap('Taux précision IA', '—', AppColors.coral),
-                error: (_, __) => _kpiRecap('Taux précision IA', '—', AppColors.coral),
+                    e.tauxPrecisionFormate, context.couleurs.alerteElevee),
+                loading: () => _kpiRecap(
+                    'Taux précision IA', '—', context.couleurs.alerteElevee),
+                error: (_, __) => _kpiRecap(
+                    'Taux précision IA', '—', context.couleurs.alerteElevee),
               ),
             ],
           ),
@@ -118,13 +124,14 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
             Column(
               children: [
                 LinearProgressIndicator(
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.15),
+                  color: context.couleurs.primaire,
+                  backgroundColor:
+                      context.couleurs.primaire.withValues(alpha: 0.15),
                 ),
                 const SizedBox(height: 10),
                 Text('Génération du rapport en cours...',
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.textSecondary)),
+                    style: AppTypography.police(
+                        fontSize: 13, color: context.couleurs.texteSecondaire)),
                 const SizedBox(height: 20),
               ],
             ),
@@ -134,12 +141,12 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                 child: ElevatedButton(
                   onPressed: _generation ? null : _exporterPDF,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.danger,
+                    backgroundColor: context.couleurs.erreur,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
-                    textStyle: GoogleFonts.poppins(
+                    textStyle: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   child: const Text('Exporter PDF'),
@@ -150,12 +157,12 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
                 child: OutlinedButton(
                   onPressed: _generation ? null : _partager,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
+                    foregroundColor: context.couleurs.primaire,
+                    side: BorderSide(color: context.couleurs.primaire),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
-                    textStyle: GoogleFonts.poppins(
+                    textStyle: AppTypography.police(
                         fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   child: const Text('Partager'),
@@ -181,11 +188,11 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(valeur,
-                style: GoogleFonts.poppins(
+                style: AppTypography.police(
                     fontSize: 22, fontWeight: FontWeight.bold, color: couleur)),
             Text(label,
-                style: GoogleFonts.inter(
-                    fontSize: 11, color: AppColors.textSecondary),
+                style: AppTypography.police(
+                    fontSize: 11, color: context.couleurs.texteSecondaire),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis),
           ],
@@ -194,10 +201,10 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
 
   Widget _sectionTitle(String t) => Text(
         t,
-        style: GoogleFonts.poppins(
+        style: AppTypography.police(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary),
+            color: context.couleurs.textePrincipal),
       );
 
   Future<void> _exporterPDF() async {
@@ -206,9 +213,9 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
     if (mounted) {
       setState(() => _generation = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Rapport PDF généré avec succès !'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: const Text('Rapport PDF généré avec succès !'),
+          backgroundColor: context.couleurs.primaire,
         ),
       );
     }
@@ -220,9 +227,9 @@ class _RapportScreenState extends ConsumerState<RapportScreen> {
     if (mounted) {
       setState(() => _generation = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Rapport prêt à partager.'),
-          backgroundColor: AppColors.primary,
+        SnackBar(
+          content: const Text('Rapport prêt à partager.'),
+          backgroundColor: context.couleurs.primaire,
         ),
       );
     }

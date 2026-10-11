@@ -17,7 +17,8 @@ class AdminRepositoryImpl implements AdminRepository {
   // ── Statistiques ─────────────────────────────────────────────────────────
 
   @override
-  Future<StatistiquesGlobalesEntity> getStatistiquesGlobales(String periode) async {
+  Future<StatistiquesGlobalesEntity> getStatistiquesGlobales(
+      String periode) async {
     try {
       final resp = await _dio.get('/admin/statistiques-globales');
       return _mapStats(resp.data as Map<String, dynamic>);
@@ -30,7 +31,7 @@ class AdminRepositoryImpl implements AdminRepository {
   Future<StatutSysteme> getStatutSysteme() async {
     // Pas d'endpoint backend dédié — état calculé localement
     return const StatutSysteme(
-      apiMeteoOperationnelle: true,
+      sourcesDonneesOperationnelles: true,
       tempsReponseApiMs: 120,
       versionModeleIA: 'EfficientNetB0 v2.1',
       precisionModeleIA: 0.92,
@@ -163,7 +164,8 @@ class AdminRepositoryImpl implements AdminRepository {
     final tous = (data['utilisateurs'] as List? ?? [])
         .cast<Map<String, dynamic>>()
         .where((u) => (u['role'] as String? ?? '') == 'EXPERT')
-        .where((u) => region == null ||
+        .where((u) =>
+            region == null ||
             (u['zone_geographique'] as String? ?? '') == region)
         .map(_mapExpertDisponible)
         .toList();
@@ -285,7 +287,8 @@ class AdminRepositoryImpl implements AdminRepository {
 
     final totalRec = m1['total_recommandations'] as int? ?? 0;
     final totalIntv = ex['interventions_planifiees'] as int? ?? 0;
-    final totalChamps = ch['total'] as int? ?? (json['total_champs'] as int? ?? 0);
+    final totalChamps =
+        ch['total'] as int? ?? (json['total_champs'] as int? ?? 0);
 
     // Top cultures recommandées
     final culturesRaw = (m1['top_cultures'] as List?) ?? [];
@@ -341,8 +344,7 @@ class AdminRepositoryImpl implements AdminRepository {
 
   static UtilisateurAdminEntity _mapUser(Map<String, dynamic> json) {
     final actif = json['actif'] as bool? ?? true;
-    final statut =
-        actif ? StatutUtilisateur.actif : StatutUtilisateur.suspendu;
+    final statut = actif ? StatutUtilisateur.actif : StatutUtilisateur.suspendu;
     final dateStr = json['dateInscription']?.toString() ?? '';
     return UtilisateurAdminEntity(
       id: (json['id'] ?? json['uid'] ?? '') as String,
@@ -350,9 +352,11 @@ class AdminRepositoryImpl implements AdminRepository {
       prenom: (json['prenom'] ?? '') as String,
       email: (json['email'] ?? '') as String,
       telephone: (json['telephone'] ?? '') as String,
-      role: RoleUtilisateur.fromString(json['role'] as String? ?? 'AGRICULTEUR'),
+      role:
+          RoleUtilisateur.fromString(json['role'] as String? ?? 'AGRICULTEUR'),
       statut: statut,
-      region: (json['zone_geographique'] ?? json['region'] ?? 'Sénégal') as String,
+      region:
+          (json['zone_geographique'] ?? json['region'] ?? 'Sénégal') as String,
       dateInscription: DateTime.tryParse(dateStr) ?? DateTime.now(),
       photoUrl: json['photo_url'] as String?,
       specialite: json['specialite'] as String?,
@@ -361,7 +365,8 @@ class AdminRepositoryImpl implements AdminRepository {
     );
   }
 
-  static ExpertDisponibleEntity _mapExpertDisponible(Map<String, dynamic> json) =>
+  static ExpertDisponibleEntity _mapExpertDisponible(
+          Map<String, dynamic> json) =>
       ExpertDisponibleEntity(
         id: (json['id'] ?? '') as String,
         nom: (json['nom'] ?? '') as String,
@@ -380,7 +385,8 @@ class AdminRepositoryImpl implements AdminRepository {
     final type = switch (typeStr) {
       _ when typeStr.contains('CONNEXION') || typeStr.contains('AUTH') =>
         TypeLog.connexion,
-      _ when typeStr.contains('DIAGNOSTIC') ||
+      _
+          when typeStr.contains('DIAGNOSTIC') ||
               typeStr.contains('ANALYSE') ||
               typeStr.contains('IMAGE') =>
         TypeLog.diagnostic,

@@ -28,8 +28,7 @@ class AuthRepositoryImpl implements AuthRepository {
             const Duration(seconds: 20),
             onTimeout: () => throw FirebaseAuthException(
               code: 'network-request-failed',
-              message:
-                  'Délai dépassé. Vérifiez votre connexion et réessayez.',
+              message: 'Délai dépassé. Vérifiez votre connexion et réessayez.',
             ),
           );
       // Obtient le token initial
@@ -50,7 +49,8 @@ class AuthRepositoryImpl implements AuthRepository {
         '/auth/me',
         options: Options(headers: {'Authorization': 'Bearer $freshToken'}),
       );
-      final user = UserModel.fromBackendJson(response.data as Map<String, dynamic>);
+      final user =
+          UserModel.fromBackendJson(response.data as Map<String, dynamic>);
       await _persistUser(user);
       return user;
     } on FirebaseAuthException catch (e) {
@@ -67,7 +67,8 @@ class AuthRepositoryImpl implements AuthRepository {
       //    envoyé automatiquement par l'intercepteur quand currentUser == null)
       try {
         final resp = await _dio.get('/auth/me');
-        final user = UserModel.fromBackendJson(resp.data as Map<String, dynamic>);
+        final user =
+            UserModel.fromBackendJson(resp.data as Map<String, dynamic>);
         await _persistUser(user);
         return user;
       } catch (_) {}
@@ -108,10 +109,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       // 2. Écriture du profil dans Firestore (collection users/{uid})
       final now = DateTime.now();
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(fbUser.uid)
-          .set({
+      await FirebaseFirestore.instance.collection('users').doc(fbUser.uid).set({
         'id': fbUser.uid,
         'nom': nom,
         'prenom': prenom,
@@ -243,7 +241,8 @@ class AuthRepositoryImpl implements AuthRepository {
         'invalid-email' => 'Adresse email invalide.',
         'user-disabled' => 'Ce compte a été désactivé.',
         'email-already-in-use' => 'Un compte existe déjà avec cet email.',
-        'weak-password' => 'Le mot de passe doit contenir au moins 6 caractères.',
+        'weak-password' =>
+          'Le mot de passe doit contenir au moins 6 caractères.',
         'network-request-failed' => 'Vérifiez votre connexion internet.',
         'too-many-requests' => 'Trop de tentatives. Réessayez plus tard.',
         'invalid-credential' => 'Email ou mot de passe incorrect.',

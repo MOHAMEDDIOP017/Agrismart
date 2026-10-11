@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Type d'intervention terrain
 enum TypeIntervention {
@@ -24,13 +24,13 @@ enum TypeIntervention {
   Color get couleur {
     switch (this) {
       case TypeIntervention.diagnostic:
-        return AppColors.info;
+        return AppPalette.info;
       case TypeIntervention.traitement:
-        return AppColors.coral;
+        return AppPalette.alerteElevee;
       case TypeIntervention.conseil:
-        return AppColors.primary;
+        return AppPalette.vert;
       case TypeIntervention.suivi:
-        return AppColors.amber;
+        return AppPalette.ocre;
     }
   }
 

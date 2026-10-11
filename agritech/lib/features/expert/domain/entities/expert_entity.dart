@@ -38,7 +38,8 @@ class ExpertEntity extends Equatable {
   final double tauxPrecisionIA;
 
   String get nomComplet => '$prenom $nom';
-  String get tauxPrecisionFormate => '${(tauxPrecisionIA * 100).toStringAsFixed(1)}%';
+  String get tauxPrecisionFormate =>
+      '${(tauxPrecisionIA * 100).toStringAsFixed(1)}%';
 
   ExpertEntity copyWith({
     String? nom,

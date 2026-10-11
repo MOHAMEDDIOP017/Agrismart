@@ -21,22 +21,22 @@ enum StatutUtilisateur {
   Color get couleur {
     switch (this) {
       case StatutUtilisateur.actif:
-        return const Color(0xFF1D9E75);
+        return AppPalette.succes;
       case StatutUtilisateur.suspendu:
-        return AppColors.danger;
+        return AppPalette.erreur;
       case StatutUtilisateur.enAttente:
-        return AppColors.amber;
+        return AppPalette.avertissement;
     }
   }
 
   Color get couleurFond {
     switch (this) {
       case StatutUtilisateur.actif:
-        return const Color(0xFF1D9E75).withValues(alpha: 0.12);
+        return AppPalette.succes.withValues(alpha: 0.12);
       case StatutUtilisateur.suspendu:
-        return AppColors.danger.withValues(alpha: 0.12);
+        return AppPalette.erreur.withValues(alpha: 0.12);
       case StatutUtilisateur.enAttente:
-        return AppColors.amber.withValues(alpha: 0.12);
+        return AppPalette.avertissement.withValues(alpha: 0.12);
     }
   }
 

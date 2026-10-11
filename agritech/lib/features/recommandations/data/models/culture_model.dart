@@ -27,13 +27,14 @@ class CultureModel extends CultureEntity {
         variete: (json['variete'] ?? '') as String,
         cycleMaturation:
             (json['cycle_maturation'] ?? json['cycleMaturation'] ?? 0) as int,
-        besoinsHydriques:
-            (json['besoins_hydriques'] ?? json['besoinsHydriques'] ?? '') as String,
+        besoinsHydriques: (json['besoins_hydriques'] ??
+            json['besoinsHydriques'] ??
+            '') as String,
         rendementMoyen:
             ((json['rendement_moyen'] ?? json['rendementMoyen']) as num? ?? 0.0)
                 .toDouble(),
-        phOptimal:
-            ((json['ph_optimal'] ?? json['phOptimal']) as num? ?? 7.0).toDouble(),
+        phOptimal: ((json['ph_optimal'] ?? json['phOptimal']) as num? ?? 7.0)
+            .toDouble(),
         nOptimal: ((json['n_optimal'] ?? json['nOptimal'] ?? json['N_optimal'])
                     as num? ??
                 0.0)
@@ -56,14 +57,13 @@ class CultureModel extends CultureEntity {
         humiditeMax:
             ((json['humidite_max'] ?? json['humiditeMax']) as num? ?? 90.0)
                 .toDouble(),
-        pluvioMin:
-            ((json['pluvio_min'] ?? json['pluvioMin']) as num? ?? 200.0)
-                .toDouble(),
-        pluvioMax:
-            ((json['pluvio_max'] ?? json['pluvioMax']) as num? ?? 1000.0)
-                .toDouble(),
+        pluvioMin: ((json['pluvio_min'] ?? json['pluvioMin']) as num? ?? 200.0)
+            .toDouble(),
+        pluvioMax: ((json['pluvio_max'] ?? json['pluvioMax']) as num? ?? 1000.0)
+            .toDouble(),
         prixMoyenMarche:
-            ((json['prix_moyen_marche'] ?? json['prixMoyenMarche']) as num? ?? 0.0)
+            ((json['prix_moyen_marche'] ?? json['prixMoyenMarche']) as num? ??
+                    0.0)
                 .toDouble(),
       );
 
