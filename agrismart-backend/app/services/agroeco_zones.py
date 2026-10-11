@@ -22,7 +22,7 @@ import time
 
 import requests
 
-from app.core.exceptions import APIMeteoIndisponibleException
+from app.core.exceptions import SourceDonneesIndisponibleException
 
 logger = logging.getLogger(__name__)
 
@@ -221,8 +221,8 @@ def collecter_sol_soilgrids(latitude: float, longitude: float) -> dict[str, floa
 def collecter_climat_nasa_power(latitude: float, longitude: float) -> dict[str, float]:
     """
     NASA POWER (climatologie long-terme) -> températures, humidité, pluies
-    annuelle et d'hivernage. Lève APIMeteoIndisponibleException si l'API ne
-    répond pas — à la différence de `collecter_sol_soilgrids`, car ici une
+    annuelle et d'hivernage. Lève SourceDonneesIndisponibleException si la
+    source ne répond pas — à la différence de `collecter_sol_soilgrids`, car ici une
     seule requête suffit à tout récupérer.
     """
     try:
@@ -258,9 +258,9 @@ def collecter_climat_nasa_power(latitude: float, longitude: float) -> dict[str, 
             "pluie_hivernage_mm": pluie_hivernage,
         }
     except requests.exceptions.Timeout:
-        raise APIMeteoIndisponibleException("NASA POWER ne répond pas (timeout).")
+        raise SourceDonneesIndisponibleException("NASA POWER ne répond pas (timeout).")
     except (requests.RequestException, KeyError) as e:
-        raise APIMeteoIndisponibleException(f"NASA POWER indisponible : {e}")
+        raise SourceDonneesIndisponibleException(f"NASA POWER indisponible : {e}")
 
 
 # Correspondance entre les clés internes (celles attendues, dans cet ordre
@@ -344,7 +344,7 @@ def assembler_variables(latitude: float, longitude: float) -> tuple[dict[str, fl
         climat = collecter_climat_nasa_power(latitude, longitude)
         variables.update(climat)
         sources["climat"] = "NASA POWER (temps réel)"
-    except APIMeteoIndisponibleException as e:
+    except SourceDonneesIndisponibleException as e:
         logger.warning(f"NASA POWER indisponible ({e}) — repli sur la moyenne de zone.")
 
     return variables, zone, sources

@@ -47,6 +47,20 @@ class ChampResponse(ChampBase):
         from_attributes = True
 
 
+class ChampListeResponse(BaseModel):
+    """
+    Enveloppe des routes qui listent des champs.
+
+    Déclarée pour que `response_model` s'applique aussi à ces routes : sans
+    elle, FastAPI laisserait passer les documents Firestore bruts, y compris
+    des clés qu'aucun modèle ne décrit (résidus d'anciennes versions, champs
+    ajoutés par un script). Le modèle de réponse est le contrat de l'API :
+    ce qui n'y figure pas ne doit pas sortir du serveur.
+    """
+    champs: list[ChampResponse]
+    total: int
+
+
 class ScoreSanteChamp(BaseModel):
     """Score de santé calculé pour un champ."""
     champId: str

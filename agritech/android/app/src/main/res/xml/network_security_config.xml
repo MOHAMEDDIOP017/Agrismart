@@ -9,6 +9,6 @@
         <!-- Émulateur Android : 10.0.2.2 est l'alias vers localhost de l'hôte -->
         <domain includeSubdomains="false">10.0.2.2</domain>
         <!-- Téléphone physique sur Wi-Fi UADB — IP du PC (màj si changement de réseau) -->
-        <domain includeSubdomains="false">10.86.209.5</domain>
+        <domain includeSubdomains="false">10.221.57.5</domain>
     </domain-config>
 </network-security-config>

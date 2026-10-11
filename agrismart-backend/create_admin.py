@@ -1,21 +1,26 @@
 """
-Script de création du compte Administrateur initial KoobalaTech.
+Script de création du compte Administrateur initial AgriSmart.
 
 Usage :
-    cd koobalatec-backend
+    cd agrismart-backend
+    set ADMIN_PASSWORD=...        (PowerShell : $env:ADMIN_PASSWORD = "...")
     python create_admin.py
 
 Prérequis :
     - firebase_service_account.json présent dans le répertoire courant
+    - variable d'environnement ADMIN_PASSWORD renseignée
     - pip install firebase-admin
 """
 
+import os
 import sys
 from datetime import datetime, timezone
 
 # ── Paramètres du compte admin à créer ──────────────────────────────────────
-ADMIN_EMAIL     = "admin@koobalatec.sn"
-ADMIN_PASSWORD  = "Admin2026!"
+ADMIN_EMAIL     = "admin@agrismart.sn"
+# Mot de passe lu depuis l'environnement : un mot de passe écrit ici serait
+# versionné avec le code et donc public.
+ADMIN_PASSWORD  = os.environ.get("ADMIN_PASSWORD", "")
 ADMIN_NOM       = "Diop"
 ADMIN_PRENOM    = "Fatou"
 ADMIN_TELEPHONE = "+221 77 900 00 01"
@@ -27,6 +32,12 @@ COLLECTION      = "users"
 
 
 def main():
+    if not ADMIN_PASSWORD:
+        print("[ERREUR]  La variable d'environnement ADMIN_PASSWORD n'est pas définie.")
+        print('    PowerShell : $env:ADMIN_PASSWORD = "VotreMotDePasse"')
+        print("    Bash       : export ADMIN_PASSWORD='VotreMotDePasse'")
+        sys.exit(1)
+
     try:
         import firebase_admin
         from firebase_admin import credentials, auth, firestore
@@ -96,7 +107,7 @@ def main():
     print("  COMPTE ADMIN CRÉÉ AVEC SUCCÈS")
     print("=" * 50)
     print(f"  Email    : {ADMIN_EMAIL}")
-    print(f"  Mot de passe : {ADMIN_PASSWORD}")
+    print("  Mot de passe : celui fourni via ADMIN_PASSWORD")
     print(f"  UID      : {uid}")
     print(f"  Rôle     : ADMIN (niveau {ADMIN_NIVEAU})")
     print("=" * 50)

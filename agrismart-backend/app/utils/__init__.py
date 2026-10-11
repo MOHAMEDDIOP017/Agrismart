@@ -1,1 +1,1 @@
-"""Package utilitaires d'KoobalaTech."""
+"""Package utilitaires d'AgriSmart."""

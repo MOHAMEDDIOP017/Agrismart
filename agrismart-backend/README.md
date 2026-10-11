@@ -1,6 +1,6 @@
-﻿# KoobalaTech Backend
+﻿# AgriSmart Backend
 
-Backend FastAPI pour l'application mobile Flutter **KoobalaTech** — assistance agricole intelligente pour les agriculteurs sénégalais.
+Backend FastAPI pour l'application mobile Flutter **AgriSmart** — assistance agricole intelligente pour les agriculteurs sénégalais.
 
 ## Architecture hybride
 
@@ -10,11 +10,10 @@ Backend FastAPI pour l'application mobile Flutter **KoobalaTech** — assistance
 | **Firestore** | Base de données NoSQL (utilisateurs, champs, diagnostics…) |
 | **FCM** | Notifications push vers Flutter |
 | **MinIO** | Stockage objet S3-compatible pour les images de plantes |
-| **OpenWeatherMap** | Données climatiques en temps réel |
 | **FastAPI** | API REST exposée à l'application Flutter |
 
 ```
-koobalatec-backend/
+agrismart-backend/
 ├── main.py                          # Point d'entrée FastAPI
 ├── app/
 │   ├── config.py                    # Variables d'environnement (pydantic-settings)
@@ -29,7 +28,6 @@ koobalatec-backend/
 │   │   ├── recommandation_service.py  # Module IA 1 — Random Forest
 │   │   ├── detection_service.py       # Module IA 2 — EfficientNetB0 (utilise MinIO)
 │   │   ├── minio_service.py           # Upload/download/delete via MinIO
-│   │   ├── meteo_service.py           # OpenWeatherMap API
 │   │   ├── notification_service.py    # FCM push notifications
 │   │   └── firestore_service.py       # Abstraction CRUD Firestore
 │   ├── routers/                     # 15 routers FastAPI
@@ -49,7 +47,6 @@ koobalatec-backend/
 - Python 3.11+
 - Docker & Docker Compose (pour MinIO)
 - Projet Firebase (Firestore, Auth, FCM) — PAS Firebase Storage
-- Clé API OpenWeatherMap (gratuite sur openweathermap.org)
 
 ---
 
@@ -60,7 +57,7 @@ MinIO est le service de stockage d'images de plantes. Il remplace Firebase Stora
 ### 1. Lancer MinIO avec Docker Compose
 
 ```bash
-# Depuis le dossier koobalatec-backend/
+# Depuis le dossier agrismart-backend/
 docker-compose up -d minio
 ```
 
@@ -68,9 +65,9 @@ MinIO sera accessible sur :
 - **API S3** (utilisée par le backend) : `http://localhost:9000`
 - **Console web** (interface graphique) : `http://localhost:9001`
 
-Credentials par défaut :
-- Login : `koobalatecadmin`
-- Mot de passe : `KoobalaTech2026!Secret`
+Identifiants : ceux que vous avez définis dans `.env`
+(`MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY`). `docker-compose.yml` les lit depuis
+ce même fichier — aucun identifiant n'est écrit en dur dans le dépôt.
 
 ### 2. Vérification du démarrage MinIO
 
@@ -82,16 +79,17 @@ curl http://localhost:9000/minio/health/live
 open http://localhost:9001
 ```
 
-Le bucket `koobalatec-images` est **créé automatiquement** au premier démarrage du backend.
+Le bucket `agrismart-images` est **créé automatiquement** au premier démarrage du backend.
 
 ### 3. Variables d'environnement MinIO dans .env
 
 ```env
 MINIO_ENDPOINT=localhost:9000
-MINIO_ACCESS_KEY=koobalatecadmin
-MINIO_SECRET_KEY=KoobalaTech2026!Secret
+# À remplacer par vos propres identifiants (voir .env.example) :
+MINIO_ACCESS_KEY=votre_access_key
+MINIO_SECRET_KEY=votre_secret_key_longue_et_aleatoire
 MINIO_SECURE=false
-MINIO_BUCKET_IMAGES=koobalatec-images
+MINIO_BUCKET_IMAGES=agrismart-images
 ```
 
 ### Flux d'upload d'image (MinIO)
@@ -132,7 +130,7 @@ Flutter                 FastAPI              Firestore            MinIO        T
 ### 1. Cloner et configurer l'environnement Python
 
 ```bash
-cd koobalatec-backend
+cd agrismart-backend
 python -m venv venv
 source venv/bin/activate  # Windows : venv\Scripts\activate
 pip install -r requirements.txt
@@ -142,7 +140,7 @@ pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Éditez .env avec vos credentials Firebase et OpenWeatherMap
+# Éditez .env avec vos credentials Firebase et MinIO
 ```
 
 ### 3. Placer le Service Account Firebase
@@ -151,7 +149,7 @@ Téléchargez depuis Firebase Console → Paramètres → Comptes de service.
 
 ```bash
 # Ne jamais commiter ce fichier !
-cp ~/Downloads/koobalatec-firebase-adminsdk-xxxx.json ./firebase_service_account.json
+cp ~/Downloads/agrismart-jf-f1879-firebase-adminsdk-xxxx.json ./firebase_service_account.json
 ```
 
 ### 4. Démarrer MinIO (Docker)
@@ -160,17 +158,28 @@ cp ~/Downloads/koobalatec-firebase-adminsdk-xxxx.json ./firebase_service_account
 docker-compose up -d minio
 ```
 
-### 5. Placer les modèles IA
+### 5. Placer le modèle IA
 
 ```
 models_ia/
-├── random_forest_crop.pkl           # Modèle Random Forest
-├── scaler_crop.pkl                  # StandardScaler
-├── label_encoder_crop.pkl           # LabelEncoder
-└── efficientnet_plant_disease.tflite  # EfficientNetB0
+└── modele_final.joblib              # Recommandation de cultures (multi-label)
 ```
 
-> **Sans les modèles**, l'application démarre en **mode MOCK** : prédictions simulées. Idéal pour le développement.
+Le fichier contient `{pipeline, binarizer, features}` : StandardScaler →
+OneVsRestClassifier(RandomForest), les 8 cultures, et les 16 variables d'entrée
+dans leur ordre significatif.
+
+> **Reproduire le modèle :** il est produit hors ligne par la chaîne de
+> préparation des données versionnée dans [`../pipeline-donnees/`](../pipeline-donnees/README.md)
+> (collecte SoilGrids / NASA POWER / iSDA, extraction NDVI, étiquetage par
+> aptitude trapézoïdale FAO Ecocrop, entraînement comparatif).
+>
+> L'ordre des 16 variables est un contrat entre cette chaîne et
+> `app/services/agroeco_zones.py` : une divergence fausserait les prédictions
+> sans lever d'erreur. Elle est verrouillée par `tests/test_pipeline_donnees.py`.
+
+> **Sans le modèle**, `/recommandations/v2/generer/{champId}` répond 503 ; le
+> reste de l'API (authentification, champs, conseils, suivi) reste disponible.
 
 ### 6. Démarrer le backend FastAPI
 
@@ -195,7 +204,7 @@ ReDoc : http://localhost:8000/redoc
 docker-compose up -d
 
 # Logs
-docker-compose logs -f koobalatec-backend
+docker-compose logs -f agrismart-backend
 docker-compose logs -f minio
 ```
 
@@ -265,7 +274,7 @@ par `conversationId`.
 | **POST** | **`/recommandations/v2/generer/{champId}`** | **Lancer le module IA de recommandation** |
 | GET | `/recommandations/v2/champ/{champId}` | Historique des recommandations d'un champ |
 | **POST** | **`/agent/chat`** | **Discuter avec l'agent conversationnel** |
-| GET | `/meteo/actuelle/{champId}` | Météo actuelle du champ |
+| GET | `/recommandations/{id}` | Détail d'une recommandation |
 | GET | `/admin/statistiques-globales` | Statistiques admin |
 
 Documentation complète : http://localhost:8000/docs
@@ -313,13 +322,12 @@ pytest tests/test_detection.py tests/test_recommandation.py -v
 | Variable | Description | Défaut |
 |----------|-------------|--------|
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | Chemin JSON Firebase | `./firebase_service_account.json` |
-| `FIREBASE_PROJECT_ID` | ID du projet Firebase | `koobalatec-final` |
+| `FIREBASE_PROJECT_ID` | ID du projet Firebase | `agrismart-jf-f1879` |
 | `MINIO_ENDPOINT` | Endpoint MinIO | `localhost:9000` |
-| `MINIO_ACCESS_KEY` | Clé d'accès MinIO | `koobalatecadmin` |
-| `MINIO_SECRET_KEY` | Secret MinIO | `KoobalaTech2026!Secret` |
+| `MINIO_ACCESS_KEY` | Clé d'accès MinIO | _(aucune — à définir dans `.env`)_ |
+| `MINIO_SECRET_KEY` | Secret MinIO | _(aucun — à définir dans `.env`)_ |
 | `MINIO_SECURE` | HTTPS pour MinIO | `false` |
-| `MINIO_BUCKET_IMAGES` | Nom du bucket images | `koobalatec-images` |
-| `OPENWEATHER_API_KEY` | Clé API OpenWeatherMap | — |
+| `MINIO_BUCKET_IMAGES` | Nom du bucket images | `agrismart-images` |
 | `API_SECRET_KEY` | Secret JWT interne | `changeme` |
 | `ENV` | Environnement | `development` |
 | `SEUIL_CONFIANCE_DETECTION` | Seuil auto-confirmation | `0.7` |
@@ -331,7 +339,6 @@ pytest tests/test_detection.py tests/test_recommandation.py -v
 
 L'application démarre avec des fallbacks :
 - **MinIO absent** : erreur 503 à l'upload (MinIO doit être actif pour les images)
-- **Météo** : données fictives si `OPENWEATHER_API_KEY` est vide
 - **Modèles IA** : prédictions heuristiques si les `.pkl`/`.tflite` sont absents
 - **Firebase** : avertissement au démarrage, API accessible
 
@@ -343,4 +350,4 @@ uvicorn main:app --reload
 
 ## Licence
 
-Projet KoobalaTech — Développé pour les agriculteurs sénégalais.
+Projet AgriSmart — Développé pour les agriculteurs sénégalais.

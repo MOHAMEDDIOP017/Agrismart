@@ -143,7 +143,6 @@ champs_service = FirestoreService("champs")
 cultures_service = FirestoreService("cultures")
 culture_en_champ_svc = FirestoreService("cultureEnChamp")
 recommandations_svc = FirestoreService("recommandationsCulture")
-recommandations_pr_svc = FirestoreService("recommandationsPostRecolte")
 interventions_svc = FirestoreService("interventions")
 conseils_svc = FirestoreService("conseils")
 

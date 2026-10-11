@@ -5,8 +5,7 @@ besoin en eau, prix marché, engrais, maladies fréquentes).
 Ces données sont indépendantes du moteur de prédiction : elles servent à
 enrichir une culture prédite (par son nom) avec des informations agronomiques
 pratiques. Utilisées par `recommandation_service_v2.py` (moteur multi-label
-actif), `culture_service.py` (seed du référentiel Culture) et
-`routers/recommandations.py` (calcul post-récolte).
+actif) et `culture_service.py` (seed du référentiel Culture).
 
 Historique : ces dicts vivaient dans `recommandation_service.py` (moteur SVM
 v1), retiré du projet — ses artefacts (`svm_crop.pkl`, `scaler_crop.pkl`,

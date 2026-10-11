@@ -1,5 +1,5 @@
 """
-KoobalaTech Backend — Point d'entrée principal FastAPI.
+AgriSmart Backend — Point d'entrée principal FastAPI.
 
 Application d'assistance agricole intelligente pour les agriculteurs sénégalais.
 Module IA :
@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.utils.logger import configurer_logging
-from app.core.exceptions import KoobalaTechException, koobalatec_exception_handler
+from app.core.exceptions import AgriSmartException, agrismart_exception_handler
 
 # Importation de tous les routers
 from app.routers import (
@@ -32,20 +32,18 @@ from app.routers import (
     utilisateurs,
     champs,
     cultures,
-    recommandations,
     recommandations_v2,
     agent,
     interventions,
     conseils,
     notifications,
-    meteo,
     admin,
     suivi_culture,
 )
 
 # ─── Configuration du logging ────────────────────────────────────────────────
 configurer_logging()
-logger = logging.getLogger("koobalatec.main")
+logger = logging.getLogger("agrismart.main")
 
 
 # ─── Cycle de vie de l'application ───────────────────────────────────────────
@@ -96,10 +94,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"❌ Erreur chargement modèle multi-label v2 au démarrage : {e}")
 
-    logger.info("KoobalaTech Backend prêt à recevoir des requêtes.")
+    logger.info("AgriSmart Backend prêt à recevoir des requêtes.")
     yield
 
-    logger.info("Arrêt d'KoobalaTech Backend.")
+    logger.info("Arrêt d'AgriSmart Backend.")
 
 
 # ─── Création de l'application FastAPI ───────────────────────────────────────
@@ -108,9 +106,9 @@ app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="""
-## KoobalaTech Backend API
+## AgriSmart Backend API
 
-API backend pour l'application mobile Flutter KoobalaTech, destinée aux agriculteurs sénégalais.
+API backend pour l'application mobile Flutter AgriSmart, destinée aux agriculteurs sénégalais.
 
 ### Module IA
 
@@ -165,10 +163,10 @@ async def timing_middleware(request: Request, call_next):
 
 # ─── Gestionnaire d'exceptions global ────────────────────────────────────────
 
-@app.exception_handler(KoobalaTechException)
-async def gestionnaire_exceptions_metier(request: Request, exc: KoobalaTechException):
-    """Convertit les exceptions KoobalaTech en réponses HTTP structurées."""
-    http_exc = koobalatec_exception_handler(exc)
+@app.exception_handler(AgriSmartException)
+async def gestionnaire_exceptions_metier(request: Request, exc: AgriSmartException):
+    """Convertit les exceptions AgriSmart en réponses HTTP structurées."""
+    http_exc = agrismart_exception_handler(exc)
     return JSONResponse(
         status_code=http_exc.status_code,
         content={"detail": http_exc.detail, "type": type(exc).__name__},
@@ -191,13 +189,11 @@ app.include_router(auth.router)
 app.include_router(utilisateurs.router)
 app.include_router(champs.router)
 app.include_router(cultures.router)
-app.include_router(recommandations.router)
 app.include_router(recommandations_v2.router)
 app.include_router(agent.router)
 app.include_router(interventions.router)
 app.include_router(conseils.router)
 app.include_router(notifications.router)
-app.include_router(meteo.router)
 app.include_router(admin.router)
 app.include_router(suivi_culture.router)
 

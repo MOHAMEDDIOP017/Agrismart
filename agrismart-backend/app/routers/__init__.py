@@ -1,1 +1,1 @@
-"""Package des routers FastAPI d'KoobalaTech."""
+"""Package des routers FastAPI d'AgriSmart."""

@@ -1,1 +1,1 @@
-"""Package principal de l'application KoobalaTech."""
+"""Package principal de l'application AgriSmart."""

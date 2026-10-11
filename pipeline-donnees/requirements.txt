@@ -1,0 +1,24 @@
+# Dépendances de la chaîne de préparation des données (hors application).
+# Le backend a ses propres dépendances : agrismart-backend/requirements.txt.
+#
+#   pip install -r requirements.txt
+
+# ── Étapes 1 et 3 : collecte et étiquetage ───────────────────────────────────
+pandas==2.0.3
+numpy==1.26.4
+requests==2.32.0
+tqdm==4.67.1
+
+# ── Étape 4 : entraînement et comparaison des modèles ────────────────────────
+# scikit-learn et joblib sont épinglés sur les mêmes versions que le backend :
+# un modèle sérialisé par une version différente peut ne pas se recharger.
+scikit-learn==1.6.1
+joblib==1.4.2
+xgboost==3.2.0
+matplotlib==3.10.7
+jupyter==1.1.1
+
+# ── Étape 2 : NDVI ───────────────────────────────────────────────────────────
+# earthengine-api n'est PAS listé ici : le notebook s'exécute sur Google Colab,
+# où la bibliothèque est préinstallée et l'authentification se fait dans le
+# navigateur. Pour l'exécuter en local :  pip install earthengine-api

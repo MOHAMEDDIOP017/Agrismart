@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
+from app.core.exceptions import agrismart_exception_handler, AgriSmartException
 from app.models.agent_chat import RequeteChat, ReponseChat
 from app.models.enums import RoleMessage
 from app.services import agent_service, message_chat_service
@@ -38,7 +38,12 @@ async def chat(
 
     try:
         historique = await message_chat_service.construire_historique_openai(conversation_id)
-        resultat = agent_service.chat(requete.message, historique)
+        resultat = await agent_service.chat(
+            requete.message,
+            historique,
+            champ_id_courant=requete.champId,
+            utilisateur_id=uid,
+        )
 
         # Persistance du MessageChat de l'utilisateur et de la réponse de l'agent.
         await message_chat_service.persister(
@@ -56,8 +61,8 @@ async def chat(
             reponse=resultat["reponse"],
             outilsUtilises=resultat["outils_utilises"],
         )
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
     except Exception as e:
         logger.error(f"Erreur lors de la conversation avec l'agent IA : {e}")
         raise HTTPException(status_code=500, detail=str(e))

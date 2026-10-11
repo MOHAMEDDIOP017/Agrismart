@@ -1,4 +1,4 @@
-"""Tests unitaires pour le service MinIO d'KoobalaTech."""
+"""Tests unitaires pour le service MinIO d'AgriSmart."""
 
 import io
 import pytest
@@ -79,7 +79,7 @@ async def test_uploader_image_png_succes(minio_service_mock, image_png_valide):
     )
 
     assert resultat["formatFichier"] == "PNG"
-    assert "koobalatec-images" in resultat["bucketMinio"] or resultat["bucketMinio"] == service.bucket
+    assert "agrismart-images" in resultat["bucketMinio"] or resultat["bucketMinio"] == service.bucket
 
 
 @pytest.mark.asyncio
@@ -210,7 +210,7 @@ async def test_supprimer_image_erreur_minio(minio_service_mock):
 def test_generer_url_presignee_succes(minio_service_mock):
     """Génération d'une URL pré-signée valide."""
     service, mock_client = minio_service_mock
-    url_attendue = "http://localhost:9000/koobalatec-images/fichier.jpg?X-Amz-Signature=abc123"
+    url_attendue = "http://localhost:9000/agrismart-images/fichier.jpg?X-Amz-Signature=abc123"
     mock_client.presigned_get_object.return_value = url_attendue
 
     url = service.generer_url_presignee("agriculteur_001/fichier.jpg", duree_validite_heures=12)

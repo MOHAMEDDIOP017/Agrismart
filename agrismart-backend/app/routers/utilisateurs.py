@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.dependencies import get_utilisateur_courant, require_admin
-from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
+from app.core.exceptions import agrismart_exception_handler, AgriSmartException
 from app.models.utilisateur import UtilisateurUpdate
 from app.models.enums import RoleUtilisateur
 from app.services.auth_service import auth_service
@@ -113,8 +113,8 @@ async def obtenir_utilisateur(
 
     try:
         return await auth_service.obtenir_utilisateur(utilisateur_id)
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.put(
@@ -139,8 +139,8 @@ async def mettre_a_jour_utilisateur(
         return await auth_service.mettre_a_jour_profil(
             utilisateur_id, donnees.model_dump(exclude_none=True)
         )
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.delete(
@@ -156,8 +156,8 @@ async def supprimer_utilisateur(
     """Suppression définitive — irréversible."""
     try:
         await auth_service.supprimer_utilisateur(utilisateur_id)
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.patch(
@@ -174,8 +174,8 @@ async def suspendre_utilisateur(
     try:
         utilisateur = await auth_service.suspendre_utilisateur(utilisateur_id)
         return {"message": "Utilisateur suspendu.", "utilisateur": utilisateur}
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.patch(

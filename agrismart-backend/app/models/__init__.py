@@ -1,4 +1,4 @@
-"""Package des modèles Pydantic d'KoobalaTech."""
+"""Package des modèles Pydantic d'AgriSmart."""
 
 from app.models.enums import (
     RoleUtilisateur,
@@ -7,7 +7,6 @@ from app.models.enums import (
     TypeIntervention,
     StatutIntervention,
     TypeConseil,
-    TypeRecommandationPostRecolte,
 )
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "TypeIntervention",
     "StatutIntervention",
     "TypeConseil",
-    "TypeRecommandationPostRecolte",
 ]

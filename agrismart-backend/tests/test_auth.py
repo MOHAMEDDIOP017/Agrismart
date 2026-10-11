@@ -40,7 +40,7 @@ class TestHealthCheck:
         response = client.get("/")
         data = response.json()
         assert "application" in data
-        assert "KoobalaTech" in data["application"]
+        assert "AgriSmart" in data["application"]
 
     def test_health_check_retourne_ok(self, client):
         """L'endpoint /health doit retourner statut ok."""
@@ -58,12 +58,12 @@ class TestVerifyToken:
         """Un token valide doit retourner un profil utilisateur."""
         mock_verifier.return_value = {
             "uid": "uid123",
-            "email": "test@koobalatec.sn",
+            "email": "test@agrismart.sn",
             "role": "AGRICULTEUR",
         }
         mock_creer.return_value = {
             "id": "uid123",
-            "email": "test@koobalatec.sn",
+            "email": "test@agrismart.sn",
             "nom": "Diop",
             "prenom": "Mamadou",
             "role": "AGRICULTEUR",

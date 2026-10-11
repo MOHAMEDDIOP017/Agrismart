@@ -1,4 +1,4 @@
-"""Fonctions utilitaires générales pour KoobalaTech."""
+"""Fonctions utilitaires générales pour AgriSmart."""
 
 from datetime import datetime, timezone
 from typing import Any, Optional

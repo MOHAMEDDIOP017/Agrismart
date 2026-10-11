@@ -18,6 +18,14 @@ class RequeteChat(BaseModel):
         None,
         description="Fil de discussion existant. Omis pour démarrer une nouvelle conversation.",
     )
+    champId: Optional[str] = Field(
+        None,
+        description=(
+            "Champ actuellement consulté dans l'application. Transmis à l'agent "
+            "comme contexte : il privilégie alors une recommandation à l'échelle "
+            "de cette parcelle plutôt qu'à l'échelle de la commune."
+        ),
+    )
 
 
 class OutilUtilise(BaseModel):

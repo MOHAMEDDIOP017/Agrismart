@@ -1,0 +1,27 @@
+# Cache des réponses d'API (SoilGrids, NASA POWER, iSDA)
+# Un fichier JSON par point et par source : plusieurs centaines de Mo pour une
+# collecte complète. Régénérable, mais à conserver localement — c'est lui qui
+# permet de reprendre une collecte interrompue sans tout réinterroger.
+cache_api/
+
+# Jeux de données intermédiaires et finaux
+# Volumineux et entièrement reproductibles en réexécutant les étapes 1 à 3
+# (voir README.md). Seul le modèle entraîné est versionné, dans
+# agrismart-backend/models_ia/.
+*.csv
+
+# Rapport généré par l'étape 3
+rapport_etiquetage.txt
+
+# Modèle sérialisé produit par l'étape 4 : sa place est dans
+# agrismart-backend/models_ia/, pas ici.
+*.joblib
+
+# Checkpoints Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/

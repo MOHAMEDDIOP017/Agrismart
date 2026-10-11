@@ -1,10 +1,24 @@
-"""Router FastAPI — Module IA 1 (v2) : Recommandation de cultures (multi-label)."""
+"""
+Router FastAPI — Recommandations de cultures.
+
+Unique router du domaine : il porte le moteur IA multi-label (chemins `/v2/...`,
+conserves tels quels pour ne pas casser l'app Flutter) et l'endpoint generique
+de consultation `GET /recommandations/{id}`, rapatrie de l'ancien
+`app/routers/recommandations.py` (supprime). Ce dernier ne contenait plus que
+cet endpoint depuis le retrait de la recommandation post-recolte, et deux
+routers pour un meme domaine produisaient deux groupes distincts dans Swagger.
+
+Attention a l'ordre de declaration : `GET /{recommandation_id}` capte n'importe
+quel chemin d'un seul segment sous `/recommandations`. Il est donc declare en
+DERNIER, apres toutes les routes `/v2/...`, car FastAPI resout les routes dans
+leur ordre de declaration.
+"""
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.dependencies import get_utilisateur_courant
-from app.core.exceptions import koobalatec_exception_handler, KoobalaTechException
+from app.core.exceptions import agrismart_exception_handler, AgriSmartException
 from app.models.recommandation_culture_v2 import (
     ResultatRecommandationV2,
     RecommandationCultureV2Response,
@@ -20,10 +34,7 @@ from app.models.enums import TypeNotification
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/recommandations/v2",
-    tags=["Module IA - Recommandation cultures (v2, multi-label)"],
-)
+router = APIRouter(prefix="/recommandations", tags=["Recommandations"])
 
 
 def _verifier_role_expert(courant: dict) -> None:
@@ -32,7 +43,7 @@ def _verifier_role_expert(courant: dict) -> None:
 
 
 @router.post(
-    "/generer/{champ_id}",
+    "/v2/generer/{champ_id}",
     summary="Générer des recommandations de cultures (IA multi-label)",
     description=(
         "Déclenche le nouveau moteur d'IA multi-label (RandomForest, 16 variables "
@@ -87,15 +98,15 @@ async def generer_recommandations_v2(
 
         return resultat
 
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
     except Exception as e:
         logger.error(f"Erreur lors de la génération des recommandations v2 : {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get(
-    "/champ/{champ_id}",
+    "/v2/champ/{champ_id}",
     summary="Historique des recommandations multi-label d'un champ",
     description="Retourne toutes les RecommandationCulture (v2) générées pour un champ.",
     status_code=status.HTTP_200_OK,
@@ -123,7 +134,7 @@ async def recommandations_champ_v2(
 
 
 @router.get(
-    "/en-attente",
+    "/v2/en-attente",
     summary="Analyses en attente de validation, groupées par top-3 (Expert)",
     description=(
         "Une carte par AnalyseParcelle ayant un top-3 EN_ATTENTE : regroupe les 1 à 3 "
@@ -142,7 +153,7 @@ async def recommandations_en_attente(
 
 
 @router.post(
-    "/{recommandation_id}/valider",
+    "/v2/{recommandation_id}/valider",
     summary="Valider une recommandation (Expert)",
     status_code=status.HTTP_200_OK,
     response_model=RecommandationCultureV2Response,
@@ -162,12 +173,12 @@ async def valider_recommandation_v2(
             f"Recommandation {recommandation_id} validée", recommandation_id,
         )
         return reco
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.post(
-    "/{recommandation_id}/corriger",
+    "/v2/{recommandation_id}/corriger",
     summary="Corriger une recommandation (Expert)",
     status_code=status.HTTP_200_OK,
     response_model=RecommandationCultureV2Response,
@@ -187,12 +198,12 @@ async def corriger_recommandation_v2(
             f"Recommandation {recommandation_id} corrigée", recommandation_id,
         )
         return reco
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.post(
-    "/{recommandation_id}/rejeter",
+    "/v2/{recommandation_id}/rejeter",
     summary="Rejeter une recommandation (Expert)",
     status_code=status.HTTP_200_OK,
     response_model=RecommandationCultureV2Response,
@@ -212,8 +223,8 @@ async def rejeter_recommandation_v2(
             f"Recommandation {recommandation_id} rejetée", recommandation_id,
         )
         return reco
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 # ─── Actions groupées (une AnalyseParcelle = un top-3 = une décision) ─────────
@@ -223,7 +234,7 @@ async def rejeter_recommandation_v2(
 # jour ensemble ici.
 
 @router.post(
-    "/analyses/{analyse_id}/valider",
+    "/v2/analyses/{analyse_id}/valider",
     summary="Valider le top-3 d'une AnalyseParcelle (Expert)",
     status_code=status.HTTP_200_OK,
 )
@@ -242,12 +253,12 @@ async def valider_analyse_v2(
             f"Analyse {analyse_id} validée", analyse_id,
         )
         return carte
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.post(
-    "/analyses/{analyse_id}/corriger",
+    "/v2/analyses/{analyse_id}/corriger",
     summary="Corriger le top-3 d'une AnalyseParcelle (Expert)",
     status_code=status.HTTP_200_OK,
 )
@@ -266,12 +277,12 @@ async def corriger_analyse_v2(
             f"Analyse {analyse_id} corrigée", analyse_id,
         )
         return carte
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
 
 
 @router.post(
-    "/analyses/{analyse_id}/rejeter",
+    "/v2/analyses/{analyse_id}/rejeter",
     summary="Rejeter le top-3 d'une AnalyseParcelle (Expert)",
     status_code=status.HTTP_200_OK,
 )
@@ -290,5 +301,32 @@ async def rejeter_analyse_v2(
             f"Analyse {analyse_id} rejetée", analyse_id,
         )
         return carte
-    except KoobalaTechException as e:
-        raise koobalatec_exception_handler(e)
+    except AgriSmartException as e:
+        raise agrismart_exception_handler(e)
+
+
+# ─── Consultation générique (rapatriée de l'ancien router recommandations.py) ─
+# DOIT rester la dernière route déclarée du module : son chemin `/{id}` d'un
+# seul segment capterait sinon `/recommandations/v2/...` (FastAPI résout les
+# routes dans l'ordre de déclaration). Indépendante du moteur ayant produit la
+# recommandation, contrairement aux routes `/v2/...` ci-dessus.
+
+@router.get(
+    "/{recommandation_id}",
+    summary="Détails d'une recommandation",
+    description="Retourne les détails complets d'une recommandation de culture.",
+    status_code=status.HTTP_200_OK,
+)
+async def obtenir_recommandation(
+    recommandation_id: str,
+    courant: dict = Depends(get_utilisateur_courant),
+):
+    reco = await recommandations_svc.lire(recommandation_id)
+    if reco is None:
+        raise HTTPException(status_code=404, detail="Recommandation introuvable.")
+
+    uid = courant["uid"]
+    if courant.get("role") not in ["ADMIN", "EXPERT"] and reco.get("agriculteurId") != uid:
+        raise HTTPException(status_code=403, detail="Accès refusé.")
+
+    return reco

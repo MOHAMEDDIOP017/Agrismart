@@ -1,4 +1,4 @@
-"""Initialisation des services Firebase pour KoobalaTech (Auth + Firestore + FCM uniquement).
+"""Initialisation des services Firebase pour AgriSmart (Auth + Firestore + FCM uniquement).
 
 Note : le stockage des images est géré par MinIO, PAS par Firebase Storage.
 """

@@ -1,1 +1,1 @@
-"""Package des services métier d'KoobalaTech."""
+"""Package des services métier d'AgriSmart."""

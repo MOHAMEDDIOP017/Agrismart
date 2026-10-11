@@ -1,4 +1,4 @@
-"""Énumérations utilisées dans les modèles Pydantic d'KoobalaTech."""
+"""Énumérations utilisées dans les modèles Pydantic d'AgriSmart."""
 
 from enum import Enum
 
@@ -51,12 +51,6 @@ class TypeConseil(str, Enum):
     RECOLTE = "RECOLTE"
     FERTILISATION = "FERTILISATION"
     AUTRE = "AUTRE"
-
-
-class TypeRecommandationPostRecolte(str, Enum):
-    """Type de recommandation post-récolte."""
-    VENTE_BRUTE = "VENTE_BRUTE"
-    TRANSFORMATION = "TRANSFORMATION"
 
 
 class StatutValidation(str, Enum):

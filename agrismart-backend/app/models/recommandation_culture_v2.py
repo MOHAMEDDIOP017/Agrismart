@@ -84,3 +84,15 @@ class ResultatRecommandationV2(BaseModel):
     topRecommandations: list[RecommandationCultureV2Response]
     modeleVersion: str
     dateAnalyse: datetime
+
+    # ── Traçabilité des données ─────────────────────────────────
+    # Origine de chaque bloc de variables : mesure temps réel (SoilGrids,
+    # NASA POWER) ou moyenne de la zone agroécologique. C'est le mécanisme de
+    # repli du moteur : la recommandation reste produite même quand une source
+    # externe ne répond pas, mais l'utilisateur doit pouvoir le savoir.
+    #
+    # `sourceDonnees` est la chaîne exacte persistée dans
+    # `AnalyseParcelle.sourceDonnees` (traçabilité en base) ; `sourcesDonnees`
+    # en est la forme structurée, bloc par bloc, pour l'affichage client.
+    sourceDonnees: str = ""
+    sourcesDonnees: dict[str, str] = Field(default_factory=dict)

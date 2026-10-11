@@ -17,6 +17,11 @@ joblib==1.4.2
 requests==2.32.0
 pytest==8.2.0
 pytest-asyncio==0.23.6
+# pandas n'est pas utilisé par l'application : il est requis par
+# tests/test_pipeline_donnees.py, qui importe le script d'étiquetage de
+# ../pipeline-donnees/ pour verrouiller la fonction d'aptitude et le
+# contrat des 16 variables du modèle.
+pandas==2.0.3
 httpx==0.27.0
 aiofiles==23.2.1
 python-jose[cryptography]==3.3.0

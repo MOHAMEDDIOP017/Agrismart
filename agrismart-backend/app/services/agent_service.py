@@ -15,8 +15,14 @@ Chaîne : app Flutter -> POST /agent/chat -> Qwen (via OpenRouter)
                                                  v
                           recommandation_service_v2 (modele_final.joblib)
                           + agroeco_zones (géocodage, sol, climat, NDVI)
+
+Tout le module est asynchrone de bout en bout : l'outil doit pouvoir lire
+Firestore (résolution d'un `champId`), et les appels réseau bloquants
+(OpenRouter, SoilGrids, NASA POWER, géocodage) sont déportés dans un thread
+par `asyncio.to_thread` pour ne pas figer la boucle d'événements du serveur.
 """
 
+import asyncio
 import json
 import logging
 
@@ -25,6 +31,7 @@ import requests
 from app.config import settings
 from app.core.exceptions import AgentIAIndisponibleException
 from app.services import agroeco_zones
+from app.services.firestore_service import champs_service
 from app.services.recommandation_service_v2 import (
     recommandation_service_v2,
     NOM_AFFICHAGE_PAR_CODE,
@@ -49,9 +56,21 @@ pas sûr d'une traduction wolof, reste en français plutôt que d'improviser.
 - Ne montre jamais ton raisonnement, tes hésitations ou une correction en cours \
 de réponse (pas de "note :", pas de "version corrigée :") : écris directement la \
 réponse finale, propre, en une seule fois.
-- Quand l'utilisateur demande quelles cultures planter dans une localité, tu \
-DOIS appeler l'outil `recommander_culture` avec le nom de la localité. Ne devine \
-jamais les cultures toi-même : utilise toujours l'outil.
+- Quand l'utilisateur demande quelles cultures planter, tu DOIS appeler l'outil \
+`recommander_culture`. Ne devine jamais les cultures toi-même : utilise toujours \
+l'outil.
+- Cet outil accepte trois façons de désigner un endroit, par ordre de précision \
+décroissante. Choisis TOUJOURS la plus précise dont tu disposes :
+  1. `champId` : l'identifiant d'une parcelle enregistrée. Si le contexte de \
+conversation t'indique un champ actuellement consulté, utilise CE champId, même \
+si l'utilisateur ne le mentionne pas.
+  2. `latitude` et `longitude` : un point GPS précis.
+  3. `localite` : un nom de commune ou de ville, à n'utiliser que si tu n'as ni \
+champId ni coordonnées, ou si l'utilisateur demande explicitement un autre lieu \
+que sa parcelle.
+- Quand l'outil renvoie une recommandation à l'échelle « localite », dis \
+clairement à l'utilisateur qu'elle vaut pour la commune et non pour sa parcelle \
+précise : reprends la phrase du champ `avertissement_echelle`.
 - Après l'outil, explique la recommandation simplement, comme à un cultivateur \
 qui ne connaît rien à la technologie. Cite le taux d'aptitude.
 - Pour les questions générales d'agriculture (maladies, techniques, calendrier \
@@ -63,16 +82,40 @@ OUTIL_SCHEMA = {
     "function": {
         "name": "recommander_culture",
         "description": (
-            "Recommande les cultures les mieux adaptées à une localité du Sénégal, "
+            "Recommande les cultures les mieux adaptées à un endroit du Sénégal, "
             "à partir des données de sol, climat et végétation. Renvoie le top-3 "
-            "avec le taux d'aptitude, en français et en wolof."
+            "avec le taux d'aptitude, en français et en wolof. L'endroit se désigne "
+            "de trois façons, par précision décroissante : champId (parcelle "
+            "enregistrée), latitude/longitude (point GPS), ou localite (commune). "
+            "Aucun paramètre n'est obligatoire mais il en faut au moins un."
         ),
         "parameters": {
             "type": "object",
             "properties": {
+                "champId": {
+                    "type": "string",
+                    "description": (
+                        "Identifiant d'une parcelle enregistrée de l'agriculteur. "
+                        "À privilégier : la recommandation porte alors sur la parcelle "
+                        "elle-même. Utilise l'identifiant du champ actuellement "
+                        "consulté quand le contexte de conversation te le donne."
+                    ),
+                },
+                "latitude": {
+                    "type": "number",
+                    "description": "Latitude en degrés décimaux (ex : 14.1652 pour Kaolack)",
+                },
+                "longitude": {
+                    "type": "number",
+                    "description": "Longitude en degrés décimaux (ex : -16.0726 pour Kaolack)",
+                },
                 "localite": {
                     "type": "string",
-                    "description": "Nom d'une ville ou commune du Sénégal (ex : Kaolack, Ziguinchor)",
+                    "description": (
+                        "Nom d'une ville ou commune du Sénégal (ex : Kaolack, Ziguinchor). "
+                        "Dernier recours : la recommandation vaut alors pour la commune "
+                        "entière, pas pour une parcelle précise."
+                    ),
                 },
                 "top_k": {
                     "type": "integer",
@@ -80,30 +123,126 @@ OUTIL_SCHEMA = {
                     "default": 3,
                 },
             },
-            "required": ["localite"],
+            # Aucun paramètre obligatoire : le modèle choisit le mode de
+            # localisation le plus précis dont il dispose. L'outil vérifie
+            # lui-même qu'au moins un a été fourni (voir `recommander_culture`).
+            "required": [],
         },
     },
 }
 
+# Paramètres que le modèle a le droit de fournir. Les arguments renvoyés par le
+# LLM sont filtrés sur cette liste avant l'appel : le contexte de sécurité
+# (`utilisateur_id`) est injecté par le serveur, jamais par le modèle.
+PARAMETRES_OUTIL = frozenset(OUTIL_SCHEMA["function"]["parameters"]["properties"])
 
-def recommander_culture(localite: str, top_k: int = 3) -> dict:
+AVERTISSEMENT_LOCALITE = (
+    "Cette recommandation vaut pour la commune dans son ensemble, et non pour une "
+    "parcelle précise : le sol peut varier d'un champ à l'autre. Pour une "
+    "recommandation sur votre parcelle, enregistrez-la dans l'application."
+)
+
+
+async def _point_depuis_champ(
+    champ_id: str, utilisateur_id: str | None
+) -> tuple[float, float, str] | dict:
     """
-    Outil appelé par l'agent (function calling) : nom de localité sénégalaise
+    Résout un `champId` en (latitude, longitude, libellé).
+
+    Vérifie que le champ appartient bien à l'utilisateur de la conversation :
+    le champId vient du modèle de langage, qui pourrait en inventer un ou
+    reprendre celui d'un autre agriculteur aperçu dans l'historique. Sans ce
+    contrôle, l'outil divulguerait la position d'une parcelle d'autrui. Le
+    message d'erreur est volontairement identique à celui d'un champ
+    inexistant, pour ne pas révéler l'existence de la parcelle.
+
+    Returns:
+        (latitude, longitude, libellé), ou un dict {"erreur": ...} directement
+        renvoyable au modèle.
+    """
+    champ = await champs_service.lire(champ_id)
+    if champ is None:
+        return {"erreur": f"Parcelle introuvable : « {champ_id} »."}
+
+    if utilisateur_id and champ.get("agriculteurId") != utilisateur_id:
+        logger.warning(
+            f"Agent : champId « {champ_id} » refusé — n'appartient pas à {utilisateur_id}."
+        )
+        return {"erreur": f"Parcelle introuvable : « {champ_id} »."}
+
+    latitude, longitude = champ.get("latitude"), champ.get("longitude")
+    if latitude is None or longitude is None:
+        return {
+            "erreur": f"La parcelle « {champ.get('nom', champ_id)} » n'a pas de "
+                      f"coordonnées GPS enregistrées."
+        }
+
+    return float(latitude), float(longitude), champ.get("nom", "votre parcelle")
+
+
+async def recommander_culture(
+    champId: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    localite: str | None = None,
+    top_k: int = 3,
+    utilisateur_id: str | None = None,
+) -> dict:
+    """
+    Outil appelé par l'agent (function calling) : un endroit du Sénégal
     -> top-k cultures recommandées + message bilingue FR/Wolof.
+
+    Trois modes de localisation, appliqués dans cet ordre de priorité :
+      1. `champId`                -> parcelle enregistrée (échelle « parcelle »)
+      2. `latitude` + `longitude` -> point GPS           (échelle « parcelle »)
+      3. `localite`               -> géocodage de commune (échelle « localite »)
+
+    Aucun n'est obligatoire, mais au moins un doit être fourni, sinon l'outil
+    renvoie une erreur explicite indiquant au modèle quoi fournir. La réponse
+    porte le champ `echelle`, pour que l'agent — et donc l'utilisateur — sache
+    si la recommandation vaut pour une parcelle précise ou pour une commune
+    entière.
 
     Réutilise `agroeco_zones` (géocodage + collecte sol/climat/NDVI) et
     `recommandation_service_v2` (chargement du modèle + prédiction) : aucune
-    logique dupliquée par rapport au flux "champ" du router /recommandations/v2.
+    logique dupliquée par rapport au flux « champ » du router /recommandations.
     """
-    geo = agroeco_zones.geocoder_localite(localite)
-    if not geo:
-        return {
-            "erreur": f"Localité introuvable : « {localite} ». "
-                      f"Précisez une commune ou une ville du Sénégal."
-        }
-    latitude, longitude, nom_resolu = geo
+    # ── Résolution de l'endroit, par priorité décroissante ────────────────
+    if champId:
+        resolu = await _point_depuis_champ(champId, utilisateur_id)
+        if isinstance(resolu, dict):
+            return resolu
+        latitude, longitude, libelle = resolu
+        echelle = "parcelle"
 
-    variables, zone, sources = agroeco_zones.assembler_variables(latitude, longitude)
+    elif latitude is not None and longitude is not None:
+        latitude, longitude = float(latitude), float(longitude)
+        libelle = f"votre position ({latitude:.4f}, {longitude:.4f})"
+        echelle = "parcelle"
+
+    elif localite:
+        # Appels réseau bloquants -> thread, pour ne pas figer la boucle.
+        geo = await asyncio.to_thread(agroeco_zones.geocoder_localite, localite)
+        if not geo:
+            return {
+                "erreur": f"Localité introuvable : « {localite} ». "
+                          f"Précisez une commune ou une ville du Sénégal."
+            }
+        latitude, longitude, libelle = geo
+        echelle = "localite"
+
+    else:
+        return {
+            "erreur": "Aucun endroit fourni. Appelle à nouveau l'outil avec l'un "
+                      "de ces paramètres, par ordre de préférence : `champId` "
+                      "(parcelle enregistrée), `latitude` et `longitude` "
+                      "(point GPS), ou `localite` (nom de commune)."
+        }
+
+    # ── Collecte des 16 variables, puis prédiction ────────────────────────
+    variables, zone, sources = await asyncio.to_thread(
+        agroeco_zones.assembler_variables, latitude, longitude
+    )
     resultats = recommandation_service_v2.predire_top_k(variables, top_k=top_k)
 
     zone_fr = agroeco_zones.ZONE_NOM_AFFICHAGE.get(zone, zone)
@@ -118,18 +257,23 @@ def recommander_culture(localite: str, top_k: int = 3) -> dict:
 
     premiere = top[0]
     message_fr = (
-        f"Pour {nom_resolu} ({zone_fr}), les cultures les plus adaptées sont : "
+        f"Pour {libelle} ({zone_fr}), les cultures les plus adaptées sont : "
         + ", ".join(f"{c['culture_fr']} ({c['aptitude_pct']:.0f}%)" for c in top)
         + f". La plus recommandée est le {premiere['culture_fr']}."
     )
     message_wo = (
-        f"Ci {nom_resolu}, mbay yi gën a baax ñooy : "
+        f"Ci {libelle}, mbay yi gën a baax ñooy : "
         + ", ".join(c["culture_wolof"] for c in top)
         + f". Bi gën a baax mooy {premiere['culture_wolof']}."
     )
+    if echelle == "localite":
+        message_fr += " " + AVERTISSEMENT_LOCALITE
 
     return {
-        "localite": nom_resolu,
+        "echelle": echelle,
+        "avertissement_echelle": AVERTISSEMENT_LOCALITE if echelle == "localite" else None,
+        "localisation": libelle,
+        "champId": champId,
         "latitude": round(latitude, 4),
         "longitude": round(longitude, 4),
         "zone_agroecologique": zone_fr,
@@ -140,11 +284,11 @@ def recommander_culture(localite: str, top_k: int = 3) -> dict:
     }
 
 
-# Registre des outils disponibles pour l'agent (nom -> fonction Python)
+# Registre des outils disponibles pour l'agent (nom -> coroutine)
 OUTILS = {"recommander_culture": recommander_culture}
 
 
-def _appeler_qwen(messages: list[dict], avec_outils: bool = True) -> dict:
+async def _appeler_qwen(messages: list[dict], avec_outils: bool = True) -> dict:
     """Un appel à Qwen via OpenRouter. Lève AgentIAIndisponibleException en cas d'échec."""
     if not settings.openrouter_api_key:
         raise AgentIAIndisponibleException(
@@ -160,14 +304,18 @@ def _appeler_qwen(messages: list[dict], avec_outils: bool = True) -> dict:
         payload["tool_choice"] = "auto"
 
     try:
-        reponse = requests.post(
-            settings.openrouter_base_url,
-            headers={
-                "Authorization": f"Bearer {settings.openrouter_api_key}",
-                "Content-Type": "application/json",
-            },
-            json=payload,
-            timeout=TIMEOUT_OPENROUTER,
+        # `requests` est bloquant : on le déporte dans un thread pour ne pas
+        # figer la boucle d'événements pendant les ~secondes de génération.
+        reponse = await asyncio.to_thread(
+            lambda: requests.post(
+                settings.openrouter_base_url,
+                headers={
+                    "Authorization": f"Bearer {settings.openrouter_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=TIMEOUT_OPENROUTER,
+            )
         )
         reponse.raise_for_status()
         # NB : on décode nous-mêmes `reponse.content` avec `json.loads` plutôt
@@ -185,7 +333,33 @@ def _appeler_qwen(messages: list[dict], avec_outils: bool = True) -> dict:
         raise AgentIAIndisponibleException(f"Agent IA indisponible : {e}")
 
 
-def chat(message: str, historique: list[dict]) -> dict:
+def _contexte_champ(champ_id: str | None) -> list[dict]:
+    """
+    Message système additionnel indiquant le champ actuellement consulté
+    dans l'application.
+
+    C'est ce qui permet au modèle de privilégier `champId` : sans ce contexte,
+    il ne peut connaître que les localités citées dans la conversation.
+    """
+    if not champ_id:
+        return []
+    return [{
+        "role": "system",
+        "content": (
+            f"Contexte : l'utilisateur consulte actuellement la parcelle dont "
+            f"l'identifiant est « {champ_id} ». Utilise ce champId comme "
+            f"paramètre de l'outil `recommander_culture`, sauf si l'utilisateur "
+            f"demande explicitement un autre endroit."
+        ),
+    }]
+
+
+async def chat(
+    message: str,
+    historique: list[dict],
+    champ_id_courant: str | None = None,
+    utilisateur_id: str | None = None,
+) -> dict:
     """
     Point d'entrée principal appelé par le router /agent/chat.
     Boucle agentique : Qwen -> (éventuel appel d'outil) -> Qwen -> réponse.
@@ -193,15 +367,21 @@ def chat(message: str, historique: list[dict]) -> dict:
     Args:
         message: nouveau message de l'utilisateur.
         historique: messages précédents au format [{role, content}, ...].
+        champ_id_courant: champ consulté dans l'app, transmis au modèle comme
+            contexte pour qu'il privilégie une recommandation à l'échelle de
+            la parcelle.
+        utilisateur_id: uid de l'appelant, injecté dans l'outil pour vérifier
+            qu'un champId appartient bien à cet utilisateur.
 
     Returns:
         {"reponse": str, "outils_utilises": [{"outil": str, "arguments": dict}, ...]}
     """
     messages: list[dict] = [{"role": "system", "content": SYSTEME_PROMPT}]
+    messages += _contexte_champ(champ_id_courant)
     messages += historique
     messages.append({"role": "user", "content": message})
 
-    reponse = _appeler_qwen(messages)
+    reponse = await _appeler_qwen(messages)
     outils_utilises: list[dict] = []
 
     for _ in range(MAX_TOURS_OUTILS):
@@ -213,9 +393,15 @@ def chat(message: str, historique: list[dict]) -> dict:
         for tc in tool_calls:
             nom_outil = tc["function"]["name"]
             args = json.loads(tc["function"]["arguments"])
+            # Filtrage sur le schéma : le modèle ne doit pas pouvoir injecter
+            # `utilisateur_id` et contourner le contrôle de propriété du champ.
+            args = {cle: val for cle, val in args.items() if cle in PARAMETRES_OUTIL}
             fonction = OUTILS.get(nom_outil)
             try:
-                resultat = fonction(**args) if fonction else {"erreur": "outil inconnu"}
+                if fonction is None:
+                    resultat = {"erreur": "outil inconnu"}
+                else:
+                    resultat = await fonction(**args, utilisateur_id=utilisateur_id)
             except Exception as e:
                 logger.error(f"Erreur lors de l'exécution de l'outil {nom_outil} : {e}")
                 resultat = {"erreur": str(e)}
@@ -225,7 +411,7 @@ def chat(message: str, historique: list[dict]) -> dict:
                 "tool_call_id": tc["id"],
                 "content": json.dumps(resultat, ensure_ascii=False),
             })
-        reponse = _appeler_qwen(messages)
+        reponse = await _appeler_qwen(messages)
 
     return {
         "reponse": _reparer_mojibake(reponse.get("content", "")),

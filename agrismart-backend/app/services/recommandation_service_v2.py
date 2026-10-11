@@ -296,6 +296,11 @@ class RecommandationServiceV2:
             topRecommandations=top_recommandations,
             modeleVersion=MODELE_VERSION,
             dateAnalyse=maintenant,
+            # Même valeur que celle persistée dans l'AnalyseParcelle ci-dessus :
+            # l'origine des données était déjà calculée mais restait en base,
+            # elle remonte désormais jusqu'à l'utilisateur.
+            sourceDonnees=analyse_doc["sourceDonnees"],
+            sourcesDonnees=sources,
         )
 
     # ──────────────────────────────────────────────────────────────────────
